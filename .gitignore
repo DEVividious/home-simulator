@@ -1,0 +1,25 @@
+# tooling
+node_modules/
+.venv/
+__pycache__/
+*.pyc
+
+# build output
+dist/
+
+# user documents written by the dev / preview save server (one directory per project)
+userdata/
+
+# generated reports (tests, previews, audits)
+reports/
+projects/*/preview/
+
+# locally downloaded tools (adb for phone install)
+.tools/
+
+# editors, OS
+.vscode/
+.idea/
+.DS_Store
+*.log
+*.tsbuildinfo

@@ -1,0 +1,3200 @@
+{
+ "schema": "home-simulator/furniture-catalog",
+ "version": 1,
+ "units": "m",
+ "description": "Built-in furniture catalog of the engine. Built-in items are parametric (generators in src/home/catalog/generators.ts): light, dimensionally correct, no external files. The runtimeModel field lets you add GLB / glTF models (type: glb, url) without changing the app.",
+ "conventions": {
+  "dimensions": "w — width (local x axis), d — depth (local y axis; back of the item at y = −d/2, front at +d/2), h — height; metres",
+  "origin": "centre of the footprint in plan, bottom of the item on the floor",
+  "parametric": "[min, max, step] ranges in metres for dimensions the user may change",
+  "variants": "size / type variants (e.g. bed 90–180); variant dimensions override dimensions",
+  "materialSlots": "materials of the item parts (ids from data/materialCatalog.json); mainSlot — the part whose material the user changes",
+  "placement": "wall — back against a wall (snaps to walls), free — free-standing, under — slides under a top (chair)"
+ },
+ "categories": [
+  {
+   "id": "living",
+   "name": "Living room",
+   "icon": "sofa"
+  },
+  {
+   "id": "dining",
+   "name": "Dining",
+   "icon": "table"
+  },
+  {
+   "id": "kitchen",
+   "name": "Kitchen",
+   "icon": "kitchen"
+  },
+  {
+   "id": "bedroom",
+   "name": "Bedroom",
+   "icon": "bed"
+  },
+  {
+   "id": "office",
+   "name": "Office",
+   "icon": "desk"
+  },
+  {
+   "id": "bathroom",
+   "name": "Bathroom",
+   "icon": "bath"
+  },
+  {
+   "id": "storage",
+   "name": "Storage",
+   "icon": "wardrobe"
+  },
+  {
+   "id": "garage",
+   "name": "Garage",
+   "icon": "garage"
+  },
+  {
+   "id": "decor",
+   "name": "Decor",
+   "icon": "plant"
+  }
+ ],
+ "items": [
+  {
+   "id": "sofa",
+   "name": "Sofa",
+   "category": "living",
+   "tags": [
+    "sofa",
+    "couch",
+    "living room",
+    "seat"
+   ],
+   "dimensions": {
+    "w": 2.1,
+    "d": 0.92,
+    "h": 0.84
+   },
+   "variants": [
+    {
+     "id": "2",
+     "name": "2-seater · 160 cm",
+     "dimensions": {
+      "w": 1.6
+     }
+    },
+    {
+     "id": "3",
+     "name": "3-seater · 210 cm",
+     "dimensions": {
+      "w": 2.1
+     }
+    },
+    {
+     "id": "4",
+     "name": "4-seater · 250 cm",
+     "dimensions": {
+      "w": 2.5
+     }
+    }
+   ],
+   "defaultVariant": "3",
+   "parametric": {
+    "w": [
+     1.4,
+     3.0,
+     0.05
+    ],
+    "d": [
+     0.82,
+     1.05,
+     0.01
+    ]
+   },
+   "runtimeModel": {
+    "type": "parametric",
+    "generator": "sofa"
+   },
+   "thumbnail": "auto:parametric",
+   "defaultMaterial": "fabric-grey",
+   "mainSlot": "main",
+   "materialCategories": [
+    "fabric"
+   ],
+   "materialSlots": {
+    "main": "fabric-grey",
+    "legs": "wood-walnut"
+   },
+   "placement": "wall",
+   "clearance": {
+    "front": 0.6
+   },
+   "source": "typical retail dimensions: seat 42–45 cm, depth 90–100 cm",
+   "license": "built-in (MIT)"
+  },
+  {
+   "id": "sofa-bed",
+   "name": "Sofa bed",
+   "category": "living",
+   "tags": [
+    "sofa",
+    "sleeping",
+    "guest",
+    "hybrid",
+    "bedroom"
+   ],
+   "dimensions": {
+    "w": 2.0,
+    "d": 0.95,
+    "h": 0.85
+   },
+   "parametric": {
+    "w": [
+     1.6,
+     2.4,
+     0.05
+    ]
+   },
+   "runtimeModel": {
+    "type": "parametric",
+    "generator": "sofa",
+    "options": {
+     "bed": true
+    }
+   },
+   "thumbnail": "auto:parametric",
+   "defaultMaterial": "fabric-green",
+   "mainSlot": "main",
+   "materialCategories": [
+    "fabric"
+   ],
+   "materialSlots": {
+    "main": "fabric-green",
+    "legs": "metal-black"
+   },
+   "placement": "wall",
+   "clearance": {
+    "front": 1.2
+   },
+   "source": "sofa bed 200 × 95; unfolded approx. 200 × 210 (sleeping area 140 × 200)",
+   "license": "built-in (MIT)"
+  },
+  {
+   "id": "armchair",
+   "name": "Armchair",
+   "category": "living",
+   "tags": [
+    "armchair",
+    "seat"
+   ],
+   "dimensions": {
+    "w": 0.8,
+    "d": 0.85,
+    "h": 0.85
+   },
+   "runtimeModel": {
+    "type": "parametric",
+    "generator": "sofa",
+    "options": {
+     "seats": 1
+    }
+   },
+   "thumbnail": "auto:parametric",
+   "defaultMaterial": "fabric-beige",
+   "mainSlot": "main",
+   "materialCategories": [
+    "fabric"
+   ],
+   "materialSlots": {
+    "main": "fabric-beige",
+    "legs": "wood-oak"
+   },
+   "placement": "free",
+   "clearance": {
+    "front": 0.5
+   },
+   "source": "lounge armchair 80 × 85",
+   "license": "built-in (MIT)"
+  },
+  {
+   "id": "coffee-table",
+   "name": "Coffee table",
+   "category": "living",
+   "tags": [
+    "small table",
+    "coffee table"
+   ],
+   "dimensions": {
+    "w": 1.1,
+    "d": 0.6,
+    "h": 0.42
+   },
+   "variants": [
+    {
+     "id": "rect",
+     "name": "rectangular 110 × 60",
+     "dimensions": {
+      "w": 1.1,
+      "d": 0.6
+     }
+    },
+    {
+     "id": "round",
+     "name": "round Ø 80",
+     "dimensions": {
+      "w": 0.8,
+      "d": 0.8
+     },
+     "options": {
+      "round": true
+     }
+    }
+   ],
+   "defaultVariant": "rect",
+   "parametric": {
+    "w": [
+     0.6,
+     1.4,
+     0.05
+    ],
+    "d": [
+     0.4,
+     0.9,
+     0.05
+    ]
+   },
+   "runtimeModel": {
+    "type": "parametric",
+    "generator": "table",
+    "options": {
+     "top": 0.035
+    }
+   },
+   "thumbnail": "auto:parametric",
+   "defaultMaterial": "wood-oak",
+   "mainSlot": "main",
+   "materialCategories": [
+    "wood"
+   ],
+   "materialSlots": {
+    "main": "wood-oak",
+    "legs": "metal-black"
+   },
+   "placement": "free",
+   "clearance": {},
+   "source": "table 110 × 60 × 42",
+   "license": "built-in (MIT)"
+  },
+  {
+   "id": "tv-stand",
+   "name": "TV cabinet",
+   "category": "living",
+   "tags": [
+    "media",
+    "tv",
+    "chest of drawers",
+    "cabinet"
+   ],
+   "dimensions": {
+    "w": 1.6,
+    "d": 0.4,
+    "h": 0.5
+   },
+   "parametric": {
+    "w": [
+     1.0,
+     2.4,
+     0.05
+    ]
+   },
+   "runtimeModel": {
+    "type": "parametric",
+    "generator": "cabinet",
+    "options": {
+     "drawers": 0,
+     "doors": 3,
+     "legs": true
+    }
+   },
+   "thumbnail": "auto:parametric",
+   "defaultMaterial": "wood-white",
+   "mainSlot": "main",
+   "materialCategories": [
+    "wood"
+   ],
+   "materialSlots": {
+    "main": "wood-white",
+    "accent": "wood-oak",
+    "legs": "metal-black",
+    "metal": "metal-black"
+   },
+   "placement": "wall",
+   "clearance": {
+    "front": 0.4
+   },
+   "source": "TV cabinet 160 × 40 × 50",
+   "license": "built-in (MIT)"
+  },
+  {
+   "id": "dining-table",
+   "name": "Dining table",
+   "category": "dining",
+   "tags": [
+    "table",
+    "dining room"
+   ],
+   "dimensions": {
+    "w": 1.6,
+    "d": 0.9,
+    "h": 0.75
+   },
+   "variants": [
+    {
+     "id": "4",
+     "name": "4 seats · 120 × 80",
+     "dimensions": {
+      "w": 1.2,
+      "d": 0.8
+     }
+    },
+    {
+     "id": "6",
+     "name": "6 seats · 160 × 90",
+     "dimensions": {
+      "w": 1.6,
+      "d": 0.9
+     }
+    },
+    {
+     "id": "8",
+     "name": "8 seats · 220 × 100",
+     "dimensions": {
+      "w": 2.2,
+      "d": 1.0
+     }
+    },
+    {
+     "id": "round",
+     "name": "round Ø 120",
+     "dimensions": {
+      "w": 1.2,
+      "d": 1.2
+     },
+     "options": {
+      "round": true
+     }
+    }
+   ],
+   "defaultVariant": "6",
+   "parametric": {
+    "w": [
+     0.8,
+     2.6,
+     0.05
+    ],
+    "d": [
+     0.7,
+     1.2,
+     0.05
+    ]
+   },
+   "runtimeModel": {
+    "type": "parametric",
+    "generator": "table",
+    "options": {
+     "top": 0.04
+    }
+   },
+   "thumbnail": "auto:parametric",
+   "defaultMaterial": "wood-oak",
+   "mainSlot": "main",
+   "materialCategories": [
+    "wood"
+   ],
+   "materialSlots": {
+    "main": "wood-oak",
+    "legs": "wood-oak"
+   },
+   "placement": "free",
+   "clearance": {
+    "around": 0.75
+   },
+   "source": "table 160 × 90 × 75 (6 seats)",
+   "license": "built-in (MIT)"
+  },
+  {
+   "id": "dining-chair",
+   "name": "Chair",
+   "category": "dining",
+   "tags": [
+    "chair",
+    "dining room"
+   ],
+   "dimensions": {
+    "w": 0.45,
+    "d": 0.52,
+    "h": 0.88
+   },
+   "runtimeModel": {
+    "type": "parametric",
+    "generator": "chair"
+   },
+   "thumbnail": "auto:parametric",
+   "defaultMaterial": "wood-oak",
+   "mainSlot": "main",
+   "materialCategories": [
+    "wood",
+    "fabric"
+   ],
+   "materialSlots": {
+    "main": "wood-oak",
+    "seat": "fabric-grey"
+   },
+   "placement": "under",
+   "tuckUnder": [
+    "dining-table",
+    "desk"
+   ],
+   "clearance": {},
+   "source": "chair 45 × 52 × 88 (seat 46)",
+   "license": "built-in (MIT)"
+  },
+  {
+   "id": "bed",
+   "name": "Bed",
+   "category": "bedroom",
+   "tags": [
+    "bed",
+    "bedroom",
+    "sleeping"
+   ],
+   "dimensions": {
+    "w": 1.5,
+    "d": 2.1,
+    "h": 1.0
+   },
+   "variants": [
+    {
+     "id": "90",
+     "name": "90 × 200",
+     "dimensions": {
+      "w": 1.0
+     },
+     "options": {
+      "mattress": 0.9
+     }
+    },
+    {
+     "id": "120",
+     "name": "120 × 200",
+     "dimensions": {
+      "w": 1.3
+     },
+     "options": {
+      "mattress": 1.2
+     }
+    },
+    {
+     "id": "140",
+     "name": "140 × 200",
+     "dimensions": {
+      "w": 1.5
+     },
+     "options": {
+      "mattress": 1.4
+     }
+    },
+    {
+     "id": "160",
+     "name": "160 × 200",
+     "dimensions": {
+      "w": 1.7
+     },
+     "options": {
+      "mattress": 1.6
+     }
+    },
+    {
+     "id": "180",
+     "name": "180 × 200",
+     "dimensions": {
+      "w": 1.9
+     },
+     "options": {
+      "mattress": 1.8
+     }
+    }
+   ],
+   "defaultVariant": "140",
+   "parametric": {
+    "h": [
+     0.8,
+     1.2,
+     0.05
+    ]
+   },
+   "runtimeModel": {
+    "type": "parametric",
+    "generator": "bed"
+   },
+   "thumbnail": "auto:parametric",
+   "defaultMaterial": "fabric-beige",
+   "mainSlot": "main",
+   "materialCategories": [
+    "fabric",
+    "wood"
+   ],
+   "materialSlots": {
+    "main": "fabric-beige",
+    "mattress": "mattress-white",
+    "bedding": "bedding-white",
+    "legs": "wood-oak"
+   },
+   "placement": "wall",
+   "clearance": {
+    "sides": 0.5,
+    "front": 0.6
+   },
+   "source": "frame +10 cm around the mattress; mattresses 90–180 × 200 (retail sizes)",
+   "license": "built-in (MIT)"
+  },
+  {
+   "id": "bedside-table",
+   "name": "Bedside table",
+   "category": "bedroom",
+   "tags": [
+    "cabinet",
+    "bedside",
+    "bedroom"
+   ],
+   "dimensions": {
+    "w": 0.45,
+    "d": 0.4,
+    "h": 0.52
+   },
+   "runtimeModel": {
+    "type": "parametric",
+    "generator": "cabinet",
+    "options": {
+     "drawers": 2,
+     "legs": true
+    }
+   },
+   "thumbnail": "auto:parametric",
+   "defaultMaterial": "wood-oak",
+   "mainSlot": "main",
+   "materialCategories": [
+    "wood"
+   ],
+   "materialSlots": {
+    "main": "wood-oak",
+    "accent": "wood-oak",
+    "legs": "wood-oak",
+    "metal": "metal-black"
+   },
+   "placement": "wall",
+   "clearance": {},
+   "source": "bedside table 45 × 40 × 52",
+   "license": "built-in (MIT)"
+  },
+  {
+   "id": "wardrobe",
+   "name": "Wardrobe",
+   "category": "bedroom",
+   "tags": [
+    "wardrobe",
+    "clothes",
+    "storage"
+   ],
+   "dimensions": {
+    "w": 1.5,
+    "d": 0.6,
+    "h": 2.2
+   },
+   "variants": [
+    {
+     "id": "2d",
+     "name": "2 doors · 100 cm",
+     "dimensions": {
+      "w": 1.0
+     }
+    },
+    {
+     "id": "3d",
+     "name": "3 doors · 150 cm",
+     "dimensions": {
+      "w": 1.5
+     }
+    },
+    {
+     "id": "slide",
+     "name": "sliding · 200 cm",
+     "dimensions": {
+      "w": 2.0,
+      "d": 0.65
+     },
+     "options": {
+      "sliding": true
+     }
+    }
+   ],
+   "defaultVariant": "3d",
+   "parametric": {
+    "w": [
+     0.5,
+     3.6,
+     0.05
+    ],
+    "h": [
+     1.8,
+     2.6,
+     0.05
+    ],
+    "d": [
+     0.5,
+     0.7,
+     0.01
+    ]
+   },
+   "runtimeModel": {
+    "type": "parametric",
+    "generator": "cabinet",
+    "options": {
+     "doorsAuto": true,
+     "plinth": true
+    }
+   },
+   "thumbnail": "auto:parametric",
+   "defaultMaterial": "wood-white",
+   "mainSlot": "main",
+   "materialCategories": [
+    "wood"
+   ],
+   "materialSlots": {
+    "main": "wood-white",
+    "accent": "wood-white",
+    "metal": "metal-steel"
+   },
+   "placement": "wall",
+   "clearance": {
+    "front": 0.6
+   },
+   "source": "clothes wardrobe, depth 60 cm",
+   "license": "built-in (MIT)"
+  },
+  {
+   "id": "desk",
+   "name": "Desk",
+   "category": "office",
+   "tags": [
+    "desk",
+    "work",
+    "office"
+   ],
+   "dimensions": {
+    "w": 1.4,
+    "d": 0.7,
+    "h": 0.75
+   },
+   "parametric": {
+    "w": [
+     0.9,
+     2.2,
+     0.05
+    ],
+    "d": [
+     0.5,
+     0.9,
+     0.05
+    ],
+    "h": [
+     0.7,
+     1.25,
+     0.01
+    ]
+   },
+   "runtimeModel": {
+    "type": "parametric",
+    "generator": "desk"
+   },
+   "thumbnail": "auto:parametric",
+   "defaultMaterial": "wood-oak",
+   "mainSlot": "main",
+   "materialCategories": [
+    "wood"
+   ],
+   "materialSlots": {
+    "main": "wood-oak",
+    "legs": "metal-black"
+   },
+   "placement": "wall",
+   "clearance": {
+    "front": 0.75
+   },
+   "source": "desk 140 × 70 × 75; h up to 125 — height-adjustable desk",
+   "license": "built-in (MIT)"
+  },
+  {
+   "id": "office-chair",
+   "name": "Office chair",
+   "category": "office",
+   "tags": [
+    "chair",
+    "armchair",
+    "office"
+   ],
+   "dimensions": {
+    "w": 0.64,
+    "d": 0.64,
+    "h": 1.12
+   },
+   "runtimeModel": {
+    "type": "parametric",
+    "generator": "officeChair"
+   },
+   "thumbnail": "auto:parametric",
+   "defaultMaterial": "fabric-charcoal",
+   "mainSlot": "main",
+   "materialCategories": [
+    "fabric"
+   ],
+   "materialSlots": {
+    "main": "fabric-charcoal",
+    "metal": "metal-black"
+   },
+   "placement": "under",
+   "tuckUnder": [
+    "desk",
+    "dining-table"
+   ],
+   "clearance": {},
+   "source": "swivel chair Ø approx. 64 cm",
+   "license": "built-in (MIT)"
+  },
+  {
+   "id": "shelves",
+   "name": "Bookcase",
+   "category": "office",
+   "tags": [
+    "shelving",
+    "shelves",
+    "books",
+    "storage"
+   ],
+   "dimensions": {
+    "w": 0.8,
+    "d": 0.35,
+    "h": 2.0
+   },
+   "parametric": {
+    "w": [
+     0.4,
+     1.6,
+     0.05
+    ],
+    "h": [
+     0.8,
+     2.4,
+     0.05
+    ],
+    "d": [
+     0.25,
+     0.45,
+     0.01
+    ]
+   },
+   "runtimeModel": {
+    "type": "parametric",
+    "generator": "shelves"
+   },
+   "thumbnail": "auto:parametric",
+   "defaultMaterial": "wood-oak",
+   "mainSlot": "main",
+   "materialCategories": [
+    "wood"
+   ],
+   "materialSlots": {
+    "main": "wood-oak",
+    "accent": "wood-white"
+   },
+   "placement": "wall",
+   "clearance": {
+    "front": 0.5
+   },
+   "source": "bookcase 80 × 35 × 200",
+   "license": "built-in (MIT)"
+  },
+  {
+   "id": "cabinet",
+   "name": "Cabinet",
+   "category": "storage",
+   "tags": [
+    "cabinet",
+    "pedestal",
+    "office"
+   ],
+   "dimensions": {
+    "w": 1.0,
+    "d": 0.45,
+    "h": 0.9
+   },
+   "variants": [
+    {
+     "id": "low",
+     "name": "low · 90 cm",
+     "dimensions": {
+      "h": 0.9
+     }
+    },
+    {
+     "id": "tall",
+     "name": "tall · 200 cm (filing)",
+     "dimensions": {
+      "h": 2.0
+     }
+    }
+   ],
+   "defaultVariant": "low",
+   "parametric": {
+    "w": [
+     0.4,
+     2.0,
+     0.05
+    ],
+    "h": [
+     0.6,
+     2.2,
+     0.05
+    ]
+   },
+   "runtimeModel": {
+    "type": "parametric",
+    "generator": "cabinet",
+    "options": {
+     "doors": 2,
+     "plinth": true
+    }
+   },
+   "thumbnail": "auto:parametric",
+   "defaultMaterial": "wood-white",
+   "mainSlot": "main",
+   "materialCategories": [
+    "wood"
+   ],
+   "materialSlots": {
+    "main": "wood-white",
+    "accent": "wood-white",
+    "metal": "metal-black"
+   },
+   "placement": "wall",
+   "clearance": {
+    "front": 0.55
+   },
+   "source": "cabinet 100 × 45 (low 90 / filing 200)",
+   "license": "built-in (MIT)"
+  },
+  {
+   "id": "dresser",
+   "name": "Chest of drawers",
+   "category": "storage",
+   "tags": [
+    "chest of drawers",
+    "drawers",
+    "bedroom"
+   ],
+   "dimensions": {
+    "w": 1.2,
+    "d": 0.45,
+    "h": 0.85
+   },
+   "parametric": {
+    "w": [
+     0.6,
+     2.0,
+     0.05
+    ],
+    "h": [
+     0.6,
+     1.2,
+     0.05
+    ]
+   },
+   "runtimeModel": {
+    "type": "parametric",
+    "generator": "cabinet",
+    "options": {
+     "drawers": 3,
+     "legs": true
+    }
+   },
+   "thumbnail": "auto:parametric",
+   "defaultMaterial": "wood-walnut",
+   "mainSlot": "main",
+   "materialCategories": [
+    "wood"
+   ],
+   "materialSlots": {
+    "main": "wood-walnut",
+    "accent": "wood-walnut",
+    "legs": "metal-black",
+    "metal": "metal-black"
+   },
+   "placement": "wall",
+   "clearance": {
+    "front": 0.5
+   },
+   "source": "chest of drawers 120 × 45 × 85",
+   "license": "built-in (MIT)"
+  },
+  {
+   "id": "shelving",
+   "name": "Storage shelving",
+   "category": "storage",
+   "tags": [
+    "shelving",
+    "shelves",
+    "garage",
+    "pantry"
+   ],
+   "dimensions": {
+    "w": 0.9,
+    "d": 0.4,
+    "h": 1.8
+   },
+   "parametric": {
+    "w": [
+     0.6,
+     1.8,
+     0.05
+    ],
+    "h": [
+     1.0,
+     2.4,
+     0.05
+    ],
+    "d": [
+     0.3,
+     0.6,
+     0.05
+    ]
+   },
+   "runtimeModel": {
+    "type": "parametric",
+    "generator": "shelves",
+    "options": {
+     "open": true
+    }
+   },
+   "thumbnail": "auto:parametric",
+   "defaultMaterial": "metal-steel",
+   "mainSlot": "main",
+   "materialCategories": [
+    "metal",
+    "wood"
+   ],
+   "materialSlots": {
+    "main": "metal-steel",
+    "accent": "wood-oak-light"
+   },
+   "placement": "wall",
+   "clearance": {
+    "front": 0.6
+   },
+   "source": "metal shelving 90 × 40 × 180",
+   "license": "built-in (MIT)"
+  },
+  {
+   "id": "rug",
+   "name": "Rug",
+   "category": "decor",
+   "tags": [
+    "rug",
+    "textiles"
+   ],
+   "dimensions": {
+    "w": 1.6,
+    "d": 2.3,
+    "h": 0.012
+   },
+   "variants": [
+    {
+     "id": "120x170",
+     "name": "120 × 170",
+     "dimensions": {
+      "w": 1.2,
+      "d": 1.7
+     }
+    },
+    {
+     "id": "160x230",
+     "name": "160 × 230",
+     "dimensions": {
+      "w": 1.6,
+      "d": 2.3
+     }
+    },
+    {
+     "id": "200x300",
+     "name": "200 × 300",
+     "dimensions": {
+      "w": 2.0,
+      "d": 3.0
+     }
+    },
+    {
+     "id": "80x150",
+     "name": "runner 80 × 150",
+     "dimensions": {
+      "w": 0.8,
+      "d": 1.5
+     }
+    },
+    {
+     "id": "round160",
+     "name": "round Ø 160",
+     "dimensions": {
+      "w": 1.6,
+      "d": 1.6
+     },
+     "options": {
+      "round": true
+     }
+    }
+   ],
+   "defaultVariant": "160x230",
+   "parametric": {
+    "w": [
+     0.6,
+     4.0,
+     0.1
+    ],
+    "d": [
+     0.6,
+     4.0,
+     0.1
+    ]
+   },
+   "runtimeModel": {
+    "type": "parametric",
+    "generator": "rug"
+   },
+   "thumbnail": "auto:parametric",
+   "defaultMaterial": "rug-wool-grey",
+   "mainSlot": "main",
+   "materialCategories": [
+    "rug"
+   ],
+   "materialSlots": {
+    "main": "rug-wool-grey"
+   },
+   "placement": "floor",
+   "flat": true,
+   "clearance": {},
+   "source": "retail rug sizes",
+   "license": "built-in (MIT)"
+  },
+  {
+   "id": "floor-lamp",
+   "name": "Floor lamp",
+   "category": "decor",
+   "tags": [
+    "lamp",
+    "lighting"
+   ],
+   "dimensions": {
+    "w": 0.4,
+    "d": 0.4,
+    "h": 1.6
+   },
+   "parametric": {
+    "h": [
+     1.2,
+     1.9,
+     0.05
+    ]
+   },
+   "runtimeModel": {
+    "type": "parametric",
+    "generator": "lamp"
+   },
+   "thumbnail": "auto:parametric",
+   "defaultMaterial": "lamp-shade-linen",
+   "mainSlot": "shade",
+   "materialCategories": [
+    "accessory",
+    "fabric"
+   ],
+   "materialSlots": {
+    "shade": "lamp-shade-linen",
+    "metal": "metal-black"
+   },
+   "placement": "free",
+   "clearance": {},
+   "source": "floor lamp Ø 40 × 160",
+   "license": "built-in (MIT)"
+  },
+  {
+   "id": "plant",
+   "name": "Plant",
+   "category": "decor",
+   "tags": [
+    "plant",
+    "flower",
+    "greenery"
+   ],
+   "dimensions": {
+    "w": 0.5,
+    "d": 0.5,
+    "h": 1.2
+   },
+   "parametric": {
+    "h": [
+     0.4,
+     2.0,
+     0.05
+    ]
+   },
+   "runtimeModel": {
+    "type": "parametric",
+    "generator": "plant"
+   },
+   "thumbnail": "auto:parametric",
+   "defaultMaterial": "pot-terracotta",
+   "mainSlot": "pot",
+   "materialCategories": [
+    "accessory"
+   ],
+   "materialSlots": {
+    "pot": "pot-terracotta",
+    "plant": "plant-green"
+   },
+   "placement": "free",
+   "clearance": {},
+   "source": "potted plant symbol (placeholder)",
+   "license": "built-in (MIT)"
+  },
+  {
+   "id": "kitchen-base",
+   "name": "Base cabinet",
+   "category": "kitchen",
+   "tags": [
+    "kitchen",
+    "cabinet",
+    "built-in"
+   ],
+   "dimensions": {
+    "w": 0.6,
+    "d": 0.6,
+    "h": 0.9
+   },
+   "variants": [
+    {
+     "id": "doors",
+     "name": "doors",
+     "options": {}
+    },
+    {
+     "id": "drawers3",
+     "name": "3 drawers",
+     "options": {
+      "drawers": 3
+     }
+    },
+    {
+     "id": "drawers2",
+     "name": "2 drawers",
+     "options": {
+      "drawers": 2
+     }
+    }
+   ],
+   "defaultVariant": "doors",
+   "parametric": {
+    "w": [
+     0.3,
+     1.2,
+     0.05
+    ]
+   },
+   "runtimeModel": {
+    "type": "parametric",
+    "generator": "kitchenBase"
+   },
+   "thumbnail": "auto:parametric",
+   "defaultMaterial": "front-white-matt",
+   "mainSlot": "front",
+   "materialCategories": [
+    "fronts"
+   ],
+   "materialSlots": {
+    "plinth": "plastic-black",
+    "main": "front-white-matt",
+    "front": "front-white-matt",
+    "metal": "metal-steel",
+    "top": "quartz-white",
+    "sink": "metal-steel",
+    "cooktop": "glass-dark",
+    "appliance": "metal-steel",
+    "glass-dark": "glass-dark"
+   },
+   "placement": "wall",
+   "clearance": {
+    "front": 0.9
+   },
+   "source": "cabinet 60 × 60, worktop 3.8 cm, working height 90 cm",
+   "license": "built-in (MIT)",
+   "extraSlots": [
+    {
+     "slot": "top",
+     "label": "Worktop",
+     "categories": [
+      "countertop"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "kitchen-sink",
+   "name": "Sink cabinet",
+   "category": "kitchen",
+   "tags": [
+    "kitchen",
+    "sink",
+    "kitchen sink"
+   ],
+   "dimensions": {
+    "w": 0.8,
+    "d": 0.6,
+    "h": 1.2
+   },
+   "parametric": {
+    "w": [
+     0.6,
+     1.2,
+     0.05
+    ]
+   },
+   "runtimeModel": {
+    "type": "parametric",
+    "generator": "kitchenBase",
+    "options": {
+     "sink": true,
+     "counter": 0.9
+    }
+   },
+   "thumbnail": "auto:parametric",
+   "defaultMaterial": "front-white-matt",
+   "mainSlot": "front",
+   "materialCategories": [
+    "fronts"
+   ],
+   "materialSlots": {
+    "plinth": "plastic-black",
+    "main": "front-white-matt",
+    "front": "front-white-matt",
+    "metal": "metal-steel",
+    "top": "quartz-white",
+    "sink": "metal-steel",
+    "cooktop": "glass-dark",
+    "appliance": "metal-steel",
+    "glass-dark": "glass-dark"
+   },
+   "placement": "wall",
+   "clearance": {
+    "front": 0.9
+   },
+   "source": "sink cabinet 80 cm (worktop 90 cm), steel sink, tap — height with tap 120 cm",
+   "license": "built-in (MIT)",
+   "extraSlots": [
+    {
+     "slot": "top",
+     "label": "Worktop",
+     "categories": [
+      "countertop"
+     ]
+    }
+   ],
+   "obstructHeight": 0.9
+  },
+  {
+   "id": "kitchen-cooktop",
+   "name": "Cooktop cabinet",
+   "category": "kitchen",
+   "tags": [
+    "kitchen",
+    "cooktop",
+    "induction",
+    "stove"
+   ],
+   "dimensions": {
+    "w": 0.8,
+    "d": 0.6,
+    "h": 0.9
+   },
+   "parametric": {
+    "w": [
+     0.6,
+     1.0,
+     0.05
+    ]
+   },
+   "runtimeModel": {
+    "type": "parametric",
+    "generator": "kitchenBase",
+    "options": {
+     "cooktop": true,
+     "drawers": 2
+    }
+   },
+   "thumbnail": "auto:parametric",
+   "defaultMaterial": "front-white-matt",
+   "mainSlot": "front",
+   "materialCategories": [
+    "fronts"
+   ],
+   "materialSlots": {
+    "plinth": "plastic-black",
+    "main": "front-white-matt",
+    "front": "front-white-matt",
+    "metal": "metal-steel",
+    "top": "quartz-white",
+    "sink": "metal-steel",
+    "cooktop": "glass-dark",
+    "appliance": "metal-steel",
+    "glass-dark": "glass-dark"
+   },
+   "placement": "wall",
+   "clearance": {
+    "front": 0.9
+   },
+   "source": "80 cm cabinet with 2 drawers, 60 cm induction cooktop",
+   "license": "built-in (MIT)",
+   "extraSlots": [
+    {
+     "slot": "top",
+     "label": "Worktop",
+     "categories": [
+      "countertop"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "kitchen-dishwasher",
+   "name": "Built-in dishwasher",
+   "category": "kitchen",
+   "tags": [
+    "kitchen",
+    "dishwasher",
+    "appliance"
+   ],
+   "dimensions": {
+    "w": 0.6,
+    "d": 0.6,
+    "h": 0.9
+   },
+   "runtimeModel": {
+    "type": "parametric",
+    "generator": "kitchenBase",
+    "options": {
+     "dishwasher": true
+    }
+   },
+   "thumbnail": "auto:parametric",
+   "defaultMaterial": "front-white-matt",
+   "mainSlot": "front",
+   "materialCategories": [
+    "fronts"
+   ],
+   "materialSlots": {
+    "plinth": "plastic-black",
+    "main": "front-white-matt",
+    "front": "front-white-matt",
+    "metal": "metal-steel",
+    "top": "quartz-white",
+    "sink": "metal-steel",
+    "cooktop": "glass-dark",
+    "appliance": "metal-steel",
+    "glass-dark": "glass-dark"
+   },
+   "placement": "wall",
+   "clearance": {
+    "front": 0.9
+   },
+   "source": "fully integrated 60 cm dishwasher",
+   "license": "built-in (MIT)",
+   "extraSlots": [
+    {
+     "slot": "top",
+     "label": "Worktop",
+     "categories": [
+      "countertop"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "kitchen-tall",
+   "name": "Tall kitchen unit",
+   "category": "kitchen",
+   "tags": [
+    "kitchen",
+    "tall unit",
+    "built-in",
+    "fridge",
+    "oven"
+   ],
+   "dimensions": {
+    "w": 0.6,
+    "d": 0.6,
+    "h": 2.2
+   },
+   "variants": [
+    {
+     "id": "pantry",
+     "name": "pantry (pull-out)",
+     "options": {}
+    },
+    {
+     "id": "oven",
+     "name": "oven",
+     "options": {
+      "oven": true
+     }
+    },
+    {
+     "id": "oven-micro",
+     "name": "oven + microwave",
+     "options": {
+      "oven": true,
+      "microwave": true
+     }
+    },
+    {
+     "id": "fridge",
+     "name": "built-in fridge",
+     "options": {
+      "fridge": true
+     }
+    }
+   ],
+   "defaultVariant": "pantry",
+   "parametric": {
+    "w": [
+     0.4,
+     0.9,
+     0.05
+    ],
+    "h": [
+     2.0,
+     2.8,
+     0.01
+    ]
+   },
+   "runtimeModel": {
+    "type": "parametric",
+    "generator": "kitchenTall"
+   },
+   "thumbnail": "auto:parametric",
+   "defaultMaterial": "front-white-matt",
+   "mainSlot": "front",
+   "materialCategories": [
+    "fronts"
+   ],
+   "materialSlots": {
+    "plinth": "plastic-black",
+    "main": "front-white-matt",
+    "front": "front-white-matt",
+    "metal": "metal-steel",
+    "top": "quartz-white",
+    "sink": "metal-steel",
+    "cooktop": "glass-dark",
+    "appliance": "metal-steel",
+    "glass-dark": "glass-dark"
+   },
+   "placement": "wall",
+   "clearance": {
+    "front": 0.9
+   },
+   "source": "tall unit 60 × 60, height up to 280 cm (floor-to-ceiling)",
+   "license": "built-in (MIT)"
+  },
+  {
+   "id": "kitchen-wall",
+   "name": "Wall cabinet",
+   "category": "kitchen",
+   "tags": [
+    "kitchen",
+    "wall cabinet",
+    "upper"
+   ],
+   "dimensions": {
+    "w": 0.6,
+    "d": 0.35,
+    "h": 0.72
+   },
+   "variants": [
+    {
+     "id": "doors",
+     "name": "doors",
+     "options": {}
+    },
+    {
+     "id": "lift",
+     "name": "lift-up door",
+     "options": {
+      "lift": true
+     }
+    },
+    {
+     "id": "open",
+     "name": "open shelf",
+     "options": {
+      "open": true
+     }
+    }
+   ],
+   "defaultVariant": "doors",
+   "parametric": {
+    "w": [
+     0.3,
+     1.2,
+     0.05
+    ],
+    "h": [
+     0.36,
+     1.2,
+     0.01
+    ]
+   },
+   "runtimeModel": {
+    "type": "parametric",
+    "generator": "kitchenWall"
+   },
+   "thumbnail": "auto:parametric",
+   "defaultMaterial": "front-white-matt",
+   "mainSlot": "front",
+   "materialCategories": [
+    "fronts"
+   ],
+   "materialSlots": {
+    "main": "front-white-matt",
+    "front": "front-white-matt",
+    "metal": "metal-steel"
+   },
+   "placement": "wall",
+   "clearance": {},
+   "source": "wall cabinet 35 cm deep, mounted 55 cm above the worktop",
+   "license": "built-in (MIT)",
+   "elevation": [
+    0.3,
+    2.4,
+    0.01
+   ],
+   "defaultElevation": 1.45,
+   "mount": "wall"
+  },
+  {
+   "id": "kitchen-hood",
+   "name": "Cooker hood",
+   "category": "kitchen",
+   "tags": [
+    "kitchen",
+    "hood",
+    "extractor"
+   ],
+   "dimensions": {
+    "w": 0.9,
+    "d": 0.5,
+    "h": 1.15
+   },
+   "parametric": {
+    "w": [
+     0.6,
+     1.2,
+     0.05
+    ],
+    "h": [
+     0.6,
+     1.4,
+     0.01
+    ]
+   },
+   "runtimeModel": {
+    "type": "parametric",
+    "generator": "hood"
+   },
+   "thumbnail": "auto:parametric",
+   "defaultMaterial": "metal-steel",
+   "mainSlot": "metal",
+   "materialCategories": [
+    "metal"
+   ],
+   "materialSlots": {
+    "metal": "metal-steel"
+   },
+   "placement": "wall",
+   "clearance": {},
+   "source": "chimney hood 90 cm, 65 cm above the cooktop",
+   "license": "built-in (MIT)",
+   "elevation": [
+    1.2,
+    2.0,
+    0.01
+   ],
+   "defaultElevation": 1.6,
+   "variants": [
+    {
+     "id": "wall",
+     "name": "wall-mounted (chimney)",
+     "options": {}
+    },
+    {
+     "id": "island",
+     "name": "island",
+     "options": {
+      "island": true
+     }
+    }
+   ],
+   "defaultVariant": "wall"
+  },
+  {
+   "id": "kitchen-island",
+   "name": "Kitchen island",
+   "category": "kitchen",
+   "tags": [
+    "kitchen",
+    "island",
+    "worktop"
+   ],
+   "dimensions": {
+    "w": 1.8,
+    "d": 0.95,
+    "h": 0.9
+   },
+   "parametric": {
+    "w": [
+     1.2,
+     3.0,
+     0.05
+    ],
+    "d": [
+     0.9,
+     1.2,
+     0.05
+    ]
+   },
+   "runtimeModel": {
+    "type": "parametric",
+    "generator": "kitchenBase",
+    "options": {
+     "drawers": 3,
+     "overhang": 0.3
+    }
+   },
+   "thumbnail": "auto:parametric",
+   "defaultMaterial": "front-white-matt",
+   "mainSlot": "front",
+   "materialCategories": [
+    "fronts"
+   ],
+   "materialSlots": {
+    "plinth": "plastic-black",
+    "main": "front-white-matt",
+    "front": "front-white-matt",
+    "metal": "metal-steel",
+    "top": "quartz-white",
+    "sink": "metal-steel",
+    "cooktop": "glass-dark",
+    "appliance": "metal-steel",
+    "glass-dark": "glass-dark"
+   },
+   "placement": "free",
+   "clearance": {
+    "around": 0.9
+   },
+   "source": "island with drawers, worktop with 30 cm overhang (bar stools)",
+   "license": "built-in (MIT)",
+   "extraSlots": [
+    {
+     "slot": "top",
+     "label": "Worktop",
+     "categories": [
+      "countertop"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "bar-stool",
+   "name": "Bar stool",
+   "category": "kitchen",
+   "tags": [
+    "stool",
+    "bar stool",
+    "island"
+   ],
+   "dimensions": {
+    "w": 0.42,
+    "d": 0.42,
+    "h": 0.75
+   },
+   "runtimeModel": {
+    "type": "parametric",
+    "generator": "barStool"
+   },
+   "thumbnail": "auto:parametric",
+   "defaultMaterial": "fabric-charcoal",
+   "mainSlot": "main",
+   "materialCategories": [
+    "fabric",
+    "wood"
+   ],
+   "materialSlots": {
+    "metal": "metal-black",
+    "main": "fabric-charcoal"
+   },
+   "placement": "under",
+   "clearance": {},
+   "source": "island bar stool 75 cm",
+   "license": "built-in (MIT)",
+   "tuckUnder": [
+    "kitchen-island"
+   ]
+  },
+  {
+   "id": "pantry-front",
+   "name": "Flush pantry door in cabinetry",
+   "category": "kitchen",
+   "tags": [
+    "pantry",
+    "hidden door",
+    "built-in",
+    "kitchen"
+   ],
+   "dimensions": {
+    "w": 1.2,
+    "d": 0.6,
+    "h": 2.4
+   },
+   "variants": [
+    {
+     "id": "left",
+     "name": "door on the left",
+     "options": {
+      "door": 0.9,
+      "doorSide": "left"
+     }
+    },
+    {
+     "id": "right",
+     "name": "door on the right",
+     "options": {
+      "door": 0.9,
+      "doorSide": "right"
+     }
+    }
+   ],
+   "defaultVariant": "left",
+   "parametric": {
+    "w": [
+     0.8,
+     2.0,
+     0.005
+    ],
+    "h": [
+     2.0,
+     2.8,
+     0.01
+    ]
+   },
+   "runtimeModel": {
+    "type": "parametric",
+    "generator": "pantryFront"
+   },
+   "thumbnail": "auto:parametric",
+   "defaultMaterial": "front-white-matt",
+   "mainSlot": "front",
+   "materialCategories": [
+    "fronts"
+   ],
+   "materialSlots": {
+    "main": "front-white-matt",
+    "plinth": "plastic-black",
+    "front": "front-white-matt",
+    "metal": "metal-steel"
+   },
+   "placement": "wall",
+   "clearance": {},
+   "source": "door hidden in the line of cabinet fronts (no frame), 90 cm leaf + fixed panel",
+   "license": "built-in (MIT)",
+   "inDoorway": true
+  },
+  {
+   "id": "fridge-freestanding",
+   "name": "Free-standing fridge",
+   "category": "kitchen",
+   "tags": [
+    "fridge",
+    "appliance"
+   ],
+   "dimensions": {
+    "w": 0.6,
+    "d": 0.66,
+    "h": 1.86
+   },
+   "runtimeModel": {
+    "type": "parametric",
+    "generator": "kitchenTall",
+    "options": {
+     "fridge": true
+    }
+   },
+   "thumbnail": "auto:parametric",
+   "defaultMaterial": "metal-steel",
+   "mainSlot": "front",
+   "materialCategories": [
+    "fronts",
+    "metal"
+   ],
+   "materialSlots": {
+    "plinth": "plastic-black",
+    "main": "metal-steel",
+    "front": "metal-steel",
+    "metal": "metal-black",
+    "appliance": "metal-steel",
+    "glass-dark": "glass-dark"
+   },
+   "placement": "wall",
+   "clearance": {
+    "front": 0.9
+   },
+   "source": "fridge 60 × 66 × 186",
+   "license": "built-in (MIT)"
+  },
+  {
+   "id": "fridge-sbs",
+   "name": "Side-by-side fridge",
+   "category": "kitchen",
+   "tags": [
+    "fridge",
+    "appliance",
+    "side-by-side",
+    "two-door"
+   ],
+   "dimensions": {
+    "w": 0.91,
+    "d": 0.72,
+    "h": 1.78
+   },
+   "runtimeModel": {
+    "type": "parametric",
+    "generator": "fridgeSbs"
+   },
+   "thumbnail": "auto:parametric",
+   "defaultMaterial": "metal-steel",
+   "mainSlot": "front",
+   "materialCategories": [
+    "fronts",
+    "metal"
+   ],
+   "materialSlots": {
+    "plinth": "plastic-black",
+    "main": "metal-steel",
+    "front": "metal-steel",
+    "metal": "metal-black",
+    "appliance": "metal-steel",
+    "glass-dark": "glass-dark"
+   },
+   "placement": "wall",
+   "clearance": {
+    "front": 0.9
+   },
+   "source": "free-standing two-door fridge, typical dimensions 91 × 72 × 178 (confirm for the chosen model)",
+   "license": "built-in (MIT)",
+   "parametric": {
+    "w": [
+     0.83,
+     0.95,
+     0.01
+    ],
+    "h": [
+     1.7,
+     1.9,
+     0.01
+    ]
+   }
+  },
+  {
+   "id": "bathtub",
+   "name": "Bathtub",
+   "category": "bathroom",
+   "tags": [
+    "bathtub",
+    "bathroom",
+    "bath"
+   ],
+   "dimensions": {
+    "w": 1.7,
+    "d": 0.75,
+    "h": 0.58
+   },
+   "variants": [
+    {
+     "id": "160",
+     "name": "160 × 75",
+     "dimensions": {
+      "w": 1.6,
+      "d": 0.75,
+      "h": 0.58
+     }
+    },
+    {
+     "id": "170",
+     "name": "170 × 75",
+     "dimensions": {
+      "w": 1.7,
+      "d": 0.75,
+      "h": 0.58
+     }
+    },
+    {
+     "id": "180",
+     "name": "180 × 80",
+     "dimensions": {
+      "w": 1.8,
+      "d": 0.8,
+      "h": 0.58
+     }
+    }
+   ],
+   "defaultVariant": "170",
+   "runtimeModel": {
+    "type": "parametric",
+    "generator": "bathtub"
+   },
+   "thumbnail": "auto:parametric",
+   "defaultMaterial": "ceramic-white",
+   "mainSlot": "front",
+   "materialCategories": [
+    "fronts",
+    "accessory"
+   ],
+   "materialSlots": {
+    "front": "ceramic-white",
+    "main": "ceramic-white",
+    "water": "water",
+    "metal": "chrome"
+   },
+   "placement": "wall",
+   "clearance": {},
+   "source": "built-in rectangular bathtub",
+   "license": "built-in (MIT)",
+   "parametric": {
+    "w": [
+     1.4,
+     1.9,
+     0.05
+    ],
+    "d": [
+     0.7,
+     0.9,
+     0.05
+    ]
+   }
+  },
+  {
+   "id": "shower",
+   "name": "Walk-in shower",
+   "category": "bathroom",
+   "tags": [
+    "shower",
+    "cabin",
+    "bathroom"
+   ],
+   "dimensions": {
+    "w": 1.2,
+    "d": 0.9,
+    "h": 2.0
+   },
+   "variants": [
+    {
+     "id": "90",
+     "name": "90 × 90",
+     "dimensions": {
+      "w": 0.9,
+      "d": 0.9,
+      "h": 2.0
+     }
+    },
+    {
+     "id": "120",
+     "name": "120 × 90",
+     "dimensions": {
+      "w": 1.2,
+      "d": 0.9,
+      "h": 2.0
+     }
+    },
+    {
+     "id": "140",
+     "name": "140 × 90",
+     "dimensions": {
+      "w": 1.4,
+      "d": 0.9,
+      "h": 2.0
+     }
+    }
+   ],
+   "defaultVariant": "120",
+   "runtimeModel": {
+    "type": "parametric",
+    "generator": "shower"
+   },
+   "thumbnail": "auto:parametric",
+   "defaultMaterial": "ceramic-white",
+   "mainSlot": "main",
+   "materialCategories": [
+    "accessory"
+   ],
+   "materialSlots": {
+    "main": "ceramic-white",
+    "glass": "glass-clear",
+    "metal": "chrome"
+   },
+   "placement": "wall",
+   "clearance": {},
+   "source": "low shower tray + glass panel, rain shower",
+   "license": "built-in (MIT)",
+   "parametric": {
+    "w": [
+     0.8,
+     1.6,
+     0.01
+    ],
+    "d": [
+     0.8,
+     1.2,
+     0.01
+    ]
+   }
+  },
+  {
+   "id": "toilet",
+   "name": "Wall-hung toilet",
+   "category": "bathroom",
+   "tags": [
+    "wc",
+    "toilet",
+    "bowl",
+    "bathroom"
+   ],
+   "dimensions": {
+    "w": 0.4,
+    "d": 0.67,
+    "h": 1.12
+   },
+   "runtimeModel": {
+    "type": "parametric",
+    "generator": "toilet"
+   },
+   "thumbnail": "auto:parametric",
+   "defaultMaterial": "ceramic-white",
+   "mainSlot": "front",
+   "materialCategories": [
+    "fronts",
+    "accessory"
+   ],
+   "materialSlots": {
+    "front": "ceramic-white",
+    "metal": "chrome",
+    "main": "ceramic-white"
+   },
+   "placement": "wall",
+   "clearance": {
+    "front": 0.6
+   },
+   "source": "36 × 54 bowl on a frame, 12 cm boxing",
+   "license": "built-in (MIT)"
+  },
+  {
+   "id": "bidet",
+   "name": "Wall-hung bidet",
+   "category": "bathroom",
+   "tags": [
+    "bidet",
+    "bathroom",
+    "sanitary"
+   ],
+   "dimensions": {
+    "w": 0.38,
+    "d": 0.62,
+    "h": 1.12
+   },
+   "runtimeModel": {
+    "type": "parametric",
+    "generator": "bidet"
+   },
+   "thumbnail": "auto:parametric",
+   "defaultMaterial": "ceramic-white",
+   "mainSlot": "front",
+   "materialCategories": [
+    "fronts",
+    "accessory"
+   ],
+   "materialSlots": {
+    "front": "ceramic-white",
+    "metal": "chrome",
+    "main": "ceramic-white"
+   },
+   "placement": "wall",
+   "clearance": {
+    "front": 0.6
+   },
+   "source": "36 × 50 bowl on a frame, 12 cm boxing, deck-mounted tap",
+   "license": "built-in (MIT)"
+  },
+  {
+   "id": "vanity",
+   "name": "Vanity unit",
+   "category": "bathroom",
+   "tags": [
+    "washbasin",
+    "cabinet",
+    "bathroom"
+   ],
+   "dimensions": {
+    "w": 0.8,
+    "d": 0.46,
+    "h": 1.15
+   },
+   "variants": [
+    {
+     "id": "60",
+     "name": "60 cm",
+     "dimensions": {
+      "w": 0.6,
+      "d": 0.46,
+      "h": 1.15
+     }
+    },
+    {
+     "id": "80",
+     "name": "80 cm",
+     "dimensions": {
+      "w": 0.8,
+      "d": 0.46,
+      "h": 1.15
+     }
+    },
+    {
+     "id": "100",
+     "name": "100 cm",
+     "dimensions": {
+      "w": 1.0,
+      "d": 0.46,
+      "h": 1.15
+     }
+    },
+    {
+     "id": "120",
+     "name": "120 cm",
+     "dimensions": {
+      "w": 1.2,
+      "d": 0.46,
+      "h": 1.15
+     }
+    }
+   ],
+   "defaultVariant": "80",
+   "runtimeModel": {
+    "type": "parametric",
+    "generator": "vanity",
+    "options": {
+     "counter": 0.85
+    }
+   },
+   "thumbnail": "auto:parametric",
+   "defaultMaterial": "front-white-matt",
+   "mainSlot": "front",
+   "materialCategories": [
+    "fronts"
+   ],
+   "materialSlots": {
+    "main": "front-white-matt",
+    "front": "front-white-matt",
+    "metal": "chrome",
+    "top": "quartz-white",
+    "basin": "ceramic-white"
+   },
+   "placement": "wall",
+   "clearance": {},
+   "source": "vanity cabinet (top at 85 cm), countertop basin, tap — height with tap 115 cm",
+   "license": "built-in (MIT)",
+   "extraSlots": [
+    {
+     "slot": "top",
+     "label": "Worktop",
+     "categories": [
+      "countertop"
+     ]
+    }
+   ],
+   "obstructHeight": 0.85,
+   "parametric": {
+    "w": [
+     0.5,
+     1.8,
+     0.05
+    ]
+   }
+  },
+  {
+   "id": "washer",
+   "name": "Washing machine",
+   "category": "bathroom",
+   "tags": [
+    "washing machine",
+    "appliance",
+    "laundry"
+   ],
+   "dimensions": {
+    "w": 0.6,
+    "d": 0.6,
+    "h": 0.85
+   },
+   "runtimeModel": {
+    "type": "parametric",
+    "generator": "washer"
+   },
+   "thumbnail": "auto:parametric",
+   "defaultMaterial": "appliance-white",
+   "mainSlot": "appliance",
+   "materialCategories": [
+    "accessory",
+    "metal"
+   ],
+   "materialSlots": {
+    "appliance": "appliance-white",
+    "metal": "chrome",
+    "glass-dark": "glass-dark"
+   },
+   "placement": "wall",
+   "clearance": {
+    "front": 0.6
+   },
+   "source": "washing machine 60 × 60 × 85",
+   "license": "built-in (MIT)"
+  },
+  {
+   "id": "dryer",
+   "name": "Tumble dryer",
+   "category": "bathroom",
+   "tags": [
+    "dryer",
+    "appliance",
+    "laundry"
+   ],
+   "dimensions": {
+    "w": 0.6,
+    "d": 0.6,
+    "h": 0.85
+   },
+   "runtimeModel": {
+    "type": "parametric",
+    "generator": "washer"
+   },
+   "thumbnail": "auto:parametric",
+   "defaultMaterial": "appliance-white",
+   "mainSlot": "appliance",
+   "materialCategories": [
+    "accessory",
+    "metal"
+   ],
+   "materialSlots": {
+    "appliance": "appliance-white",
+    "metal": "chrome",
+    "glass-dark": "glass-dark"
+   },
+   "placement": "wall",
+   "clearance": {
+    "front": 0.6
+   },
+   "source": "tumble dryer 60 × 60 × 85",
+   "license": "built-in (MIT)"
+  },
+  {
+   "id": "mirror",
+   "name": "Mirror",
+   "category": "bathroom",
+   "tags": [
+    "mirror",
+    "bathroom",
+    "hallway"
+   ],
+   "dimensions": {
+    "w": 0.8,
+    "d": 0.03,
+    "h": 0.9
+   },
+   "variants": [
+    {
+     "id": "rect",
+     "name": "rectangular",
+     "options": {}
+    },
+    {
+     "id": "round",
+     "name": "round Ø 80",
+     "dimensions": {
+      "w": 0.8,
+      "d": 0.03,
+      "h": 0.8
+     },
+     "options": {
+      "round": true
+     }
+    },
+    {
+     "id": "tall",
+     "name": "tall 60 × 170",
+     "dimensions": {
+      "w": 0.6,
+      "d": 0.03,
+      "h": 1.7
+     }
+    }
+   ],
+   "defaultVariant": "rect",
+   "parametric": {
+    "w": [
+     0.4,
+     2.0,
+     0.05
+    ],
+    "h": [
+     0.4,
+     2.0,
+     0.05
+    ]
+   },
+   "runtimeModel": {
+    "type": "parametric",
+    "generator": "mirror"
+   },
+   "thumbnail": "auto:parametric",
+   "defaultMaterial": "metal-black",
+   "mainSlot": "frame",
+   "materialCategories": [
+    "metal",
+    "wood"
+   ],
+   "materialSlots": {
+    "frame": "metal-black",
+    "mirror": "mirror-glass"
+   },
+   "placement": "wall",
+   "clearance": {},
+   "source": "wall mirror",
+   "license": "built-in (MIT)",
+   "elevation": [
+    0.0,
+    2.0,
+    0.01
+   ],
+   "defaultElevation": 1.1,
+   "mount": "wall"
+  },
+  {
+   "id": "corner-sofa",
+   "name": "Corner sofa",
+   "category": "living",
+   "tags": [
+    "corner sofa",
+    "sofa",
+    "couch",
+    "living room"
+   ],
+   "dimensions": {
+    "w": 2.8,
+    "d": 1.65,
+    "h": 0.84
+   },
+   "variants": [
+    {
+     "id": "right",
+     "name": "chaise on the right",
+     "options": {
+      "side": "right"
+     }
+    },
+    {
+     "id": "left",
+     "name": "chaise on the left",
+     "options": {
+      "side": "left"
+     }
+    }
+   ],
+   "defaultVariant": "right",
+   "parametric": {
+    "w": [
+     2.2,
+     3.4,
+     0.05
+    ],
+    "d": [
+     1.4,
+     2.0,
+     0.05
+    ]
+   },
+   "runtimeModel": {
+    "type": "parametric",
+    "generator": "cornerSofa"
+   },
+   "thumbnail": "auto:parametric",
+   "defaultMaterial": "fabric-grey",
+   "mainSlot": "main",
+   "materialCategories": [
+    "fabric"
+   ],
+   "materialSlots": {
+    "main": "fabric-grey",
+    "seat": "fabric-grey",
+    "legs": "metal-black"
+   },
+   "placement": "wall",
+   "clearance": {
+    "front": 0.6
+   },
+   "source": "corner sofa 280 × 165, seat 45 cm",
+   "license": "built-in (MIT)"
+  },
+  {
+   "id": "tv",
+   "name": "TV",
+   "category": "living",
+   "tags": [
+    "television",
+    "TV",
+    "living room"
+   ],
+   "dimensions": {
+    "w": 1.45,
+    "d": 0.3,
+    "h": 0.92
+   },
+   "variants": [
+    {
+     "id": "55",
+     "name": "55″",
+     "dimensions": {
+      "w": 1.23,
+      "d": 0.27,
+      "h": 0.8
+     }
+    },
+    {
+     "id": "65",
+     "name": "65″",
+     "dimensions": {
+      "w": 1.45,
+      "d": 0.3,
+      "h": 0.92
+     }
+    },
+    {
+     "id": "75",
+     "name": "75″",
+     "dimensions": {
+      "w": 1.68,
+      "d": 0.34,
+      "h": 1.05
+     }
+    }
+   ],
+   "defaultVariant": "65",
+   "runtimeModel": {
+    "type": "parametric",
+    "generator": "tv"
+   },
+   "thumbnail": "auto:parametric",
+   "defaultMaterial": "plastic-black",
+   "mainSlot": "frame",
+   "materialCategories": [
+    "metal"
+   ],
+   "materialSlots": {
+    "frame": "plastic-black",
+    "screen": "glass-dark",
+    "metal": "metal-black"
+   },
+   "placement": "free",
+   "clearance": {},
+   "source": "TV on a stand (placed on a TV cabinet)",
+   "license": "built-in (MIT)",
+   "elevation": [
+    0.0,
+    1.5,
+    0.01
+   ],
+   "defaultElevation": 0.5
+  },
+  {
+   "id": "tv-wall",
+   "name": "Wall-mounted TV",
+   "category": "living",
+   "tags": [
+    "television",
+    "TV",
+    "living room",
+    "wall"
+   ],
+   "dimensions": {
+    "w": 1.45,
+    "d": 0.05,
+    "h": 0.84
+   },
+   "variants": [
+    {
+     "id": "55",
+     "name": "55″",
+     "dimensions": {
+      "w": 1.23,
+      "d": 0.05,
+      "h": 0.71
+     }
+    },
+    {
+     "id": "65",
+     "name": "65″",
+     "dimensions": {
+      "w": 1.45,
+      "d": 0.05,
+      "h": 0.84
+     }
+    },
+    {
+     "id": "75",
+     "name": "75″",
+     "dimensions": {
+      "w": 1.68,
+      "d": 0.05,
+      "h": 0.97
+     }
+    },
+    {
+     "id": "85",
+     "name": "85″",
+     "dimensions": {
+      "w": 1.9,
+      "d": 0.05,
+      "h": 1.09
+     }
+    }
+   ],
+   "defaultVariant": "65",
+   "runtimeModel": {
+    "type": "parametric",
+    "generator": "tv",
+    "options": {
+     "wall": true
+    }
+   },
+   "thumbnail": "auto:parametric",
+   "defaultMaterial": "plastic-black",
+   "mainSlot": "frame",
+   "materialCategories": [
+    "metal"
+   ],
+   "materialSlots": {
+    "frame": "plastic-black",
+    "screen": "glass-dark",
+    "metal": "metal-black"
+   },
+   "placement": "wall",
+   "clearance": {},
+   "source": "TV on a wall bracket (screen centre approx. 1.35 m)",
+   "license": "built-in (MIT)",
+   "elevation": [
+    0.3,
+    2.0,
+    0.01
+   ],
+   "defaultElevation": 0.95,
+   "mount": "wall"
+  },
+  {
+   "id": "sideboard",
+   "name": "Sideboard / media unit",
+   "category": "living",
+   "tags": [
+    "sideboard",
+    "chest of drawers",
+    "media",
+    "living room"
+   ],
+   "dimensions": {
+    "w": 1.8,
+    "d": 0.45,
+    "h": 0.75
+   },
+   "parametric": {
+    "w": [
+     1.0,
+     2.6,
+     0.05
+    ]
+   },
+   "runtimeModel": {
+    "type": "parametric",
+    "generator": "cabinet",
+    "options": {
+     "doorsAuto": true,
+     "legs": true
+    }
+   },
+   "thumbnail": "auto:parametric",
+   "defaultMaterial": "wood-oak",
+   "mainSlot": "main",
+   "materialCategories": [
+    "wood",
+    "fronts"
+   ],
+   "materialSlots": {
+    "main": "wood-oak",
+    "accent": "wood-oak",
+    "metal": "metal-black",
+    "legs": "metal-black"
+   },
+   "placement": "wall",
+   "clearance": {},
+   "source": "sideboard on legs",
+   "license": "built-in (MIT)"
+  },
+  {
+   "id": "pouf",
+   "name": "Pouf",
+   "category": "living",
+   "tags": [
+    "pouf",
+    "seat",
+    "living room"
+   ],
+   "dimensions": {
+    "w": 0.5,
+    "d": 0.5,
+    "h": 0.42
+   },
+   "runtimeModel": {
+    "type": "parametric",
+    "generator": "pouf"
+   },
+   "thumbnail": "auto:parametric",
+   "defaultMaterial": "fabric-beige",
+   "mainSlot": "main",
+   "materialCategories": [
+    "fabric"
+   ],
+   "materialSlots": {
+    "main": "fabric-beige"
+   },
+   "placement": "free",
+   "clearance": {},
+   "source": "pouf Ø 50",
+   "license": "built-in (MIT)"
+  },
+  {
+   "id": "side-table",
+   "name": "Side table",
+   "category": "living",
+   "tags": [
+    "small table",
+    "side",
+    "living room",
+    "bedroom"
+   ],
+   "dimensions": {
+    "w": 0.45,
+    "d": 0.45,
+    "h": 0.55
+   },
+   "runtimeModel": {
+    "type": "parametric",
+    "generator": "table",
+    "options": {
+     "round": true,
+     "top": 0.025
+    }
+   },
+   "thumbnail": "auto:parametric",
+   "defaultMaterial": "wood-oak",
+   "mainSlot": "main",
+   "materialCategories": [
+    "wood",
+    "countertop"
+   ],
+   "materialSlots": {
+    "main": "wood-oak",
+    "legs": "metal-black"
+   },
+   "placement": "free",
+   "clearance": {},
+   "source": "side table Ø 45",
+   "license": "built-in (MIT)"
+  },
+  {
+   "id": "fireplace",
+   "name": "Fireplace",
+   "category": "living",
+   "tags": [
+    "fireplace",
+    "fire",
+    "living room",
+    "stove"
+   ],
+   "dimensions": {
+    "w": 1.2,
+    "d": 0.55,
+    "h": 2.75
+   },
+   "variants": [
+    {
+     "id": "built-in",
+     "name": "floor-to-ceiling surround",
+     "dimensions": {
+      "w": 1.2,
+      "d": 0.55,
+      "h": 2.75
+     },
+     "options": {
+      "style": "built-in"
+     }
+    },
+    {
+     "id": "tv",
+     "name": "panoramic, in the media wall",
+     "dimensions": {
+      "w": 2.4,
+      "d": 0.5,
+      "h": 2.75
+     },
+     "options": {
+      "style": "tv"
+     }
+    },
+    {
+     "id": "stove",
+     "name": "free-standing stove",
+     "dimensions": {
+      "w": 0.55,
+      "d": 0.55,
+      "h": 2.75
+     },
+     "options": {
+      "style": "stove"
+     }
+    }
+   ],
+   "defaultVariant": "built-in",
+   "parametric": {
+    "h": [
+     2.0,
+     2.8,
+     0.01
+    ]
+   },
+   "runtimeModel": {
+    "type": "parametric",
+    "generator": "fireplace"
+   },
+   "thumbnail": "auto:parametric",
+   "defaultMaterial": "front-white-matt",
+   "mainSlot": "main",
+   "materialCategories": [
+    "fronts",
+    "countertop"
+   ],
+   "materialSlots": {
+    "main": "front-white-matt",
+    "hearth": "stone-graphite",
+    "metal": "metal-black",
+    "glass-dark": "glass-dark",
+    "fire": "fire"
+   },
+   "placement": "wall",
+   "clearance": {
+    "front": 0.8
+   },
+   "source": "fireplace with a glazed insert; place it on the chimney axis",
+   "license": "built-in (MIT)"
+  },
+  {
+   "id": "bench",
+   "name": "Bench",
+   "category": "dining",
+   "tags": [
+    "bench",
+    "dining room",
+    "hallway"
+   ],
+   "dimensions": {
+    "w": 1.4,
+    "d": 0.38,
+    "h": 0.45
+   },
+   "parametric": {
+    "w": [
+     0.8,
+     2.2,
+     0.05
+    ]
+   },
+   "runtimeModel": {
+    "type": "parametric",
+    "generator": "bench"
+   },
+   "thumbnail": "auto:parametric",
+   "defaultMaterial": "wood-oak",
+   "mainSlot": "main",
+   "materialCategories": [
+    "wood",
+    "fabric"
+   ],
+   "materialSlots": {
+    "main": "wood-oak",
+    "legs": "metal-black"
+   },
+   "placement": "free",
+   "clearance": {},
+   "source": "dining bench",
+   "license": "built-in (MIT)"
+  },
+  {
+   "id": "dressing-table",
+   "name": "Dressing table with mirror",
+   "category": "bedroom",
+   "tags": [
+    "dressing table",
+    "mirror",
+    "bedroom"
+   ],
+   "dimensions": {
+    "w": 1.0,
+    "d": 0.45,
+    "h": 1.45
+   },
+   "runtimeModel": {
+    "type": "parametric",
+    "generator": "dressingTable"
+   },
+   "thumbnail": "auto:parametric",
+   "defaultMaterial": "wood-white",
+   "mainSlot": "main",
+   "materialCategories": [
+    "wood",
+    "fronts"
+   ],
+   "materialSlots": {
+    "main": "wood-white",
+    "front": "wood-white",
+    "legs": "wood-oak",
+    "frame": "wood-oak",
+    "mirror": "mirror-glass"
+   },
+   "placement": "wall",
+   "clearance": {},
+   "source": "dressing table 100 × 45, mirror",
+   "license": "built-in (MIT)"
+  },
+  {
+   "id": "crib",
+   "name": "Baby cot",
+   "category": "bedroom",
+   "tags": [
+    "cot",
+    "child",
+    "baby"
+   ],
+   "dimensions": {
+    "w": 0.66,
+    "d": 1.26,
+    "h": 0.9
+   },
+   "runtimeModel": {
+    "type": "parametric",
+    "generator": "crib"
+   },
+   "thumbnail": "auto:parametric",
+   "defaultMaterial": "wood-white",
+   "mainSlot": "main",
+   "materialCategories": [
+    "wood",
+    "fronts"
+   ],
+   "materialSlots": {
+    "main": "wood-white",
+    "mattress": "mattress-white"
+   },
+   "placement": "wall",
+   "clearance": {},
+   "source": "cot 60 × 120 (outer dimensions 66 × 126)",
+   "license": "built-in (MIT)"
+  },
+  {
+   "id": "bunk-bed",
+   "name": "Bunk bed",
+   "category": "bedroom",
+   "tags": [
+    "bunk bed",
+    "child",
+    "kids room"
+   ],
+   "dimensions": {
+    "w": 0.98,
+    "d": 2.08,
+    "h": 1.65
+   },
+   "runtimeModel": {
+    "type": "parametric",
+    "generator": "bunkBed"
+   },
+   "thumbnail": "auto:parametric",
+   "defaultMaterial": "wood-oak-light",
+   "mainSlot": "main",
+   "materialCategories": [
+    "wood",
+    "fronts"
+   ],
+   "materialSlots": {
+    "main": "wood-oak-light",
+    "mattress": "mattress-white",
+    "bedding": "bedding-white"
+   },
+   "placement": "wall",
+   "clearance": {},
+   "source": "bunk bed 90 × 200",
+   "license": "built-in (MIT)"
+  },
+  {
+   "id": "filing-cabinet",
+   "name": "Desk pedestal",
+   "category": "office",
+   "tags": [
+    "pedestal",
+    "drawers",
+    "office"
+   ],
+   "dimensions": {
+    "w": 0.42,
+    "d": 0.55,
+    "h": 0.6
+   },
+   "runtimeModel": {
+    "type": "parametric",
+    "generator": "cabinet",
+    "options": {
+     "drawers": 3
+    }
+   },
+   "thumbnail": "auto:parametric",
+   "defaultMaterial": "wood-white",
+   "mainSlot": "main",
+   "materialCategories": [
+    "wood",
+    "fronts"
+   ],
+   "materialSlots": {
+    "main": "wood-white",
+    "accent": "wood-white",
+    "metal": "metal-steel",
+    "legs": "metal-black"
+   },
+   "placement": "under",
+   "clearance": {},
+   "source": "3-drawer pedestal",
+   "license": "built-in (MIT)",
+   "tuckUnder": [
+    "desk"
+   ]
+  },
+  {
+   "id": "car",
+   "name": "Car — compact hatchback",
+   "category": "garage",
+   "tags": [
+    "car",
+    "auto",
+    "garage"
+   ],
+   "dimensions": {
+    "w": 1.8,
+    "d": 4.1,
+    "h": 1.45
+   },
+   "runtimeModel": {
+    "type": "parametric",
+    "generator": "car",
+    "options": {
+     "wheelbase": 2.6,
+     "frontOverhang": 0.85,
+     "wheel": 0.62
+    }
+   },
+   "thumbnail": "auto:parametric",
+   "defaultMaterial": "car-white",
+   "mainSlot": "main",
+   "materialCategories": [
+    "car-paint"
+   ],
+   "materialSlots": {
+    "main": "car-white",
+    "glass-dark": "glass-dark",
+    "tyre": "rubber",
+    "metal": "metal-steel",
+    "trim": "plastic-black",
+    "lights-front": "lights-white",
+    "lights-rear": "lights-red",
+    "plate": "plate-white"
+   },
+   "placement": "free",
+   "clearance": {
+    "around": 0.6
+   },
+   "source": "generic compact hatchback: length 4100, width 1800 (without mirrors), height 1450, wheelbase 2600, front overhang 850 mm — simplified model (body from cross-sections)",
+   "license": "built-in (MIT)"
+  },
+  {
+   "id": "workbench",
+   "name": "Workbench",
+   "category": "garage",
+   "tags": [
+    "workshop",
+    "table",
+    "garage",
+    "tools"
+   ],
+   "dimensions": {
+    "w": 1.6,
+    "d": 0.65,
+    "h": 1.6
+   },
+   "runtimeModel": {
+    "type": "parametric",
+    "generator": "workbench"
+   },
+   "thumbnail": "auto:parametric",
+   "defaultMaterial": "countertop-oak",
+   "mainSlot": "main",
+   "materialCategories": [
+    "wood",
+    "countertop"
+   ],
+   "materialSlots": {
+    "main": "countertop-oak",
+    "legs": "metal-black",
+    "accent": "wood-oak-light",
+    "metal": "metal-black"
+   },
+   "placement": "wall",
+   "clearance": {},
+   "source": "workbench with a shelf and a tool board",
+   "license": "built-in (MIT)"
+  },
+  {
+   "id": "wall-shelf",
+   "name": "Wall shelf",
+   "category": "decor",
+   "tags": [
+    "shelf",
+    "wall",
+    "decor"
+   ],
+   "dimensions": {
+    "w": 0.9,
+    "d": 0.22,
+    "h": 0.2
+   },
+   "parametric": {
+    "w": [
+     0.4,
+     2.0,
+     0.05
+    ],
+    "d": [
+     0.12,
+     0.35,
+     0.01
+    ]
+   },
+   "runtimeModel": {
+    "type": "parametric",
+    "generator": "wallShelf"
+   },
+   "thumbnail": "auto:parametric",
+   "defaultMaterial": "wood-oak",
+   "mainSlot": "main",
+   "materialCategories": [
+    "wood"
+   ],
+   "materialSlots": {
+    "main": "wood-oak",
+    "metal": "metal-black"
+   },
+   "placement": "wall",
+   "mount": "wall",
+   "clearance": {},
+   "source": "wall shelf 90 × 22 on brackets",
+   "license": "built-in (MIT)",
+   "elevation": [
+    0.2,
+    2.4,
+    0.01
+   ],
+   "defaultElevation": 1.4
+  },
+  {
+   "id": "wall-lamp",
+   "name": "Wall lamp",
+   "category": "decor",
+   "tags": [
+    "lamp",
+    "wall lamp",
+    "lighting",
+    "wall"
+   ],
+   "dimensions": {
+    "w": 0.18,
+    "d": 0.24,
+    "h": 0.3
+   },
+   "runtimeModel": {
+    "type": "parametric",
+    "generator": "wallLamp"
+   },
+   "thumbnail": "auto:parametric",
+   "defaultMaterial": "lamp-shade-linen",
+   "mainSlot": "shade",
+   "materialCategories": [
+    "accessory",
+    "fabric"
+   ],
+   "materialSlots": {
+    "shade": "lamp-shade-linen",
+    "metal": "metal-black"
+   },
+   "placement": "wall",
+   "mount": "wall",
+   "clearance": {},
+   "source": "wall lamp with a Ø 18 shade",
+   "license": "built-in (MIT)",
+   "elevation": [
+    0.8,
+    2.4,
+    0.01
+   ],
+   "defaultElevation": 1.6
+  }
+ ]
+}

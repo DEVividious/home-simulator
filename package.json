@@ -1,0 +1,49 @@
+{
+  "name": "home-simulator",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "license": "MIT",
+  "displayName": "Home Simulator",
+  "description": "Generic 3D home and apartment configurator engine. A building is a data package (projects/<id>/project.json) that AI-agent skills can author from CAD files or 2D floor plans. Runs in the browser and as an offline PWA on Android.",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "audit:genericity": "node scripts/audit/no-house-refs.mjs",
+    "project:build": "vite-node scripts/project/build.ts --",
+    "project:validate": "vite-node scripts/project/validate.ts --",
+    "schema:generate": "vite-node scripts/schema/generate.ts",
+    "i18n:gen": "node scripts/i18n/gen.mjs",
+    "project:preview": "node scripts/project/preview.mjs",
+    "skills:catalog": "node scripts/skills/catalog-table.mjs",
+    "phone": "node scripts/phone/phone.mjs",
+    "audit:i18n": "node scripts/audit/i18n-check.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@react-three/drei": "10.7.9",
+    "@react-three/fiber": "9.8.1",
+    "jspdf": "^4.2.1",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "three": "0.181.0",
+    "zod": "4.6.5"
+  },
+  "devDependencies": {
+    "@types/node": "24.19.0",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@types/three": "0.181.0",
+    "@vitejs/plugin-react": "5.2.0",
+    "fake-indexeddb": "^6.2.5",
+    "puppeteer-core": "24.43.1",
+    "typescript": "5.9.3",
+    "vite": "7.3.6",
+    "vitest": "3.2.7"
+  }
+}

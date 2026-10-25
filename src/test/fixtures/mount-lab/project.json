@@ -1,0 +1,242 @@
+{
+ "$schema": "../../../../schemas/project.schema.json",
+ "schema": "home-simulator/project",
+ "version": 1,
+ "manifest": {
+  "projectId": "mount-lab",
+  "name": "Mount lab",
+  "description": "unit-test fixture: a room with a wall made of two collinear segments, an exterior door and a 0.115 m partition end; a room under a sloped ceiling (knee walls) \u2014 the sloped ceiling of AR is set in project.json (plan.json has flat ceilings only)",
+  "language": "en",
+  "units": "m",
+  "coordinateSystem": {
+   "name": "LCS",
+   "description": "origin at the outer corner (bottom-left of the plan); +X right, +Y up, +Z up; Z = 0 is the finished floor",
+   "up": "Z",
+   "handedness": "right"
+  },
+  "buildingType": "apartment",
+  "levels": [
+   {
+    "id": "L0",
+    "name": "Level",
+    "floorZ": 0
+   }
+  ],
+  "dataSources": {
+   "rooms": "unit-test fixture (synthetic data)",
+   "doors": "unit-test fixture (synthetic data)",
+   "interiors": "unit-test fixture (synthetic data)",
+   "electrical": "unit-test fixture (synthetic data)"
+  },
+  "modules": [],
+  "capabilities": [
+   "interiors",
+   "electrical",
+   "variants",
+   "walk"
+  ],
+  "defaultView": {
+   "levelId": "L0",
+   "roomId": null,
+   "view": "interior"
+  },
+  "metadata": {
+   "synthetic": true
+  }
+ },
+ "building": {
+  "rooms": {
+   "levels": {
+    "L0": {
+     "name": "Level",
+     "floor_z": 0,
+     "cut_height": 2.3,
+     "plan_wall_offset": 0.06
+    }
+   },
+   "rooms": [
+    {
+     "id": "LR",
+     "name": "Living room",
+     "level": "L0",
+     "floor_z": 0,
+     "area": 23.85,
+     "area_data": 23.85,
+     "id_source": "unit-test fixture (synthetic data)",
+     "bbox": [
+      0.3,
+      0.3,
+      6.3,
+      4.3
+     ],
+     "polygon": [
+      [
+       0.3,
+       0.3
+      ],
+      [
+       3.5,
+       0.3
+      ],
+      [
+       6.3,
+       0.3
+      ],
+      [
+       6.3,
+       4.3
+      ],
+      [
+       3,
+       4.3
+      ],
+      [
+       3,
+       3
+      ],
+      [
+       2.885,
+       3
+      ],
+      [
+       2.885,
+       4.3
+      ],
+      [
+       0.3,
+       4.3
+      ]
+     ],
+     "rectangular": false,
+     "ceiling": {
+      "kind": "flat",
+      "z": 2.6
+     },
+     "stair_opening": null,
+     "doors": [
+      {
+       "along": "X",
+       "from_": 4.05,
+       "to": 4.95,
+       "across": [
+        0,
+        0.3
+       ],
+       "width": 0.9,
+       "door_id": "D0",
+       "leaf": 0.8,
+       "height": 2.05
+      }
+     ],
+     "openings": [],
+     "roof_windows": [],
+     "kind": "living",
+     "tags": []
+    },
+    {
+     "id": "AR",
+     "name": "Room under the roof",
+     "level": "L0",
+     "floor_z": 0,
+     "area": 16,
+     "area_data": 16,
+     "id_source": "unit-test fixture (synthetic data)",
+     "bbox": [
+      7,
+      0.3,
+      11,
+      4.3
+     ],
+     "polygon": [
+      [
+       7,
+       0.3
+      ],
+      [
+       11,
+       0.3
+      ],
+      [
+       11,
+       4.3
+      ],
+      [
+       7,
+       4.3
+      ]
+     ],
+     "rectangular": true,
+     "ceiling": {
+      "kind": "attic",
+      "flat_z": 2.5,
+      "ridge_y": 2.3,
+      "z_at_ridge": 3.5,
+      "slope": 1.0
+     },
+     "stair_opening": null,
+     "doors": [],
+     "openings": [],
+     "roof_windows": [],
+     "kind": "bed",
+     "tags": []
+    }
+   ]
+  },
+  "doors": [
+   {
+    "id": "D0",
+    "level": "L0",
+    "rooms": [
+     "LR",
+     "exterior"
+    ],
+    "floorZ": 0,
+    "opening": {
+     "along": "X",
+     "from": 4.05,
+     "to": 4.95,
+     "faces": [
+      0,
+      0.3
+     ],
+     "width": 0.9,
+     "height": 2.05
+    },
+    "leafWidth": 0.8,
+    "height": 2,
+    "type": "hinged-single",
+    "source": [
+     "unit-test fixture (synthetic data)"
+    ],
+    "confidence": "confirmed",
+    "hinge": [
+     4.9,
+     0.3
+    ],
+    "closedDir": [
+     -1,
+     0
+    ],
+    "openDir": [
+     0,
+     1
+    ],
+    "hingeSide": "left",
+    "swingInto": "LR",
+    "openAngle": 90,
+    "slide": null
+   }
+  ],
+  "shell": {
+   "exteriorWall": 0.3,
+   "slab": 0.25
+  }
+ },
+ "interiors": {
+  "items": [],
+  "notIncluded": []
+ },
+ "electrical": {
+  "points": []
+ }
+}

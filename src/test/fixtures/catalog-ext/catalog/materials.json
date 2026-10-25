@@ -1,0 +1,18 @@
+{
+ "materials": [
+  {
+   "id": "catalog-ext:oak-oiled",
+   "name": "Oiled oak",
+   "category": "wood",
+   "surfaces": [
+    "furniture",
+    "floor"
+   ],
+   "baseColor": "#b08a5a",
+   "textureSet": {
+    "type": "planks"
+   },
+   "source": "fixture"
+  }
+ ]
+}

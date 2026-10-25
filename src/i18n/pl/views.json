@@ -1,0 +1,10 @@
+{
+ "views.overview": "Widok ogólny",
+ "views.overview.hint": "cały budynek",
+ "views.opposite": "Druga strona",
+ "views.opposite.hint": "z przeciwnej strony",
+ "views.top": "Z góry",
+ "views.top.hint": "rzut z góry",
+ "views.interior": "Wnętrze",
+ "views.interior.hint": "przekrój kondygnacji"
+}

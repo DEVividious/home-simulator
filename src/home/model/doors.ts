@@ -1,0 +1,166 @@
+// Doors — pure TS (tests without a browser).
+// Definitions come from the project package (project().building.doors): opening, leaf, hinge, opening direction and angle, type,
+// rooms on both sides — door behaviour follows from this data only. Facts beyond geometry (decisions about
+// specific doors, exterior joinery opened in walk mode) — project().building.doorFacts.
+// User state (open / closed, "Show doors") is separate (DoorState) — it neither changes nor removes door definitions.
+import { derived } from '../../project/active';
+import type { LevelId, Vec2 } from './types';
+
+export type DoorType = 'hinged-single' | 'hinged-double' | 'sliding' | 'pocket';
+
+export interface DoorDef {
+  id: string;
+  level: LevelId;
+  /** rooms on both sides (the second: a room id or 'exterior') */
+  rooms: [string, string];
+  floorZ: number;
+  /** wall opening: wall axis, range along the axis, wall faces (cross coordinate), clear width and height of the masonry opening */
+  opening: { along: 'X' | 'Y'; from: number; to: number; faces: number[]; width: number; height: number };
+  /** leaf width [m] */
+  leafWidth: number;
+  /** leaf height [m] */
+  height: number;
+  type: DoorType;
+  /** hinge axis in plan (LCS) — hinged leaves */
+  hinge: Vec2 | null;
+  /** direction of the closed leaf (from hinge to lock) and of the leaf opened by 90° — unit vectors */
+  closedDir: Vec2 | null;
+  openDir: Vec2 | null;
+  /** hinge side as seen from the room the door opens into */
+  hingeSide: 'left' | 'right' | null;
+  /** room the leaf opens into */
+  swingInto: string | null;
+  /** full opening angle [°] */
+  openAngle: number | null;
+  /** sliding leaf: opening start on the wall axis, sliding direction, travel [m] */
+  slide: { origin: Vec2; dir: Vec2; travel: number } | null;
+  source: string[];
+  confidence: 'confirmed' | 'probable' | 'unknown';
+  notes?: string;
+  /** door flush with the wall (concealed frame, leaf face in the wall face on the opening side) */
+  flush?: boolean;
+}
+
+interface DoorsModel { all: DoorDef[]; byId: Map<string, DoorDef>; interactive: DoorDef[] }
+const model = derived((p): DoorsModel => {
+  const over = p.building.doorFacts?.overrides ?? {};
+  const all = p.building.doors.map((d) => (over[d.id] ? { ...d, flush: over[d.id].flush, source: [...d.source, over[d.id].source] } : d));
+  return { all, byId: new Map(all.map((d) => [d.id, d])), interactive: all.filter(isInteractive) };
+});
+/** all doors of the project */
+export const allDoors = (): DoorDef[] => model().all;
+export const doorById = (id: string | null | undefined): DoorDef | null => (id ? model().byId.get(id) ?? null : null);
+export const doorsOfLevel = (level: LevelId): DoorDef[] => model().all.filter((d) => d.level === level);
+export const doorsOfRoom = (roomId: string): DoorDef[] => model().all.filter((d) => d.rooms.includes(roomId));
+
+/** doors the engine draws and opens itself (every door with a hinge or a sliding track, also doors to the exterior) */
+export function isInteractive(d: DoorDef) { return d.hinge !== null || d.slide !== null; }
+export const interactiveDoors = (): DoorDef[] => model().interactive;
+
+/** i18n keys of door types */
+export const doorTypeKey = (t: DoorType): string => `doors.type.${t}`;
+
+/** whether a door has an open state (interactive door of the door model) */
+export const isOperable = (id: string): boolean => { const d = doorById(id); return !!d && isInteractive(d); };
+
+/** leaf thickness [m] */
+export const LEAF_T = 0.04;
+/** opening degree (0…1) from which the door can be passed through */
+export const PASS_OPEN = 0.6;
+/** full open / close time [s] */
+export const DOOR_ANIM_S = 0.55;
+/** full open / close time of a door [s] */
+export const animSeconds = (_id: string) => DOOR_ANIM_S;
+/** longest door animation of the project [s] (how long rendering continues after a state change) */
+export const maxAnimSeconds = () => DOOR_ANIM_S;
+
+const clamp01 = (t: number) => Math.min(1, Math.max(0, Number.isFinite(t) ? t : 0));
+
+/** leaf angle [°] at opening t (0 — closed, 1 — fully open) */
+export const leafAngle = (d: DoorDef, t: number) => (d.openAngle ?? 0) * clamp01(t);
+
+/**
+ * Leaf in plan at opening t: leaf axis segment a → b (a — the hinge edge / leaf start).
+ * Hinged: rotation about the hinge axis (point a is fixed for every t — pivot at the hinge, not at the leaf centre).
+ * Sliding: shift along the wall by travel · t.
+ */
+export function leafSegment(d: DoorDef, t: number): { a: Vec2; b: Vec2; dir: Vec2 } | null {
+  if (d.hinge && d.closedDir && d.openDir) {
+    const th = (leafAngle(d, t) * Math.PI) / 180, c = Math.cos(th), s = Math.sin(th);
+    const dir: Vec2 = [d.closedDir[0] * c + d.openDir[0] * s, d.closedDir[1] * c + d.openDir[1] * s];
+    return { a: d.hinge, b: [d.hinge[0] + dir[0] * d.leafWidth, d.hinge[1] + dir[1] * d.leafWidth], dir };
+  }
+  if (d.slide) {
+    const k = (d.opening.width - d.leafWidth) / 2 + d.slide.travel * clamp01(t);
+    const a: Vec2 = [d.slide.origin[0] + d.slide.dir[0] * k, d.slide.origin[1] + d.slide.dir[1] * k];
+    return { a, b: [a[0] + d.slide.dir[0] * d.leafWidth, a[1] + d.slide.dir[1] * d.leafWidth], dir: d.slide.dir };
+  }
+  return null;
+}
+
+/** swing arc for the 2D plan: path of the leaf edge from closed to open (polyline); sliding — segment of the leaf track */
+export function swingArc(d: DoorDef, steps = 16): Vec2[] {
+  if (!d.hinge) { const s0 = leafSegment(d, 0), s1 = leafSegment(d, 1); return s0 && s1 ? [s0.a, s1.b] : []; }
+  return Array.from({ length: steps + 1 }, (_, i) => leafSegment(d, i / steps)!.b);
+}
+
+/** opening centre in plan (on the wall axis) */
+export function doorCenter(d: DoorDef): Vec2 {
+  const m = (d.opening.from + d.opening.to) / 2, c = d.opening.faces.reduce((s, v) => s + v, 0) / d.opening.faces.length;
+  return d.opening.along === 'X' ? [m, c] : [c, m];
+}
+
+/** whether a point stands in the clear opening (with margin m along and across the wall) — closing a door "on a person" is blocked */
+export function inDoorway(d: DoorDef, p: Vec2, m = 0.3): boolean {
+  const ax = d.opening.along === 'X' ? 0 : 1, lo = Math.min(...d.opening.faces), hi = Math.max(...d.opening.faces);
+  return p[ax] > d.opening.from - 0.05 && p[ax] < d.opening.to + 0.05 && p[1 - ax] > lo - m && p[1 - ax] < hi + m;
+}
+
+// ------------------------------------------------------------------ user state
+export interface DoorState {
+  /** "Show doors": false — leaves hidden (openings and frames remain), no leaf collisions */
+  show: boolean;
+  /** door opening degree 0…1 (no entry = closed) */
+  open: Record<string, number>;
+}
+export const defaultDoorState = (): DoorState => ({ show: true, open: {} });
+
+export const openOf = (s: DoorState, id: string) => clamp01(s.open[id] ?? 0);
+
+/** whether the door can be passed: "Show doors" off (free passages) or the leaf open at least PASS_OPEN */
+export function doorPassable(s: DoorState, id: string): boolean {
+  if (!isOperable(id)) return true;
+  return !s.show || openOf(s, id) >= PASS_OPEN;
+}
+
+export function setDoorOpen(s: DoorState, id: string, t: number): DoorState {
+  if (!isOperable(id)) return s;
+  const v = Math.round(clamp01(t) * 1000) / 1000;
+  if (openOf(s, id) === v) return s;
+  const open = { ...s.open };
+  if (v === 0) delete open[id]; else open[id] = v;
+  return { ...s, open };
+}
+export const toggleDoor = (s: DoorState, id: string): DoorState => setDoorOpen(s, id, openOf(s, id) >= 0.5 ? 0 : 1);
+/** every door with an open state */
+export const OPERABLE_IDS = (): string[] => interactiveDoors().map((d) => d.id);
+export const setAllDoors = (s: DoorState, t: number): DoorState => OPERABLE_IDS().reduce((acc, id) => setDoorOpen(acc, id, t), s);
+
+/** state serialization (browser preferences): version + only doors that are not closed */
+export function serializeDoorState(s: DoorState): string {
+  const open = Object.fromEntries(Object.entries(s.open).filter(([id, v]) => isOperable(id) && v > 0).sort(([a], [b]) => a.localeCompare(b)));
+  return JSON.stringify({ v: 1, show: s.show, open });
+}
+/** state parsing: unknown doors and invalid values are skipped (door definitions may change after a data rebuild) */
+export function parseDoorState(raw: string | null | undefined): DoorState {
+  const out = defaultDoorState();
+  if (!raw) return out;
+  try {
+    const j = JSON.parse(raw) as { show?: unknown; open?: unknown };
+    if (typeof j.show === 'boolean') out.show = j.show;
+    if (j.open && typeof j.open === 'object') for (const [id, v] of Object.entries(j.open as Record<string, unknown>)) {
+      if (isOperable(id) && typeof v === 'number' && Number.isFinite(v) && v > 0) out.open[id] = Math.round(clamp01(v) * 1000) / 1000;
+    }
+  } catch { /* corrupted record — default state */ }
+  return out;
+}

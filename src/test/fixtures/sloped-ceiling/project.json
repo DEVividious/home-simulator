@@ -1,0 +1,307 @@
+{
+ "schema": "home-simulator/project",
+ "version": 1,
+ "manifest": {
+  "projectId": "sloped-ceiling",
+  "name": "Sloped ceiling fixture",
+  "description": "unit-test fixture \u00b7 synthetic data",
+  "language": "en",
+  "units": "m",
+  "coordinateSystem": {
+   "name": "LCS",
+   "description": "origin at the outer corner; +X right, +Y up on the plan, +Z up; Z = 0 is the finished floor",
+   "up": "Z",
+   "handedness": "right"
+  },
+  "buildingType": "house",
+  "levels": [
+   {
+    "id": "L1",
+    "name": "Top floor",
+    "floorZ": 0
+   }
+  ],
+  "dataSources": {
+   "rooms": "sloped-ceiling test fixture (synthetic data)"
+  },
+  "modules": [],
+  "capabilities": [
+   "interiors",
+   "walk"
+  ],
+  "defaultView": {
+   "levelId": "L1",
+   "roomId": null,
+   "view": "interior"
+  },
+  "metadata": {
+   "synthetic": true
+  }
+ },
+ "building": {
+  "rooms": {
+   "levels": {
+    "L1": {
+     "name": "Top floor",
+     "floor_z": 0,
+     "cut_height": 2.3,
+     "plan_wall_offset": 0.06
+    }
+   },
+   "rooms": [
+    {
+     "id": "A1",
+     "name": "Sloped bedroom",
+     "level": "L1",
+     "floor_z": 0,
+     "area": 20.0,
+     "area_data": 20.0,
+     "id_source": "sloped-ceiling test fixture (synthetic data)",
+     "bbox": [
+      0.3,
+      0.3,
+      4.3,
+      5.3
+     ],
+     "polygon": [
+      [
+       0.3,
+       0.3
+      ],
+      [
+       4.3,
+       0.3
+      ],
+      [
+       4.3,
+       5.3
+      ],
+      [
+       0.3,
+       5.3
+      ]
+     ],
+     "rectangular": true,
+     "ceiling": {
+      "kind": "attic",
+      "flat_z": 2.6,
+      "ridge_y": 2.8,
+      "z_at_ridge": 4.0,
+      "slope": 1.0
+     },
+     "stair_opening": null,
+     "doors": [
+      {
+       "along": "Y",
+       "from_": 1.0,
+       "to": 1.9,
+       "across": [
+        4.3,
+        4.42
+       ],
+       "width": 0.9,
+       "door_id": "D1",
+       "leaf": 0.8,
+       "height": 2.05
+      }
+     ],
+     "openings": [
+      {
+       "id": "G1",
+       "kind": "glazing (gable, from the slab)",
+       "plane_axis": "X",
+       "inner": 0.3,
+       "from_": 2.0,
+       "to": 3.6,
+       "polygon_YZ": [
+        [
+         2.0,
+         -0.2
+        ],
+        [
+         3.6,
+         -0.2
+        ],
+        [
+         3.6,
+         2.0
+        ],
+        [
+         2.8,
+         2.45
+        ],
+        [
+         2.0,
+         2.0
+        ]
+       ]
+      }
+     ],
+     "roof_windows": [],
+     "kind": "bed",
+     "tags": []
+    },
+    {
+     "id": "A2",
+     "name": "Sloped study",
+     "level": "L1",
+     "floor_z": 0,
+     "area": 20.0,
+     "area_data": 20.0,
+     "id_source": "sloped-ceiling test fixture (synthetic data)",
+     "bbox": [
+      4.42,
+      0.3,
+      8.42,
+      5.3
+     ],
+     "polygon": [
+      [
+       4.42,
+       0.3
+      ],
+      [
+       8.42,
+       0.3
+      ],
+      [
+       8.42,
+       5.3
+      ],
+      [
+       4.42,
+       5.3
+      ]
+     ],
+     "rectangular": true,
+     "ceiling": {
+      "kind": "attic",
+      "flat_z": 2.6,
+      "ridge_y": 2.8,
+      "z_at_ridge": 4.0,
+      "slope": 1.0
+     },
+     "stair_opening": null,
+     "doors": [
+      {
+       "along": "Y",
+       "from_": 1.0,
+       "to": 1.9,
+       "across": [
+        4.3,
+        4.42
+       ],
+       "width": 0.9,
+       "door_id": "D1",
+       "leaf": 0.8,
+       "height": 2.05
+      }
+     ],
+     "openings": [
+      {
+       "id": "G2W",
+       "kind": "glazing (gable, above a sill)",
+       "plane_axis": "X",
+       "inner": 8.42,
+       "from_": 2.0,
+       "to": 3.6,
+       "polygon_YZ": [
+        [
+         2.0,
+         0.9
+        ],
+        [
+         3.6,
+         0.9
+        ],
+        [
+         3.6,
+         2.0
+        ],
+        [
+         2.8,
+         2.45
+        ],
+        [
+         2.0,
+         2.0
+        ]
+       ]
+      }
+     ],
+     "roof_windows": [],
+     "kind": "office",
+     "tags": []
+    }
+   ]
+  },
+  "doors": [
+   {
+    "id": "D1",
+    "level": "L1",
+    "rooms": [
+     "A1",
+     "A2"
+    ],
+    "floorZ": 0,
+    "opening": {
+     "along": "Y",
+     "from": 1.0,
+     "to": 1.9,
+     "faces": [
+      4.3,
+      4.42
+     ],
+     "width": 0.9,
+     "height": 2.05
+    },
+    "leafWidth": 0.8,
+    "height": 2,
+    "type": "hinged-single",
+    "source": [
+     "sloped-ceiling test fixture (synthetic data)"
+    ],
+    "confidence": "confirmed",
+    "hinge": [
+     4.42,
+     1.05
+    ],
+    "closedDir": [
+     0,
+     1
+    ],
+    "openDir": [
+     1,
+     0
+    ],
+    "hingeSide": "left",
+    "swingInto": "A2",
+    "openAngle": 90,
+    "slide": null
+   }
+  ],
+  "shell": {
+   "exteriorWall": 0.3,
+   "slab": 0.25
+  }
+ },
+ "interiors": {
+  "items": [],
+  "notIncluded": [],
+  "extra": {
+   "A2": [
+    {
+     "id": "x-A2-desk",
+     "catalogId": "desk",
+     "variant": null,
+     "x": 6.42,
+     "y": 2.8,
+     "rot": 0
+    }
+   ]
+  }
+ },
+ "electrical": {
+  "points": []
+ }
+}

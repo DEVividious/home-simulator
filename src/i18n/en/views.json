@@ -1,0 +1,10 @@
+{
+ "views.overview": "Overview",
+ "views.overview.hint": "the whole building",
+ "views.opposite": "Other side",
+ "views.opposite.hint": "from the opposite side",
+ "views.top": "From above",
+ "views.top.hint": "plan view from above",
+ "views.interior": "Interior",
+ "views.interior.hint": "section through the level"
+}

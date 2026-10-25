@@ -1,0 +1,1812 @@
+{
+ "$schema": "../../schemas/project.schema.json",
+ "schema": "home-simulator/project",
+ "version": 1,
+ "manifest": {
+  "projectId": "sample-house",
+  "name": "Sample house",
+  "description": "example project · two storeys, stairs, plot · synthetic data",
+  "documentTitle": "Sample house (synthetic data)",
+  "language": "en",
+  "units": "m",
+  "coordinateSystem": {
+   "name": "LCS",
+   "description": "origin at the south-west outer corner of the building; +X east, +Y north, +Z up; Z = 0 is the finished ground floor",
+   "up": "Z",
+   "handedness": "right"
+  },
+  "buildingType": "house",
+  "levels": [
+   {
+    "id": "L0",
+    "name": "Ground floor",
+    "floorZ": 0
+   },
+   {
+    "id": "L1",
+    "name": "First floor",
+    "floorZ": 2.95
+   }
+  ],
+  "dataSources": {
+   "rooms": "sample-house package (synthetic data)",
+   "doors": "sample-house package (synthetic data)",
+   "interiors": "sample-house package (synthetic data)",
+   "electrical": "sample-house package (synthetic data)"
+  },
+  "modules": [
+   "site",
+   "sun",
+   "stairs"
+  ],
+  "capabilities": [
+   "interiors",
+   "electrical",
+   "variants",
+   "walk"
+  ],
+  "defaultView": {
+   "levelId": "L0",
+   "roomId": null,
+   "view": "exterior"
+  },
+  "metadata": {
+   "synthetic": true
+  }
+ },
+ "building": {
+  "rooms": {
+   "levels": {
+    "L0": {
+     "name": "Ground floor",
+     "floor_z": 0,
+     "cut_height": 2.45,
+     "plan_wall_offset": 0.06
+    },
+    "L1": {
+     "name": "First floor",
+     "floor_z": 2.95,
+     "cut_height": 2.45,
+     "plan_wall_offset": 0.06
+    }
+   },
+   "rooms": [
+    {
+     "id": "H0",
+     "name": "Hall",
+     "level": "L0",
+     "floor_z": 0,
+     "area": 14.1,
+     "area_data": 14.1,
+     "id_source": "sample-house package (synthetic data)",
+     "bbox": [
+      0.3,
+      0.3,
+      3.3,
+      5
+     ],
+     "polygon": [
+      [
+       0.3,
+       0.3
+      ],
+      [
+       3.3,
+       0.3
+      ],
+      [
+       3.3,
+       5
+      ],
+      [
+       0.3,
+       5
+      ]
+     ],
+     "rectangular": true,
+     "ceiling": {
+      "kind": "flat",
+      "z": 2.7
+     },
+     "stair_opening": null,
+     "doors": [
+      {
+       "along": "Y",
+       "from_": 3.7,
+       "to": 4.7,
+       "across": [
+        0,
+        0.3
+       ],
+       "width": 1,
+       "door_id": "D0",
+       "leaf": 0.9,
+       "height": 2.05
+      },
+      {
+       "along": "Y",
+       "from_": 3.8,
+       "to": 4.7,
+       "across": [
+        3.3,
+        3.42
+       ],
+       "width": 0.9,
+       "door_id": "D1",
+       "leaf": 0.8,
+       "height": 2.05
+      },
+      {
+       "along": "X",
+       "from_": 1.8,
+       "to": 2.6,
+       "across": [
+        5,
+        5.12
+       ],
+       "width": 0.8,
+       "door_id": "D2",
+       "leaf": 0.7,
+       "height": 2.05
+      }
+     ],
+     "openings": [],
+     "roof_windows": [],
+     "kind": "hall",
+     "tags": []
+    },
+    {
+     "id": "B0",
+     "name": "Bathroom",
+     "level": "L0",
+     "floor_z": 0,
+     "area": 7.74,
+     "area_data": 7.74,
+     "id_source": "sample-house package (synthetic data)",
+     "bbox": [
+      0.3,
+      5.12,
+      3.3,
+      7.7
+     ],
+     "polygon": [
+      [
+       0.3,
+       5.12
+      ],
+      [
+       3.3,
+       5.12
+      ],
+      [
+       3.3,
+       7.7
+      ],
+      [
+       0.3,
+       7.7
+      ]
+     ],
+     "rectangular": true,
+     "ceiling": {
+      "kind": "flat",
+      "z": 2.7
+     },
+     "stair_opening": null,
+     "doors": [
+      {
+       "along": "X",
+       "from_": 1.8,
+       "to": 2.6,
+       "across": [
+        5,
+        5.12
+       ],
+       "width": 0.8,
+       "door_id": "D2",
+       "leaf": 0.7,
+       "height": 2.05
+      }
+     ],
+     "openings": [
+      {
+       "id": "W4",
+       "kind": "window",
+       "plane_axis": "Y",
+       "inner": 7.7,
+       "from_": 1.45,
+       "to": 2.15,
+       "sill_z": 1.4,
+       "head_z": 2.1
+      }
+     ],
+     "roof_windows": [],
+     "kind": "bath",
+     "tags": []
+    },
+    {
+     "id": "LK",
+     "name": "Living room with kitchen",
+     "level": "L0",
+     "floor_z": 0,
+     "area": 46.47,
+     "area_data": 46.47,
+     "id_source": "sample-house package (synthetic data)",
+     "bbox": [
+      3.42,
+      0.3,
+      9.7,
+      7.7
+     ],
+     "polygon": [
+      [
+       3.42,
+       0.3
+      ],
+      [
+       9.7,
+       0.3
+      ],
+      [
+       9.7,
+       7.7
+      ],
+      [
+       3.42,
+       7.7
+      ]
+     ],
+     "rectangular": true,
+     "ceiling": {
+      "kind": "flat",
+      "z": 2.7
+     },
+     "stair_opening": null,
+     "doors": [
+      {
+       "along": "Y",
+       "from_": 3.8,
+       "to": 4.7,
+       "across": [
+        3.3,
+        3.42
+       ],
+       "width": 0.9,
+       "door_id": "D1",
+       "leaf": 0.8,
+       "height": 2.05
+      }
+     ],
+     "openings": [
+      {
+       "id": "W1",
+       "kind": "window",
+       "plane_axis": "Y",
+       "inner": 0.3,
+       "from_": 4.8,
+       "to": 7.2,
+       "sill_z": 0.85,
+       "head_z": 2.35
+      },
+      {
+       "id": "W2",
+       "kind": "window (floor-to-lintel)",
+       "plane_axis": "X",
+       "inner": 9.7,
+       "from_": 2.5,
+       "to": 4.5,
+       "sill_z": 0,
+       "head_z": 2.35
+      },
+      {
+       "id": "W3",
+       "kind": "window",
+       "plane_axis": "Y",
+       "inner": 7.7,
+       "from_": 7.4,
+       "to": 8.6,
+       "sill_z": 1,
+       "head_z": 2.35
+      }
+     ],
+     "roof_windows": [],
+     "kind": "living",
+     "tags": [
+      "kitchen"
+     ]
+    },
+    {
+     "id": "H1",
+     "name": "Landing",
+     "level": "L1",
+     "floor_z": 2.95,
+     "area": 14.1,
+     "area_data": 14.1,
+     "id_source": "sample-house package (synthetic data)",
+     "bbox": [
+      0.3,
+      0.3,
+      3.3,
+      5
+     ],
+     "polygon": [
+      [
+       0.3,
+       0.3
+      ],
+      [
+       3.3,
+       0.3
+      ],
+      [
+       3.3,
+       5
+      ],
+      [
+       0.3,
+       5
+      ]
+     ],
+     "rectangular": true,
+     "ceiling": {
+      "kind": "flat",
+      "z": 5.55
+     },
+     "stair_opening": [
+      0.3,
+      0.3,
+      2.25,
+      3.46
+     ],
+     "doors": [
+      {
+       "along": "Y",
+       "from_": 4.01,
+       "to": 4.91,
+       "across": [
+        3.3,
+        3.42
+       ],
+       "width": 0.9,
+       "door_id": "D3",
+       "leaf": 0.8,
+       "height": 2.05
+      },
+      {
+       "along": "Y",
+       "from_": 2.6,
+       "to": 3.4,
+       "across": [
+        3.3,
+        3.42
+       ],
+       "width": 0.8,
+       "door_id": "D4",
+       "leaf": 0.7,
+       "height": 2.05
+      },
+      {
+       "along": "X",
+       "from_": 1.8,
+       "to": 2.6,
+       "across": [
+        5,
+        5.12
+       ],
+       "width": 0.8,
+       "door_id": "D5",
+       "leaf": 0.7,
+       "height": 2.05
+      }
+     ],
+     "openings": [
+      {
+       "id": "W10",
+       "kind": "window",
+       "plane_axis": "X",
+       "inner": 0.3,
+       "from_": 3.75,
+       "to": 4.65,
+       "sill_z": 3.95,
+       "head_z": 5.3
+      }
+     ],
+     "roof_windows": [],
+     "kind": "hall",
+     "tags": []
+    },
+    {
+     "id": "O1",
+     "name": "Office",
+     "level": "L1",
+     "floor_z": 2.95,
+     "area": 7.74,
+     "area_data": 7.74,
+     "id_source": "sample-house package (synthetic data)",
+     "bbox": [
+      0.3,
+      5.12,
+      3.3,
+      7.7
+     ],
+     "polygon": [
+      [
+       0.3,
+       5.12
+      ],
+      [
+       3.3,
+       5.12
+      ],
+      [
+       3.3,
+       7.7
+      ],
+      [
+       0.3,
+       7.7
+      ]
+     ],
+     "rectangular": true,
+     "ceiling": {
+      "kind": "flat",
+      "z": 5.55
+     },
+     "stair_opening": null,
+     "doors": [
+      {
+       "along": "X",
+       "from_": 1.8,
+       "to": 2.6,
+       "across": [
+        5,
+        5.12
+       ],
+       "width": 0.8,
+       "door_id": "D5",
+       "leaf": 0.7,
+       "height": 2.05
+      }
+     ],
+     "openings": [
+      {
+       "id": "W9",
+       "kind": "window",
+       "plane_axis": "X",
+       "inner": 0.3,
+       "from_": 5.8,
+       "to": 7,
+       "sill_z": 3.8,
+       "head_z": 5.3
+      }
+     ],
+     "roof_windows": [],
+     "kind": "office",
+     "tags": []
+    },
+    {
+     "id": "BR2",
+     "name": "Bedroom 2",
+     "level": "L1",
+     "floor_z": 2.95,
+     "area": 10.78,
+     "area_data": 10.78,
+     "id_source": "sample-house package (synthetic data)",
+     "bbox": [
+      3.42,
+      0.3,
+      6.5,
+      3.8
+     ],
+     "polygon": [
+      [
+       3.42,
+       0.3
+      ],
+      [
+       6.5,
+       0.3
+      ],
+      [
+       6.5,
+       3.8
+      ],
+      [
+       3.42,
+       3.8
+      ]
+     ],
+     "rectangular": true,
+     "ceiling": {
+      "kind": "flat",
+      "z": 5.55
+     },
+     "stair_opening": null,
+     "doors": [
+      {
+       "along": "Y",
+       "from_": 2.6,
+       "to": 3.4,
+       "across": [
+        3.3,
+        3.42
+       ],
+       "width": 0.8,
+       "door_id": "D4",
+       "leaf": 0.7,
+       "height": 2.05
+      }
+     ],
+     "openings": [
+      {
+       "id": "W7",
+       "kind": "window",
+       "plane_axis": "Y",
+       "inner": 0.3,
+       "from_": 4.25,
+       "to": 5.75,
+       "sill_z": 3.8,
+       "head_z": 5.3
+      }
+     ],
+     "roof_windows": [],
+     "kind": "bed",
+     "tags": []
+    },
+    {
+     "id": "B1",
+     "name": "Bathroom (first floor)",
+     "level": "L1",
+     "floor_z": 2.95,
+     "area": 10.78,
+     "area_data": 10.78,
+     "id_source": "sample-house package (synthetic data)",
+     "bbox": [
+      6.62,
+      0.3,
+      9.7,
+      3.8
+     ],
+     "polygon": [
+      [
+       6.62,
+       0.3
+      ],
+      [
+       9.7,
+       0.3
+      ],
+      [
+       9.7,
+       3.8
+      ],
+      [
+       6.62,
+       3.8
+      ]
+     ],
+     "rectangular": true,
+     "ceiling": {
+      "kind": "flat",
+      "z": 5.55
+     },
+     "stair_opening": null,
+     "doors": [
+      {
+       "along": "X",
+       "from_": 7,
+       "to": 7.8,
+       "across": [
+        3.8,
+        3.92
+       ],
+       "width": 0.8,
+       "door_id": "D6",
+       "leaf": 0.7,
+       "height": 2.05
+      }
+     ],
+     "openings": [
+      {
+       "id": "W8",
+       "kind": "window",
+       "plane_axis": "Y",
+       "inner": 0.3,
+       "from_": 7.8,
+       "to": 8.6,
+       "sill_z": 4.35,
+       "head_z": 5.05
+      }
+     ],
+     "roof_windows": [],
+     "kind": "bath",
+     "tags": []
+    },
+    {
+     "id": "BR1",
+     "name": "Main bedroom",
+     "level": "L1",
+     "floor_z": 2.95,
+     "area": 23.74,
+     "area_data": 23.74,
+     "id_source": "sample-house package (synthetic data)",
+     "bbox": [
+      3.42,
+      3.92,
+      9.7,
+      7.7
+     ],
+     "polygon": [
+      [
+       3.42,
+       3.92
+      ],
+      [
+       9.7,
+       3.92
+      ],
+      [
+       9.7,
+       7.7
+      ],
+      [
+       3.42,
+       7.7
+      ]
+     ],
+     "rectangular": true,
+     "ceiling": {
+      "kind": "flat",
+      "z": 5.55
+     },
+     "stair_opening": null,
+     "doors": [
+      {
+       "along": "Y",
+       "from_": 4.01,
+       "to": 4.91,
+       "across": [
+        3.3,
+        3.42
+       ],
+       "width": 0.9,
+       "door_id": "D3",
+       "leaf": 0.8,
+       "height": 2.05
+      },
+      {
+       "along": "X",
+       "from_": 7,
+       "to": 7.8,
+       "across": [
+        3.8,
+        3.92
+       ],
+       "width": 0.8,
+       "door_id": "D6",
+       "leaf": 0.7,
+       "height": 2.05
+      }
+     ],
+     "openings": [
+      {
+       "id": "W5",
+       "kind": "window",
+       "plane_axis": "Y",
+       "inner": 7.7,
+       "from_": 5.5,
+       "to": 7.5,
+       "sill_z": 3.8,
+       "head_z": 5.3
+      },
+      {
+       "id": "W6",
+       "kind": "window",
+       "plane_axis": "X",
+       "inner": 9.7,
+       "from_": 5.2,
+       "to": 6.4,
+       "sill_z": 3.8,
+       "head_z": 5.3
+      }
+     ],
+     "roof_windows": [],
+     "kind": "bed",
+     "tags": []
+    }
+   ]
+  },
+  "doors": [
+   {
+    "id": "D0",
+    "level": "L0",
+    "rooms": [
+     "H0",
+     "exterior"
+    ],
+    "floorZ": 0,
+    "opening": {
+     "along": "Y",
+     "from": 3.7,
+     "to": 4.7,
+     "faces": [
+      0,
+      0.3
+     ],
+     "width": 1,
+     "height": 2.05
+    },
+    "leafWidth": 0.9,
+    "height": 2,
+    "type": "hinged-single",
+    "source": [
+     "sample-house package (synthetic data)"
+    ],
+    "confidence": "probable",
+    "hinge": [
+     0.3,
+     4.65
+    ],
+    "closedDir": [
+     0,
+     -1
+    ],
+    "openDir": [
+     1,
+     0
+    ],
+    "hingeSide": "right",
+    "swingInto": "H0",
+    "openAngle": 90,
+    "slide": null
+   },
+   {
+    "id": "D1",
+    "level": "L0",
+    "rooms": [
+     "H0",
+     "LK"
+    ],
+    "floorZ": 0,
+    "opening": {
+     "along": "Y",
+     "from": 3.8,
+     "to": 4.7,
+     "faces": [
+      3.3,
+      3.42
+     ],
+     "width": 0.9,
+     "height": 2.05
+    },
+    "leafWidth": 0.8,
+    "height": 2,
+    "type": "hinged-single",
+    "source": [
+     "sample-house package (synthetic data)"
+    ],
+    "confidence": "probable",
+    "hinge": [
+     3.42,
+     3.85
+    ],
+    "closedDir": [
+     0,
+     1
+    ],
+    "openDir": [
+     1,
+     0
+    ],
+    "hingeSide": "left",
+    "swingInto": "LK",
+    "openAngle": 90,
+    "slide": null
+   },
+   {
+    "id": "D2",
+    "level": "L0",
+    "rooms": [
+     "H0",
+     "B0"
+    ],
+    "floorZ": 0,
+    "opening": {
+     "along": "X",
+     "from": 1.8,
+     "to": 2.6,
+     "faces": [
+      5,
+      5.12
+     ],
+     "width": 0.8,
+     "height": 2.05
+    },
+    "leafWidth": 0.7,
+    "height": 2,
+    "type": "hinged-single",
+    "source": [
+     "sample-house package (synthetic data)"
+    ],
+    "confidence": "probable",
+    "hinge": [
+     1.85,
+     5.12
+    ],
+    "closedDir": [
+     1,
+     0
+    ],
+    "openDir": [
+     0,
+     1
+    ],
+    "hingeSide": "right",
+    "swingInto": "B0",
+    "openAngle": 90,
+    "slide": null
+   },
+   {
+    "id": "D3",
+    "level": "L1",
+    "rooms": [
+     "H1",
+     "BR1"
+    ],
+    "floorZ": 2.95,
+    "opening": {
+     "along": "Y",
+     "from": 4.01,
+     "to": 4.91,
+     "faces": [
+      3.3,
+      3.42
+     ],
+     "width": 0.9,
+     "height": 2.05
+    },
+    "leafWidth": 0.8,
+    "height": 2,
+    "type": "hinged-single",
+    "source": [
+     "sample-house package (synthetic data)"
+    ],
+    "confidence": "probable",
+    "hinge": [
+     3.42,
+     4.06
+    ],
+    "closedDir": [
+     0,
+     1
+    ],
+    "openDir": [
+     1,
+     0
+    ],
+    "hingeSide": "left",
+    "swingInto": "BR1",
+    "openAngle": 90,
+    "slide": null
+   },
+   {
+    "id": "D4",
+    "level": "L1",
+    "rooms": [
+     "H1",
+     "BR2"
+    ],
+    "floorZ": 2.95,
+    "opening": {
+     "along": "Y",
+     "from": 2.6,
+     "to": 3.4,
+     "faces": [
+      3.3,
+      3.42
+     ],
+     "width": 0.8,
+     "height": 2.05
+    },
+    "leafWidth": 0.7,
+    "height": 2,
+    "type": "hinged-single",
+    "source": [
+     "sample-house package (synthetic data)"
+    ],
+    "confidence": "probable",
+    "hinge": [
+     3.42,
+     3.35
+    ],
+    "closedDir": [
+     0,
+     -1
+    ],
+    "openDir": [
+     1,
+     0
+    ],
+    "hingeSide": "right",
+    "swingInto": "BR2",
+    "openAngle": 90,
+    "slide": null
+   },
+   {
+    "id": "D5",
+    "level": "L1",
+    "rooms": [
+     "H1",
+     "O1"
+    ],
+    "floorZ": 2.95,
+    "opening": {
+     "along": "X",
+     "from": 1.8,
+     "to": 2.6,
+     "faces": [
+      5,
+      5.12
+     ],
+     "width": 0.8,
+     "height": 2.05
+    },
+    "leafWidth": 0.7,
+    "height": 2,
+    "type": "hinged-single",
+    "source": [
+     "sample-house package (synthetic data)"
+    ],
+    "confidence": "probable",
+    "hinge": [
+     1.85,
+     5.12
+    ],
+    "closedDir": [
+     1,
+     0
+    ],
+    "openDir": [
+     0,
+     1
+    ],
+    "hingeSide": "right",
+    "swingInto": "O1",
+    "openAngle": 90,
+    "slide": null
+   },
+   {
+    "id": "D6",
+    "level": "L1",
+    "rooms": [
+     "BR1",
+     "B1"
+    ],
+    "floorZ": 2.95,
+    "opening": {
+     "along": "X",
+     "from": 7,
+     "to": 7.8,
+     "faces": [
+      3.8,
+      3.92
+     ],
+     "width": 0.8,
+     "height": 2.05
+    },
+    "leafWidth": 0.7,
+    "height": 2,
+    "type": "sliding",
+    "source": [
+     "sample-house package (synthetic data)"
+    ],
+    "confidence": "probable",
+    "hinge": null,
+    "closedDir": null,
+    "openDir": null,
+    "hingeSide": null,
+    "swingInto": null,
+    "openAngle": null,
+    "slide": {
+     "origin": [
+      7,
+      3.86
+     ],
+     "dir": [
+      1,
+      0
+     ],
+     "travel": 0.7
+    }
+   }
+  ],
+  "doorFacts": {
+   "passableOpenings": [
+    "W2"
+   ]
+  },
+  "stairs": [
+   {
+    "id": "S1",
+    "kind": "u-turn",
+    "fromLevel": "L0",
+    "toLevel": "L1",
+    "bbox": [
+     0.3,
+     0.3,
+     2.25,
+     3.46
+    ],
+    "risers": 9,
+    "riser": 0.164,
+    "tread": 0.27,
+    "flightWidth": 0.95,
+    "gap": 0.05,
+    "landingZ": 1.475,
+    "topZ": 2.95,
+    "split": 1.275,
+    "run": 2.16,
+    "landingEdge": 1.3,
+    "confidence": "probable",
+    "note": "railing 0.9 m on the landing"
+   }
+  ],
+  "shell": {
+   "exteriorWall": 0.3,
+   "slab": 0.25
+  }
+ },
+ "interiors": {
+  "items": [
+   {
+    "key": "LK-kitchen-tall",
+    "room": "LK",
+    "catalogId": "kitchen-tall",
+    "variant": "fridge",
+    "x": 3.72,
+    "y": 7.395,
+    "rot": 180,
+    "source": "sample-house package (synthetic data)",
+    "basis": "approximate",
+    "note": "",
+    "group": "kitchen"
+   },
+   {
+    "key": "LK-kitchen-tall-2",
+    "room": "LK",
+    "catalogId": "kitchen-tall",
+    "variant": "oven",
+    "x": 4.32,
+    "y": 7.395,
+    "rot": 180,
+    "source": "sample-house package (synthetic data)",
+    "basis": "approximate",
+    "note": "",
+    "group": "kitchen"
+   },
+   {
+    "key": "LK-kitchen-base",
+    "room": "LK",
+    "catalogId": "kitchen-base",
+    "variant": "drawers3",
+    "x": 4.92,
+    "y": 7.395,
+    "rot": 180,
+    "source": "sample-house package (synthetic data)",
+    "basis": "approximate",
+    "note": "",
+    "group": "kitchen"
+   },
+   {
+    "key": "LK-kitchen-cooktop",
+    "room": "LK",
+    "catalogId": "kitchen-cooktop",
+    "variant": null,
+    "x": 5.62,
+    "y": 7.395,
+    "rot": 180,
+    "source": "sample-house package (synthetic data)",
+    "basis": "approximate",
+    "note": "",
+    "group": "kitchen"
+   },
+   {
+    "key": "LK-kitchen-base-2",
+    "room": "LK",
+    "catalogId": "kitchen-base",
+    "variant": "doors",
+    "x": 6.32,
+    "y": 7.395,
+    "rot": 180,
+    "source": "sample-house package (synthetic data)",
+    "basis": "approximate",
+    "note": "",
+    "group": "kitchen"
+   },
+   {
+    "key": "LK-kitchen-dishwasher",
+    "room": "LK",
+    "catalogId": "kitchen-dishwasher",
+    "variant": null,
+    "x": 6.92,
+    "y": 7.395,
+    "rot": 180,
+    "source": "sample-house package (synthetic data)",
+    "basis": "approximate",
+    "note": "",
+    "group": "kitchen"
+   },
+   {
+    "key": "LK-kitchen-base-3",
+    "room": "LK",
+    "catalogId": "kitchen-base",
+    "variant": "doors",
+    "x": 7.52,
+    "y": 7.395,
+    "rot": 180,
+    "source": "sample-house package (synthetic data)",
+    "basis": "approximate",
+    "note": "",
+    "group": "kitchen"
+   },
+   {
+    "key": "LK-kitchen-sink",
+    "room": "LK",
+    "catalogId": "kitchen-sink",
+    "variant": null,
+    "x": 8.22,
+    "y": 7.395,
+    "rot": 180,
+    "source": "sample-house package (synthetic data)",
+    "basis": "approximate",
+    "note": "",
+    "group": "kitchen"
+   },
+   {
+    "key": "LK-kitchen-base-4",
+    "room": "LK",
+    "catalogId": "kitchen-base",
+    "variant": "drawers2",
+    "x": 8.92,
+    "y": 7.395,
+    "rot": 180,
+    "source": "sample-house package (synthetic data)",
+    "basis": "approximate",
+    "note": "",
+    "group": "kitchen"
+   },
+   {
+    "key": "LK-kitchen-wall",
+    "room": "LK",
+    "catalogId": "kitchen-wall",
+    "variant": "doors",
+    "x": 4.92,
+    "y": 7.52,
+    "rot": 180,
+    "source": "sample-house package (synthetic data)",
+    "basis": "approximate",
+    "note": "",
+    "elevation": 1.5,
+    "group": "kitchen"
+   },
+   {
+    "key": "LK-kitchen-wall-2",
+    "room": "LK",
+    "catalogId": "kitchen-wall",
+    "variant": "doors",
+    "x": 6.32,
+    "y": 7.52,
+    "rot": 180,
+    "source": "sample-house package (synthetic data)",
+    "basis": "approximate",
+    "note": "",
+    "elevation": 1.5,
+    "group": "kitchen"
+   },
+   {
+    "key": "LK-dining-table",
+    "room": "LK",
+    "catalogId": "dining-table",
+    "variant": "6",
+    "x": 6.5,
+    "y": 5.2,
+    "rot": 0,
+    "source": "sample-house package (synthetic data)",
+    "basis": "approximate",
+    "note": "",
+    "group": "dining"
+   },
+   {
+    "key": "LK-dining-chair",
+    "room": "LK",
+    "catalogId": "dining-chair",
+    "variant": null,
+    "x": 6,
+    "y": 4.5,
+    "rot": 0,
+    "source": "sample-house package (synthetic data)",
+    "basis": "approximate",
+    "note": "",
+    "group": "dining"
+   },
+   {
+    "key": "LK-dining-chair-2",
+    "room": "LK",
+    "catalogId": "dining-chair",
+    "variant": null,
+    "x": 7,
+    "y": 4.5,
+    "rot": 0,
+    "source": "sample-house package (synthetic data)",
+    "basis": "approximate",
+    "note": "",
+    "group": "dining"
+   },
+   {
+    "key": "LK-dining-chair-3",
+    "room": "LK",
+    "catalogId": "dining-chair",
+    "variant": null,
+    "x": 6,
+    "y": 5.9,
+    "rot": 180,
+    "source": "sample-house package (synthetic data)",
+    "basis": "approximate",
+    "note": "",
+    "group": "dining"
+   },
+   {
+    "key": "LK-dining-chair-4",
+    "room": "LK",
+    "catalogId": "dining-chair",
+    "variant": null,
+    "x": 7,
+    "y": 5.9,
+    "rot": 180,
+    "source": "sample-house package (synthetic data)",
+    "basis": "approximate",
+    "note": "",
+    "group": "dining"
+   },
+   {
+    "key": "LK-tv-wall",
+    "room": "LK",
+    "catalogId": "tv-wall",
+    "variant": "65",
+    "x": 3.45,
+    "y": 2,
+    "rot": 270,
+    "source": "sample-house package (synthetic data)",
+    "basis": "approximate",
+    "note": "",
+    "elevation": 1,
+    "group": "living"
+   },
+   {
+    "key": "LK-sofa",
+    "room": "LK",
+    "catalogId": "sofa",
+    "variant": "3",
+    "x": 6.4,
+    "y": 2,
+    "rot": 90,
+    "source": "sample-house package (synthetic data)",
+    "basis": "approximate",
+    "note": "",
+    "group": "living"
+   },
+   {
+    "key": "LK-coffee-table",
+    "room": "LK",
+    "catalogId": "coffee-table",
+    "variant": "rect",
+    "x": 5.1,
+    "y": 2,
+    "rot": 90,
+    "source": "sample-house package (synthetic data)",
+    "basis": "approximate",
+    "note": "",
+    "group": "living"
+   },
+   {
+    "key": "B0-toilet",
+    "room": "B0",
+    "catalogId": "toilet",
+    "variant": null,
+    "x": 0.64,
+    "y": 6,
+    "rot": 270,
+    "source": "sample-house package (synthetic data)",
+    "basis": "approximate",
+    "note": ""
+   },
+   {
+    "key": "B0-vanity",
+    "room": "B0",
+    "catalogId": "vanity",
+    "variant": "80",
+    "x": 2.7,
+    "y": 7.465,
+    "rot": 180,
+    "source": "sample-house package (synthetic data)",
+    "basis": "approximate",
+    "note": ""
+   },
+   {
+    "key": "B0-mirror",
+    "room": "B0",
+    "catalogId": "mirror",
+    "variant": "rect",
+    "x": 2.7,
+    "y": 7.68,
+    "rot": 180,
+    "source": "sample-house package (synthetic data)",
+    "basis": "approximate",
+    "note": "",
+    "elevation": 1.25
+   },
+   {
+    "key": "B0-shower",
+    "room": "B0",
+    "catalogId": "shower",
+    "variant": "90",
+    "x": 2.845,
+    "y": 6.2,
+    "rot": 90,
+    "source": "sample-house package (synthetic data)",
+    "basis": "approximate",
+    "note": ""
+   },
+   {
+    "key": "B0-washer",
+    "room": "B0",
+    "catalogId": "washer",
+    "variant": null,
+    "x": 0.75,
+    "y": 5.425,
+    "rot": 0,
+    "source": "sample-house package (synthetic data)",
+    "basis": "approximate",
+    "note": ""
+   },
+   {
+    "key": "H0-cabinet",
+    "room": "H0",
+    "catalogId": "cabinet",
+    "variant": "low",
+    "x": 3.07,
+    "y": 1.5,
+    "rot": 90,
+    "source": "sample-house package (synthetic data)",
+    "basis": "approximate",
+    "note": ""
+   },
+   {
+    "key": "H0-mirror",
+    "room": "H0",
+    "catalogId": "mirror",
+    "variant": "rect",
+    "x": 3.28,
+    "y": 1.5,
+    "rot": 90,
+    "source": "sample-house package (synthetic data)",
+    "basis": "approximate",
+    "note": "",
+    "elevation": 1.05
+   },
+   {
+    "key": "BR1-bed",
+    "room": "BR1",
+    "catalogId": "bed",
+    "variant": "160",
+    "x": 4.475,
+    "y": 6.2,
+    "rot": 270,
+    "source": "sample-house package (synthetic data)",
+    "basis": "approximate",
+    "note": ""
+   },
+   {
+    "key": "BR1-bedside-table",
+    "room": "BR1",
+    "catalogId": "bedside-table",
+    "variant": null,
+    "x": 3.625,
+    "y": 5.15,
+    "rot": 270,
+    "source": "sample-house package (synthetic data)",
+    "basis": "approximate",
+    "note": ""
+   },
+   {
+    "key": "BR1-bedside-table-2",
+    "room": "BR1",
+    "catalogId": "bedside-table",
+    "variant": null,
+    "x": 3.625,
+    "y": 7.25,
+    "rot": 270,
+    "source": "sample-house package (synthetic data)",
+    "basis": "approximate",
+    "note": ""
+   },
+   {
+    "key": "BR1-wardrobe",
+    "room": "BR1",
+    "catalogId": "wardrobe",
+    "variant": "3d",
+    "x": 5,
+    "y": 4.225,
+    "rot": 0,
+    "source": "sample-house package (synthetic data)",
+    "basis": "approximate",
+    "note": ""
+   },
+   {
+    "key": "BR1-dresser",
+    "room": "BR1",
+    "catalogId": "dresser",
+    "variant": null,
+    "x": 8.7,
+    "y": 7.47,
+    "rot": 180,
+    "source": "sample-house package (synthetic data)",
+    "basis": "approximate",
+    "note": ""
+   },
+   {
+    "key": "BR2-bed",
+    "room": "BR2",
+    "catalogId": "bed",
+    "variant": "90",
+    "x": 5.445,
+    "y": 1.5,
+    "rot": 90,
+    "source": "sample-house package (synthetic data)",
+    "basis": "approximate",
+    "note": ""
+   },
+   {
+    "key": "BR2-desk",
+    "room": "BR2",
+    "catalogId": "desk",
+    "variant": null,
+    "x": 4.4,
+    "y": 0.655,
+    "rot": 0,
+    "source": "sample-house package (synthetic data)",
+    "basis": "approximate",
+    "note": ""
+   },
+   {
+    "key": "BR2-wardrobe",
+    "room": "BR2",
+    "catalogId": "wardrobe",
+    "variant": "2d",
+    "x": 5.7,
+    "y": 3.495,
+    "rot": 180,
+    "source": "sample-house package (synthetic data)",
+    "basis": "approximate",
+    "note": ""
+   },
+   {
+    "key": "B1-bathtub",
+    "room": "B1",
+    "catalogId": "bathtub",
+    "variant": "170",
+    "x": 8,
+    "y": 0.68,
+    "rot": 0,
+    "source": "sample-house package (synthetic data)",
+    "basis": "approximate",
+    "note": ""
+   },
+   {
+    "key": "B1-toilet",
+    "room": "B1",
+    "catalogId": "toilet",
+    "variant": null,
+    "x": 9.36,
+    "y": 2.6,
+    "rot": 90,
+    "source": "sample-house package (synthetic data)",
+    "basis": "approximate",
+    "note": ""
+   },
+   {
+    "key": "B1-vanity",
+    "room": "B1",
+    "catalogId": "vanity",
+    "variant": "80",
+    "x": 6.855,
+    "y": 1.8,
+    "rot": 270,
+    "source": "sample-house package (synthetic data)",
+    "basis": "approximate",
+    "note": ""
+   },
+   {
+    "key": "B1-mirror",
+    "room": "B1",
+    "catalogId": "mirror",
+    "variant": "rect",
+    "x": 6.64,
+    "y": 1.8,
+    "rot": 270,
+    "source": "sample-house package (synthetic data)",
+    "basis": "approximate",
+    "note": "",
+    "elevation": 1.25
+   },
+   {
+    "key": "O1-desk",
+    "room": "O1",
+    "catalogId": "desk",
+    "variant": null,
+    "x": 0.655,
+    "y": 6.4,
+    "rot": 270,
+    "source": "sample-house package (synthetic data)",
+    "basis": "approximate",
+    "note": ""
+   },
+   {
+    "key": "O1-shelves",
+    "room": "O1",
+    "catalogId": "shelves",
+    "variant": null,
+    "x": 3.12,
+    "y": 6.4,
+    "rot": 90,
+    "source": "sample-house package (synthetic data)",
+    "basis": "approximate",
+    "note": ""
+   }
+  ],
+  "notIncluded": []
+ },
+ "electrical": {
+  "points": [
+   {
+    "id": "B1",
+    "type": "board",
+    "roomId": "H0",
+    "x": 3.3,
+    "y": 0.6,
+    "heightAFFL": 1.5,
+    "label": "Distribution board",
+    "source": "sample-house package (synthetic data)",
+    "status": "source",
+    "width": 0.4
+   },
+   {
+    "id": "S1",
+    "type": "socket-2",
+    "roomId": "LK",
+    "x": 3.42,
+    "y": 2,
+    "heightAFFL": 0.3,
+    "label": "TV socket",
+    "source": "sample-house package (synthetic data)",
+    "status": "source"
+   },
+   {
+    "id": "S2",
+    "type": "socket-2",
+    "roomId": "LK",
+    "x": 5.62,
+    "y": 7.7,
+    "heightAFFL": 1.15,
+    "label": "Socket above the worktop",
+    "source": "sample-house package (synthetic data)",
+    "status": "source"
+   },
+   {
+    "id": "S3",
+    "type": "socket-1",
+    "roomId": "LK",
+    "x": 4,
+    "y": 0.3,
+    "heightAFFL": 0.3,
+    "label": "Socket — living room",
+    "source": "sample-house package (synthetic data)",
+    "status": "source"
+   },
+   {
+    "id": "S4",
+    "type": "socket-1",
+    "roomId": "B0",
+    "x": 3.1,
+    "y": 7.7,
+    "heightAFFL": 1.2,
+    "label": "Socket by the washbasin",
+    "source": "sample-house package (synthetic data)",
+    "status": "source"
+   },
+   {
+    "id": "S5",
+    "type": "socket-2",
+    "roomId": "BR1",
+    "x": 3.42,
+    "y": 5.15,
+    "heightAFFL": 0.3,
+    "label": "Socket by the bed",
+    "source": "sample-house package (synthetic data)",
+    "status": "source"
+   },
+   {
+    "id": "S6",
+    "type": "socket-2",
+    "roomId": "BR2",
+    "x": 3.8,
+    "y": 0.3,
+    "heightAFFL": 0.3,
+    "label": "Socket by the desk",
+    "source": "sample-house package (synthetic data)",
+    "status": "source"
+   },
+   {
+    "id": "SW1",
+    "type": "switch",
+    "roomId": "H0",
+    "x": 0.3,
+    "y": 4.85,
+    "heightAFFL": 1.1,
+    "label": "Switch — hall",
+    "source": "sample-house package (synthetic data)",
+    "status": "source"
+   },
+   {
+    "id": "SW2",
+    "type": "switch",
+    "roomId": "LK",
+    "x": 3.42,
+    "y": 4.85,
+    "heightAFFL": 1.1,
+    "label": "Switch — living room",
+    "source": "sample-house package (synthetic data)",
+    "status": "source"
+   },
+   {
+    "id": "SW3",
+    "type": "switch",
+    "roomId": "BR1",
+    "x": 3.42,
+    "y": 5.05,
+    "heightAFFL": 1.1,
+    "label": "Switch — main bedroom",
+    "source": "sample-house package (synthetic data)",
+    "status": "source"
+   },
+   {
+    "id": "SW4",
+    "type": "switch",
+    "roomId": "BR2",
+    "x": 3.42,
+    "y": 2.45,
+    "heightAFFL": 1.1,
+    "label": "Switch — bedroom 2",
+    "source": "sample-house package (synthetic data)",
+    "status": "source"
+   }
+  ]
+ },
+ "site": {
+  "footprint": [
+   [
+    0,
+    0
+   ],
+   [
+    10,
+    0
+   ],
+   [
+    10,
+    8
+   ],
+   [
+    0,
+    8
+   ]
+  ],
+  "boundary": [
+   [
+    -8,
+    -8
+   ],
+   [
+    18,
+    -8
+   ],
+   [
+    18,
+    16
+   ],
+   [
+    -8,
+    16
+   ]
+  ],
+  "groundLevel": -0.15,
+  "levelId": "L0"
+ },
+ "sun": {
+  "lat": 50,
+  "lon": 8,
+  "gridAzimuthX": 90,
+  "convergence": 0,
+  "trueAzimuthX": 90,
+  "confidence": "probable",
+  "uncertaintyDeg": 15,
+  "timeZone": "Europe/Berlin",
+  "placeName": "Example town"
+ },
+ "viewpoints": [
+  {
+   "id": "vp-front",
+   "name": "Front door",
+   "p": [
+    -2.5,
+    4.2
+   ],
+   "level": "SITE",
+   "look": [
+    1,
+    4.2,
+    1.6
+   ],
+   "fov": 70,
+   "hint": "outside the entrance"
+  },
+  {
+   "id": "vp-garden",
+   "name": "Garden",
+   "p": [
+    14,
+    3.5
+   ],
+   "level": "SITE",
+   "look": [
+    9.7,
+    3.5,
+    1.4
+   ],
+   "fov": 70,
+   "hint": "from the garden towards the terrace door"
+  },
+  {
+   "id": "vp-living",
+   "name": "Living room",
+   "p": [
+    8.6,
+    1.2
+   ],
+   "level": "L0",
+   "look": [
+    4,
+    5.5,
+    1.2
+   ],
+   "fov": 70,
+   "hint": "from the window towards the kitchen"
+  },
+  {
+   "id": "vp-bedroom",
+   "name": "Main bedroom",
+   "p": [
+    4.6,
+    4.6
+   ],
+   "level": "L1",
+   "look": [
+    9,
+    6.8,
+    1.2
+   ],
+   "fov": 70,
+   "hint": "from the door"
+  }
+ ]
+}

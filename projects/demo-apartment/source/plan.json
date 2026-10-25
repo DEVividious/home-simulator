@@ -1,0 +1,82 @@
+{
+ "$schema": "../../../schemas/plan.schema.json",
+ "schema": "home-simulator/plan",
+ "version": 1,
+ "project": {
+  "id": "demo-apartment",
+  "name": "Demo apartment",
+  "description": "example project · synthetic data",
+  "documentTitle": "Demo apartment (synthetic data)",
+  "language": "en",
+  "buildingType": "apartment",
+  "origin": "origin at the outer corner of the apartment (bottom-left of the plan); +X right on the plan, +Y up on the plan, +Z up; Z = 0 is the finished floor",
+  "metadata": { "synthetic": true }
+ },
+ "units": "m",
+ "source": "demo-apartment package (synthetic data)",
+ "defaults": { "confidence": "confirmed" },
+ "levels": [{ "id": "L1", "name": "Apartment", "floorZ": 0, "ceiling": 2.6 }],
+ "rooms": [
+  { "id": "R1", "name": "Living room with kitchenette", "level": "L1", "kind": "living", "tags": ["kitchen"], "rect": [2.52, 0.3, 8.7, 3.9] },
+  { "id": "R2", "name": "Bedroom", "level": "L1", "kind": "bed", "rect": [2.52, 4.02, 8.7, 6.7] },
+  { "id": "R3", "name": "Bathroom", "level": "L1", "kind": "bath", "rect": [0.3, 3.02, 2.4, 6.7] },
+  { "id": "R4", "name": "Hallway", "level": "L1", "kind": "hall", "rect": [0.3, 0.3, 2.4, 2.9] }
+ ],
+ "doors": [
+  { "id": "D0", "between": ["R4", "exterior"], "at": [0.15, 1.8], "width": 1.0, "swingInto": "R4", "hinge": "left" },
+  { "id": "D1", "between": ["R4", "R1"], "at": [2.46, 1.45], "width": 0.9, "swingInto": "R1", "hinge": "left" },
+  { "id": "D2", "between": ["R4", "R3"], "at": [1.3, 2.96], "width": 0.8, "swingInto": "R3", "hinge": "right" },
+  { "id": "D3", "between": ["R1", "R2"], "at": [3.65, 3.96], "width": 0.9, "swingInto": "R2", "hinge": "left" }
+ ],
+ "windows": [
+  { "id": "W1", "room": "R1", "at": [6.3, 0.3], "width": 2.4, "sill": 0.85, "head": 2.35 },
+  { "id": "W2", "room": "R1", "at": [8.7, 1.2], "width": 0.5, "sill": 1.05, "head": 2.35 },
+  { "id": "W3", "room": "R2", "at": [5.6, 6.7], "width": 2.0, "sill": 0.85, "head": 2.35 },
+  { "id": "W4", "room": "R3", "at": [1.35, 6.7], "width": 0.7, "sill": 1.3, "head": 2.1 }
+ ],
+ "furniture": [
+  { "key": "R1-fridge", "room": "R1", "catalogId": "fridge-freestanding", "at": [8.37, 0.6], "rot": 90, "group": "kitchen", "note": "example layout" },
+  { "key": "R1-sink", "room": "R1", "catalogId": "kitchen-sink", "at": [8.4, 1.2], "rot": 90, "dims": { "w": 0.6 }, "group": "kitchen", "note": "example layout" },
+  { "key": "R1-cooktop", "room": "R1", "catalogId": "kitchen-cooktop", "at": [8.4, 1.8], "rot": 90, "dims": { "w": 0.6 }, "group": "kitchen", "note": "example layout" },
+  { "key": "R1-wall-1", "room": "R1", "catalogId": "kitchen-wall", "variant": "doors", "at": [8.525, 1.8], "rot": 90, "elevation": 1.5, "group": "kitchen", "note": "example layout" },
+  { "key": "R1-tv", "room": "R1", "catalogId": "tv-wall", "variant": "65", "at": [6.3, 3.875], "rot": 180, "elevation": 1.0, "group": "living", "note": "example layout" },
+  { "key": "R1-shelf", "room": "R1", "catalogId": "wall-shelf", "at": [3.6, 0.41], "rot": 0, "elevation": 1.4, "group": "dining", "note": "example layout" },
+  { "key": "R1-sofa", "room": "R1", "catalogId": "sofa", "variant": "3", "at": [6.3, 0.81], "rot": 0, "group": "living", "note": "example layout" },
+  { "key": "R1-coffee", "room": "R1", "catalogId": "coffee-table", "variant": "rect", "at": [6.3, 2.05], "rot": 0, "group": "living", "note": "example layout" },
+  { "key": "R1-table", "room": "R1", "catalogId": "dining-table", "variant": "4", "at": [4.3, 1.5], "rot": 0, "group": "dining", "note": "example layout" },
+  { "key": "R1-chair-1", "room": "R1", "catalogId": "dining-chair", "at": [4.0, 0.84], "rot": 0, "group": "dining", "note": "example layout" },
+  { "key": "R1-chair-2", "room": "R1", "catalogId": "dining-chair", "at": [4.6, 0.84], "rot": 0, "group": "dining", "note": "example layout" },
+  { "key": "R1-chair-3", "room": "R1", "catalogId": "dining-chair", "at": [4.0, 2.16], "rot": 180, "group": "dining", "note": "example layout" },
+  { "key": "R1-chair-4", "room": "R1", "catalogId": "dining-chair", "at": [4.6, 2.16], "rot": 180, "group": "dining", "note": "example layout" },
+  { "key": "R2-bed", "room": "R2", "catalogId": "bed", "at": [7.65, 5.36], "rot": 90, "note": "example layout" },
+  { "key": "R2-bedside-1", "room": "R2", "catalogId": "bedside-table", "at": [8.5, 4.3], "rot": 90, "note": "example layout" },
+  { "key": "R2-bedside-2", "room": "R2", "catalogId": "bedside-table", "at": [8.5, 6.42], "rot": 90, "note": "example layout" },
+  { "key": "R2-wardrobe", "room": "R2", "catalogId": "wardrobe", "variant": "3d", "at": [2.82, 5.6], "rot": 270, "note": "example layout" },
+  { "key": "R2-dresser", "room": "R2", "catalogId": "dresser", "at": [5.5, 4.245], "rot": 0, "note": "example layout" },
+  { "key": "R2-mirror", "room": "R2", "catalogId": "mirror", "variant": "rect", "at": [5.5, 4.035], "rot": 0, "elevation": 1.1, "note": "example layout" },
+  { "key": "R3-bath", "room": "R3", "catalogId": "bathtub", "variant": "170", "at": [1.15, 6.325], "rot": 180, "note": "example layout" },
+  { "key": "R3-wc", "room": "R3", "catalogId": "toilet", "at": [0.635, 4.2], "rot": 270, "note": "example layout" },
+  { "key": "R3-vanity", "room": "R3", "catalogId": "vanity", "variant": "80", "at": [2.17, 4.6], "rot": 90, "note": "example layout" },
+  { "key": "R3-mirror", "room": "R3", "catalogId": "mirror", "variant": "rect", "at": [2.385, 4.6], "rot": 90, "elevation": 1.25, "note": "example layout" },
+  { "key": "R3-washer", "room": "R3", "catalogId": "washer", "at": [2.1, 5.6], "rot": 90, "note": "example layout" },
+  { "key": "R4-cabinet", "room": "R4", "catalogId": "cabinet", "variant": "low", "at": [1.4, 0.525], "rot": 0, "note": "example layout" },
+  { "key": "R4-mirror", "room": "R4", "catalogId": "mirror", "variant": "rect", "at": [1.4, 0.315], "rot": 0, "elevation": 1.05, "note": "example layout" }
+ ],
+ "electrical": [
+  { "id": "B1", "type": "board", "room": "R4", "at": [2.05, 2.9], "height": 1.5, "label": "Apartment distribution board", "width": 0.4 },
+  { "id": "S1", "type": "socket-2", "room": "R1", "at": [6.3, 3.9], "height": 0.3, "label": "TV socket" },
+  { "id": "S2", "type": "socket-2", "room": "R1", "at": [8.7, 1.5], "height": 1.15, "label": "Socket above worktop" },
+  { "id": "S3", "type": "socket-1", "room": "R1", "at": [4.3, 0.3], "height": 0.3, "label": "Socket by the table" },
+  { "id": "S4", "type": "socket-2", "room": "R2", "at": [8.7, 4.2], "height": 0.3, "label": "Socket by the bed" },
+  { "id": "S5", "type": "socket-1", "room": "R3", "at": [2.4, 4.1], "height": 1.2, "label": "Socket by the washbasin" },
+  { "id": "SW1", "type": "switch", "room": "R4", "at": [2.4, 2.2], "height": 1.1, "label": "Switch — hallway" },
+  { "id": "SW2", "type": "switch", "room": "R1", "at": [2.52, 2.2], "height": 1.1, "label": "Switch — living room" },
+  { "id": "SW3", "type": "switch", "room": "R2", "at": [4.4, 4.02], "height": 1.1, "label": "Switch — bedroom" },
+  { "id": "SW4", "type": "switch", "room": "R4", "at": [0.6, 2.9], "height": 1.1, "label": "Switch — bathroom" }
+ ],
+ "viewpoints": [
+  { "id": "vp-entry", "name": "Entrance", "level": "L1", "at": [0.9, 1.8], "look": [2.4, 1.5, 1.5], "hint": "just inside the entrance door" },
+  { "id": "vp-sofa", "name": "From the sofa", "level": "L1", "at": [6.3, 1.5], "look": [6.3, 3.9, 1.4], "hint": "facing the TV" },
+  { "id": "vp-bed", "name": "Bedroom", "level": "L1", "at": [4.0, 5.3], "look": [8.0, 5.4, 1.2], "hint": "from the door towards the bed" }
+ ]
+}

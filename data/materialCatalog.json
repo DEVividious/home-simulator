@@ -1,0 +1,3482 @@
+{
+ "schema": "home-simulator/material-catalog",
+ "version": 1,
+ "units": "m",
+ "description": "Shared material catalog: wall, floor and ceiling finishes, furniture and rug materials. Built-in textures are procedural (src/home/three/textures.ts), no external files. EVERY texture has a real pattern repeat size (physicalSize): a 0.60 × 0.60 m tile covers exactly 0.60 × 0.60 m of the surface (surface UVs are in metres).",
+ "conventions": {
+  "physicalSize": "[width, height] of one texture repeat in metres (tiles: tile module; boards: [board length, board width × pattern rows])",
+  "repeat": "pattern density multiplier (1 = real scale)",
+  "rotation": "pattern rotation [°] (boards: laying direction)",
+  "textureSet": "texture description: type solid | tiles | planks | panels | fluted | slats | wallpaper | noise | weave | terrazzo | rug; pattern parameters; type 'file' (PBR maps from files) — prepared for external materials",
+  "surfaces": "where the material can be used: wall, floor, ceiling, furniture, rug",
+  "normalScale": "relief strength (bump map from the same texture; 0 = flat)"
+ },
+ "categories": [
+  {
+   "id": "wall-paint",
+   "name": "Paint",
+   "surfaces": [
+    "wall",
+    "ceiling"
+   ]
+  },
+  {
+   "id": "wallpaper",
+   "name": "Wallpaper",
+   "surfaces": [
+    "wall"
+   ]
+  },
+  {
+   "id": "wall-panel",
+   "name": "Decorative panels",
+   "surfaces": [
+    "wall",
+    "ceiling"
+   ]
+  },
+  {
+   "id": "decorative-slats",
+   "name": "Slats",
+   "surfaces": [
+    "wall"
+   ]
+  },
+  {
+   "id": "brick",
+   "name": "Brick",
+   "surfaces": [
+    "wall"
+   ]
+  },
+  {
+   "id": "wall-tile",
+   "name": "Wall tiles",
+   "surfaces": [
+    "wall"
+   ]
+  },
+  {
+   "id": "floor-tile",
+   "name": "Floor tiles",
+   "surfaces": [
+    "floor"
+   ]
+  },
+  {
+   "id": "parquet",
+   "name": "Herringbone (parquet)",
+   "surfaces": [
+    "floor",
+    "wall"
+   ]
+  },
+  {
+   "id": "vinyl",
+   "name": "Vinyl",
+   "surfaces": [
+    "floor"
+   ]
+  },
+  {
+   "id": "laminate",
+   "name": "Laminate",
+   "surfaces": [
+    "floor"
+   ]
+  },
+  {
+   "id": "wood",
+   "name": "Wood",
+   "surfaces": [
+    "floor",
+    "furniture"
+   ]
+  },
+  {
+   "id": "stone",
+   "name": "Concrete / stone",
+   "surfaces": [
+    "floor",
+    "wall"
+   ]
+  },
+  {
+   "id": "fabric",
+   "name": "Fabric",
+   "surfaces": [
+    "furniture"
+   ]
+  },
+  {
+   "id": "rug",
+   "name": "Rug",
+   "surfaces": [
+    "rug"
+   ]
+  },
+  {
+   "id": "metal",
+   "name": "Metal",
+   "surfaces": [
+    "furniture"
+   ]
+  },
+  {
+   "id": "accessory",
+   "name": "Accessories",
+   "surfaces": [
+    "furniture"
+   ]
+  },
+  {
+   "id": "fronts",
+   "name": "Cabinet fronts",
+   "surfaces": [
+    "furniture"
+   ]
+  },
+  {
+   "id": "countertop",
+   "name": "Worktops",
+   "surfaces": [
+    "furniture"
+   ]
+  },
+  {
+   "id": "car-paint",
+   "name": "Car paint",
+   "surfaces": [
+    "furniture"
+   ]
+  }
+ ],
+ "materials": [
+  {
+   "id": "paint-white",
+   "name": "White",
+   "category": "wall-paint",
+   "surfaces": [
+    "wall",
+    "ceiling"
+   ],
+   "baseColor": "#f4f2ee",
+   "textureSet": {
+    "type": "solid"
+   },
+   "physicalSize": [
+    1,
+    1
+   ],
+   "repeat": [
+    1,
+    1
+   ],
+   "rotation": 0,
+   "roughness": 0.93,
+   "metalness": 0,
+   "normalScale": 0,
+   "thumbnail": "auto:procedural",
+   "source": "colour (built-in)"
+  },
+  {
+   "id": "paint-warm-white",
+   "name": "Warm white",
+   "category": "wall-paint",
+   "surfaces": [
+    "wall",
+    "ceiling"
+   ],
+   "baseColor": "#efe8dc",
+   "textureSet": {
+    "type": "solid"
+   },
+   "physicalSize": [
+    1,
+    1
+   ],
+   "repeat": [
+    1,
+    1
+   ],
+   "rotation": 0,
+   "roughness": 0.93,
+   "metalness": 0,
+   "normalScale": 0,
+   "thumbnail": "auto:procedural",
+   "source": "colour (built-in)"
+  },
+  {
+   "id": "paint-light-grey",
+   "name": "Light grey",
+   "category": "wall-paint",
+   "surfaces": [
+    "wall",
+    "ceiling"
+   ],
+   "baseColor": "#d9d8d4",
+   "textureSet": {
+    "type": "solid"
+   },
+   "physicalSize": [
+    1,
+    1
+   ],
+   "repeat": [
+    1,
+    1
+   ],
+   "rotation": 0,
+   "roughness": 0.92,
+   "metalness": 0,
+   "normalScale": 0,
+   "thumbnail": "auto:procedural",
+   "source": "colour (built-in)"
+  },
+  {
+   "id": "paint-greige",
+   "name": "Greige",
+   "category": "wall-paint",
+   "surfaces": [
+    "wall",
+    "ceiling"
+   ],
+   "baseColor": "#c9bfb0",
+   "textureSet": {
+    "type": "solid"
+   },
+   "physicalSize": [
+    1,
+    1
+   ],
+   "repeat": [
+    1,
+    1
+   ],
+   "rotation": 0,
+   "roughness": 0.92,
+   "metalness": 0,
+   "normalScale": 0,
+   "thumbnail": "auto:procedural",
+   "source": "colour (built-in)"
+  },
+  {
+   "id": "paint-sage",
+   "name": "Sage green",
+   "category": "wall-paint",
+   "surfaces": [
+    "wall",
+    "ceiling"
+   ],
+   "baseColor": "#a9b49c",
+   "textureSet": {
+    "type": "solid"
+   },
+   "physicalSize": [
+    1,
+    1
+   ],
+   "repeat": [
+    1,
+    1
+   ],
+   "rotation": 0,
+   "roughness": 0.92,
+   "metalness": 0,
+   "normalScale": 0,
+   "thumbnail": "auto:procedural",
+   "source": "colour (built-in)"
+  },
+  {
+   "id": "paint-dusty-blue",
+   "name": "Dusty blue",
+   "category": "wall-paint",
+   "surfaces": [
+    "wall",
+    "ceiling"
+   ],
+   "baseColor": "#9fb2c2",
+   "textureSet": {
+    "type": "solid"
+   },
+   "physicalSize": [
+    1,
+    1
+   ],
+   "repeat": [
+    1,
+    1
+   ],
+   "rotation": 0,
+   "roughness": 0.92,
+   "metalness": 0,
+   "normalScale": 0,
+   "thumbnail": "auto:procedural",
+   "source": "colour (built-in)"
+  },
+  {
+   "id": "paint-navy",
+   "name": "Navy",
+   "category": "wall-paint",
+   "surfaces": [
+    "wall",
+    "ceiling"
+   ],
+   "baseColor": "#2f3d55",
+   "textureSet": {
+    "type": "solid"
+   },
+   "physicalSize": [
+    1,
+    1
+   ],
+   "repeat": [
+    1,
+    1
+   ],
+   "rotation": 0,
+   "roughness": 0.9,
+   "metalness": 0,
+   "normalScale": 0,
+   "thumbnail": "auto:procedural",
+   "source": "colour (built-in)"
+  },
+  {
+   "id": "paint-terracotta",
+   "name": "Terracotta",
+   "category": "wall-paint",
+   "surfaces": [
+    "wall",
+    "ceiling"
+   ],
+   "baseColor": "#c0785a",
+   "textureSet": {
+    "type": "solid"
+   },
+   "physicalSize": [
+    1,
+    1
+   ],
+   "repeat": [
+    1,
+    1
+   ],
+   "rotation": 0,
+   "roughness": 0.92,
+   "metalness": 0,
+   "normalScale": 0,
+   "thumbnail": "auto:procedural",
+   "source": "colour (built-in)"
+  },
+  {
+   "id": "paint-olive",
+   "name": "Olive",
+   "category": "wall-paint",
+   "surfaces": [
+    "wall",
+    "ceiling"
+   ],
+   "baseColor": "#7d7a52",
+   "textureSet": {
+    "type": "solid"
+   },
+   "physicalSize": [
+    1,
+    1
+   ],
+   "repeat": [
+    1,
+    1
+   ],
+   "rotation": 0,
+   "roughness": 0.92,
+   "metalness": 0,
+   "normalScale": 0,
+   "thumbnail": "auto:procedural",
+   "source": "colour (built-in)"
+  },
+  {
+   "id": "paint-charcoal",
+   "name": "Graphite",
+   "category": "wall-paint",
+   "surfaces": [
+    "wall",
+    "ceiling"
+   ],
+   "baseColor": "#4a4b4d",
+   "textureSet": {
+    "type": "solid"
+   },
+   "physicalSize": [
+    1,
+    1
+   ],
+   "repeat": [
+    1,
+    1
+   ],
+   "rotation": 0,
+   "roughness": 0.9,
+   "metalness": 0,
+   "normalScale": 0,
+   "thumbnail": "auto:procedural",
+   "source": "colour (built-in)"
+  },
+  {
+   "id": "wallpaper-stripes",
+   "name": "Striped wallpaper",
+   "category": "wallpaper",
+   "surfaces": [
+    "wall"
+   ],
+   "baseColor": "#e8e0d2",
+   "textureSet": {
+    "type": "wallpaper",
+    "motif": "stripes",
+    "accent": "#cdbfa8"
+   },
+   "physicalSize": [
+    0.265,
+    0.53
+   ],
+   "repeat": [
+    1,
+    1
+   ],
+   "rotation": 0,
+   "roughness": 0.85,
+   "metalness": 0,
+   "normalScale": 0.2,
+   "thumbnail": "auto:procedural",
+   "source": "procedural pattern (10 cm stripe) — repeat 26.5 cm (½ of a 53 cm roll)"
+  },
+  {
+   "id": "wallpaper-dots",
+   "name": "Dotted wallpaper",
+   "category": "wallpaper",
+   "surfaces": [
+    "wall"
+   ],
+   "baseColor": "#eceae5",
+   "textureSet": {
+    "type": "wallpaper",
+    "motif": "dots",
+    "accent": "#9aa5ad"
+   },
+   "physicalSize": [
+    0.265,
+    0.265
+   ],
+   "repeat": [
+    1,
+    1
+   ],
+   "rotation": 0,
+   "roughness": 0.85,
+   "metalness": 0,
+   "normalScale": 0.1,
+   "thumbnail": "auto:procedural",
+   "source": "procedural pattern (15 cm repeat) — repeat 26.5 cm (53 cm roll)"
+  },
+  {
+   "id": "wallpaper-geo",
+   "name": "Geometric wallpaper",
+   "category": "wallpaper",
+   "surfaces": [
+    "wall"
+   ],
+   "baseColor": "#c8d2c4",
+   "textureSet": {
+    "type": "wallpaper",
+    "motif": "geo",
+    "accent": "#8fa38a"
+   },
+   "physicalSize": [
+    0.53,
+    0.53
+   ],
+   "repeat": [
+    1,
+    1
+   ],
+   "rotation": 0,
+   "roughness": 0.85,
+   "metalness": 0,
+   "normalScale": 0.1,
+   "thumbnail": "auto:procedural",
+   "source": "procedural pattern (30 cm repeat) — repeat 53 cm (roll width)"
+  },
+  {
+   "id": "wallpaper-linen",
+   "name": "Linen wallpaper",
+   "category": "wallpaper",
+   "surfaces": [
+    "wall"
+   ],
+   "baseColor": "#d8cfc1",
+   "textureSet": {
+    "type": "weave",
+    "accent": "#c5baa9"
+   },
+   "physicalSize": [
+    0.25,
+    0.25
+   ],
+   "repeat": [
+    1,
+    1
+   ],
+   "rotation": 0,
+   "roughness": 0.9,
+   "metalness": 0,
+   "normalScale": 0.3,
+   "thumbnail": "auto:procedural",
+   "source": "procedural texture"
+  },
+  {
+   "id": "panel-oak",
+   "name": "Oak panelling",
+   "category": "wall-panel",
+   "surfaces": [
+    "wall",
+    "ceiling"
+   ],
+   "baseColor": "#b48c62",
+   "textureSet": {
+    "type": "planks",
+    "boardWidth": 0.12,
+    "boardLength": 2.4,
+    "pattern": "straight",
+    "grain": 0.6,
+    "variation": 0.06,
+    "gap": 0.003,
+    "gapColor": "#5e4630"
+   },
+   "physicalSize": [
+    2.4,
+    0.12
+   ],
+   "repeat": [
+    1,
+    1
+   ],
+   "rotation": 90,
+   "roughness": 0.7,
+   "metalness": 0,
+   "normalScale": 0.5,
+   "thumbnail": "auto:procedural",
+   "source": "vertical 12 cm boards (procedural)"
+  },
+  {
+   "id": "panel-moulding-white",
+   "name": "Moulding (frames)",
+   "category": "wall-panel",
+   "surfaces": [
+    "wall"
+   ],
+   "baseColor": "#f1efe9",
+   "textureSet": {
+    "type": "panels",
+    "groove": 0.012,
+    "inset": 0.08,
+    "accent": "#d6d2c8"
+   },
+   "physicalSize": [
+    0.6,
+    1.0
+   ],
+   "repeat": [
+    1,
+    1
+   ],
+   "rotation": 0,
+   "roughness": 0.85,
+   "metalness": 0,
+   "normalScale": 0.8,
+   "thumbnail": "auto:procedural",
+   "source": "frame panels 60 × 100 cm (procedural)"
+  },
+  {
+   "id": "panel-fluted-grey",
+   "name": "Fluted panel",
+   "category": "wall-panel",
+   "surfaces": [
+    "wall"
+   ],
+   "baseColor": "#9a9b98",
+   "textureSet": {
+    "type": "fluted",
+    "accent": "#7c7d7a"
+   },
+   "physicalSize": [
+    0.04,
+    0.04
+   ],
+   "repeat": [
+    1,
+    1
+   ],
+   "rotation": 0,
+   "roughness": 0.75,
+   "metalness": 0,
+   "normalScale": 1.0,
+   "thumbnail": "auto:procedural",
+   "source": "4 cm flutes (procedural)"
+  },
+  {
+   "id": "slats-oak",
+   "name": "Oak slats",
+   "category": "decorative-slats",
+   "surfaces": [
+    "wall"
+   ],
+   "baseColor": "#b98f62",
+   "textureSet": {
+    "type": "slats",
+    "slat": 0.04,
+    "gapColor": "#2b2622"
+   },
+   "physicalSize": [
+    0.06,
+    0.06
+   ],
+   "repeat": [
+    1,
+    1
+   ],
+   "rotation": 0,
+   "roughness": 0.65,
+   "metalness": 0,
+   "normalScale": 1.2,
+   "thumbnail": "auto:procedural",
+   "source": "4 cm slats, 2 cm gap (procedural)"
+  },
+  {
+   "id": "slats-walnut",
+   "name": "Walnut slats",
+   "category": "decorative-slats",
+   "surfaces": [
+    "wall"
+   ],
+   "baseColor": "#6e4c35",
+   "textureSet": {
+    "type": "slats",
+    "slat": 0.04,
+    "gapColor": "#1f1a17"
+   },
+   "physicalSize": [
+    0.06,
+    0.06
+   ],
+   "repeat": [
+    1,
+    1
+   ],
+   "rotation": 0,
+   "roughness": 0.65,
+   "metalness": 0,
+   "normalScale": 1.2,
+   "thumbnail": "auto:procedural",
+   "source": "4 cm slats, 2 cm gap (procedural)"
+  },
+  {
+   "id": "slats-black",
+   "name": "Black slats",
+   "category": "decorative-slats",
+   "surfaces": [
+    "wall"
+   ],
+   "baseColor": "#2c2d2f",
+   "textureSet": {
+    "type": "slats",
+    "slat": 0.04,
+    "gapColor": "#121212"
+   },
+   "physicalSize": [
+    0.06,
+    0.06
+   ],
+   "repeat": [
+    1,
+    1
+   ],
+   "rotation": 0,
+   "roughness": 0.6,
+   "metalness": 0,
+   "normalScale": 1.2,
+   "thumbnail": "auto:procedural",
+   "source": "4 cm slats, 2 cm gap (procedural)"
+  },
+  {
+   "id": "walltile-white-30x60",
+   "name": "White tile 30 × 60",
+   "category": "wall-tile",
+   "surfaces": [
+    "wall"
+   ],
+   "baseColor": "#f0f0ee",
+   "textureSet": {
+    "type": "tiles",
+    "grout": 0.002,
+    "groutColor": "#cfcfcb",
+    "variation": 0.015,
+    "pattern": "grid"
+   },
+   "physicalSize": [
+    0.3,
+    0.6
+   ],
+   "repeat": [
+    1,
+    1
+   ],
+   "rotation": 0,
+   "roughness": 0.35,
+   "metalness": 0,
+   "normalScale": 0.5,
+   "thumbnail": "auto:procedural",
+   "source": "30 × 60 cm tile, 2 mm joint"
+  },
+  {
+   "id": "walltile-metro-green",
+   "name": "Green metro tile",
+   "category": "wall-tile",
+   "surfaces": [
+    "wall"
+   ],
+   "baseColor": "#6f8f7d",
+   "textureSet": {
+    "type": "tiles",
+    "grout": 0.002,
+    "groutColor": "#e4e2dc",
+    "variation": 0.05,
+    "pattern": "brick"
+   },
+   "physicalSize": [
+    0.15,
+    0.075
+   ],
+   "repeat": [
+    1,
+    1
+   ],
+   "rotation": 0,
+   "roughness": 0.3,
+   "metalness": 0,
+   "normalScale": 0.6,
+   "thumbnail": "auto:procedural",
+   "source": "15 × 7.5 cm tile, brick bond"
+  },
+  {
+   "id": "walltile-terrazzo",
+   "name": "Terrazzo 60 × 60",
+   "category": "wall-tile",
+   "surfaces": [
+    "wall",
+    "floor"
+   ],
+   "baseColor": "#e6e1d8",
+   "textureSet": {
+    "type": "terrazzo",
+    "grout": 0.002,
+    "groutColor": "#d2ccc1",
+    "chips": [
+     "#9d978c",
+     "#c7b199",
+     "#6d7172",
+     "#b8806a"
+    ]
+   },
+   "physicalSize": [
+    0.6,
+    0.6
+   ],
+   "repeat": [
+    1,
+    1
+   ],
+   "rotation": 0,
+   "roughness": 0.45,
+   "metalness": 0,
+   "normalScale": 0.3,
+   "thumbnail": "auto:procedural",
+   "source": "60 × 60 cm terrazzo tile"
+  },
+  {
+   "id": "tile-60-grey",
+   "name": "Grey tile 60 × 60",
+   "category": "floor-tile",
+   "surfaces": [
+    "floor",
+    "wall"
+   ],
+   "baseColor": "#a19f9a",
+   "textureSet": {
+    "type": "tiles",
+    "grout": 0.003,
+    "groutColor": "#c3c0b9",
+    "variation": 0.03,
+    "pattern": "grid",
+    "noise": 0.04
+   },
+   "physicalSize": [
+    0.6,
+    0.6
+   ],
+   "repeat": [
+    1,
+    1
+   ],
+   "rotation": 0,
+   "roughness": 0.55,
+   "metalness": 0,
+   "normalScale": 0.4,
+   "thumbnail": "auto:procedural",
+   "source": "60 × 60 cm porcelain, 3 mm joint"
+  },
+  {
+   "id": "tile-60-beige",
+   "name": "Beige tile 60 × 60",
+   "category": "floor-tile",
+   "surfaces": [
+    "floor",
+    "wall"
+   ],
+   "baseColor": "#cfc3b0",
+   "textureSet": {
+    "type": "tiles",
+    "grout": 0.003,
+    "groutColor": "#ddd4c6",
+    "variation": 0.03,
+    "pattern": "grid",
+    "noise": 0.03
+   },
+   "physicalSize": [
+    0.6,
+    0.6
+   ],
+   "repeat": [
+    1,
+    1
+   ],
+   "rotation": 0,
+   "roughness": 0.55,
+   "metalness": 0,
+   "normalScale": 0.4,
+   "thumbnail": "auto:procedural",
+   "source": "60 × 60 cm porcelain, 3 mm joint"
+  },
+  {
+   "id": "tile-120-concrete",
+   "name": "Concrete-look porcelain 60 × 120",
+   "category": "floor-tile",
+   "surfaces": [
+    "floor",
+    "wall"
+   ],
+   "baseColor": "#8f8d89",
+   "textureSet": {
+    "type": "tiles",
+    "grout": 0.002,
+    "groutColor": "#a8a6a1",
+    "variation": 0.02,
+    "pattern": "grid",
+    "noise": 0.08
+   },
+   "physicalSize": [
+    1.2,
+    0.6
+   ],
+   "repeat": [
+    1,
+    1
+   ],
+   "rotation": 0,
+   "roughness": 0.65,
+   "metalness": 0,
+   "normalScale": 0.4,
+   "thumbnail": "auto:procedural",
+   "source": "60 × 120 cm porcelain, 2 mm joint"
+  },
+  {
+   "id": "tile-20-terracotta",
+   "name": "Terracotta 20 × 20",
+   "category": "floor-tile",
+   "surfaces": [
+    "floor"
+   ],
+   "baseColor": "#b86f4f",
+   "textureSet": {
+    "type": "tiles",
+    "grout": 0.004,
+    "groutColor": "#d6c3ad",
+    "variation": 0.08,
+    "pattern": "grid",
+    "noise": 0.06
+   },
+   "physicalSize": [
+    0.2,
+    0.2
+   ],
+   "repeat": [
+    1,
+    1
+   ],
+   "rotation": 0,
+   "roughness": 0.75,
+   "metalness": 0,
+   "normalScale": 0.5,
+   "thumbnail": "auto:procedural",
+   "source": "20 × 20 cm terracotta, 4 mm joint"
+  },
+  {
+   "id": "vinyl-oak-natural",
+   "name": "Vinyl natural oak",
+   "category": "vinyl",
+   "surfaces": [
+    "floor"
+   ],
+   "baseColor": "#c39b6d",
+   "textureSet": {
+    "type": "planks",
+    "boardWidth": 0.18,
+    "boardLength": 1.22,
+    "pattern": "third",
+    "grain": 0.5,
+    "variation": 0.07,
+    "gap": 0.0012,
+    "gapColor": "#7a5c3f"
+   },
+   "physicalSize": [
+    1.22,
+    0.54
+   ],
+   "repeat": [
+    1,
+    1
+   ],
+   "rotation": 0,
+   "roughness": 0.6,
+   "metalness": 0,
+   "normalScale": 0.3,
+   "thumbnail": "auto:procedural",
+   "source": "18 × 122 cm vinyl plank, 1/3 offset"
+  },
+  {
+   "id": "vinyl-oak-grey",
+   "name": "Vinyl grey oak",
+   "category": "vinyl",
+   "surfaces": [
+    "floor"
+   ],
+   "baseColor": "#a59c91",
+   "textureSet": {
+    "type": "planks",
+    "boardWidth": 0.18,
+    "boardLength": 1.22,
+    "pattern": "random",
+    "grain": 0.5,
+    "variation": 0.06,
+    "gap": 0.0012,
+    "gapColor": "#6b6259"
+   },
+   "physicalSize": [
+    1.22,
+    0.9
+   ],
+   "repeat": [
+    1,
+    1
+   ],
+   "rotation": 0,
+   "roughness": 0.6,
+   "metalness": 0,
+   "normalScale": 0.3,
+   "thumbnail": "auto:procedural",
+   "source": "18 × 122 cm vinyl plank, random layout"
+  },
+  {
+   "id": "vinyl-stone",
+   "name": "Vinyl stone",
+   "category": "vinyl",
+   "surfaces": [
+    "floor"
+   ],
+   "baseColor": "#b1aea6",
+   "textureSet": {
+    "type": "tiles",
+    "grout": 0.0015,
+    "groutColor": "#8f8c85",
+    "variation": 0.04,
+    "pattern": "brick",
+    "noise": 0.06
+   },
+   "physicalSize": [
+    0.6,
+    0.3
+   ],
+   "repeat": [
+    1,
+    1
+   ],
+   "rotation": 0,
+   "roughness": 0.6,
+   "metalness": 0,
+   "normalScale": 0.3,
+   "thumbnail": "auto:procedural",
+   "source": "30 × 60 cm vinyl tile (stone)"
+  },
+  {
+   "id": "laminate-oak-light",
+   "name": "Laminate light oak",
+   "category": "laminate",
+   "surfaces": [
+    "floor"
+   ],
+   "baseColor": "#d3b48a",
+   "textureSet": {
+    "type": "planks",
+    "boardWidth": 0.19,
+    "boardLength": 1.38,
+    "pattern": "half",
+    "grain": 0.45,
+    "variation": 0.06,
+    "gap": 0.001,
+    "gapColor": "#8b6b4a"
+   },
+   "physicalSize": [
+    1.38,
+    0.38
+   ],
+   "repeat": [
+    1,
+    1
+   ],
+   "rotation": 0,
+   "roughness": 0.55,
+   "metalness": 0,
+   "normalScale": 0.25,
+   "thumbnail": "auto:procedural",
+   "source": "19 × 138 cm laminate plank, 1/2 offset"
+  },
+  {
+   "id": "laminate-oak-honey",
+   "name": "Laminate honey oak",
+   "category": "laminate",
+   "surfaces": [
+    "floor"
+   ],
+   "baseColor": "#b98a55",
+   "textureSet": {
+    "type": "planks",
+    "boardWidth": 0.19,
+    "boardLength": 1.38,
+    "pattern": "third",
+    "grain": 0.5,
+    "variation": 0.07,
+    "gap": 0.001,
+    "gapColor": "#6e4f30"
+   },
+   "physicalSize": [
+    1.38,
+    0.57
+   ],
+   "repeat": [
+    1,
+    1
+   ],
+   "rotation": 0,
+   "roughness": 0.55,
+   "metalness": 0,
+   "normalScale": 0.25,
+   "thumbnail": "auto:procedural",
+   "source": "19 × 138 cm laminate plank, 1/3 offset"
+  },
+  {
+   "id": "laminate-walnut",
+   "name": "Laminate walnut",
+   "category": "laminate",
+   "surfaces": [
+    "floor"
+   ],
+   "baseColor": "#7a563d",
+   "textureSet": {
+    "type": "planks",
+    "boardWidth": 0.19,
+    "boardLength": 1.38,
+    "pattern": "half",
+    "grain": 0.55,
+    "variation": 0.07,
+    "gap": 0.001,
+    "gapColor": "#3f2c1f"
+   },
+   "physicalSize": [
+    1.38,
+    0.38
+   ],
+   "repeat": [
+    1,
+    1
+   ],
+   "rotation": 0,
+   "roughness": 0.5,
+   "metalness": 0,
+   "normalScale": 0.25,
+   "thumbnail": "auto:procedural",
+   "source": "19 × 138 cm laminate plank"
+  },
+  {
+   "id": "wood-floor-oak",
+   "name": "Oak floorboard",
+   "category": "wood",
+   "surfaces": [
+    "floor"
+   ],
+   "baseColor": "#c8a274",
+   "textureSet": {
+    "type": "planks",
+    "boardWidth": 0.22,
+    "boardLength": 2.2,
+    "pattern": "random",
+    "grain": 0.65,
+    "variation": 0.09,
+    "gap": 0.0015,
+    "gapColor": "#6d5136"
+   },
+   "physicalSize": [
+    2.2,
+    1.1
+   ],
+   "repeat": [
+    1,
+    1
+   ],
+   "rotation": 0,
+   "roughness": 0.5,
+   "metalness": 0,
+   "normalScale": 0.4,
+   "thumbnail": "auto:procedural",
+   "source": "engineered 22 × 220 cm board, random layout"
+  },
+  {
+   "id": "wood-floor-ash-white",
+   "name": "White-washed ash board",
+   "category": "wood",
+   "surfaces": [
+    "floor"
+   ],
+   "baseColor": "#ddd2c1",
+   "textureSet": {
+    "type": "planks",
+    "boardWidth": 0.18,
+    "boardLength": 1.9,
+    "pattern": "half",
+    "grain": 0.5,
+    "variation": 0.05,
+    "gap": 0.0015,
+    "gapColor": "#a99b86"
+   },
+   "physicalSize": [
+    1.9,
+    0.36
+   ],
+   "repeat": [
+    1,
+    1
+   ],
+   "rotation": 0,
+   "roughness": 0.5,
+   "metalness": 0,
+   "normalScale": 0.35,
+   "thumbnail": "auto:procedural",
+   "source": "18 × 190 cm board"
+  },
+  {
+   "id": "wood-floor-herringbone",
+   "name": "Herringbone boards (simple)",
+   "category": "wood",
+   "surfaces": [
+    "floor"
+   ],
+   "baseColor": "#b38556",
+   "textureSet": {
+    "type": "herringbone",
+    "boardWidth": 0.1,
+    "boardLength": 0.6,
+    "grain": 0.6,
+    "variation": 0.08,
+    "gap": 0.0012
+   },
+   "physicalSize": [
+    0.8485,
+    0.1414
+   ],
+   "repeat": [
+    1,
+    1
+   ],
+   "rotation": 45,
+   "roughness": 0.5,
+   "metalness": 0,
+   "normalScale": 0.35,
+   "thumbnail": "auto:procedural",
+   "source": "classic oak herringbone parquet, 10 × 60 cm staves"
+  },
+  {
+   "id": "concrete-microcement",
+   "name": "Microcement",
+   "category": "stone",
+   "surfaces": [
+    "floor",
+    "wall"
+   ],
+   "baseColor": "#9c9b97",
+   "textureSet": {
+    "type": "noise",
+    "scale": 0.4,
+    "amount": 0.08,
+    "accent": "#878682"
+   },
+   "physicalSize": [
+    2.0,
+    2.0
+   ],
+   "repeat": [
+    1,
+    1
+   ],
+   "rotation": 0,
+   "roughness": 0.7,
+   "metalness": 0,
+   "normalScale": 0.1,
+   "thumbnail": "auto:procedural",
+   "source": "procedural texture (2 m repeat)"
+  },
+  {
+   "id": "concrete-light",
+   "name": "Light concrete",
+   "category": "stone",
+   "surfaces": [
+    "floor",
+    "wall"
+   ],
+   "baseColor": "#c3c0ba",
+   "textureSet": {
+    "type": "noise",
+    "scale": 0.25,
+    "amount": 0.07,
+    "accent": "#a9a6a0"
+   },
+   "physicalSize": [
+    2.0,
+    2.0
+   ],
+   "repeat": [
+    1,
+    1
+   ],
+   "rotation": 0,
+   "roughness": 0.75,
+   "metalness": 0,
+   "normalScale": 0.1,
+   "thumbnail": "auto:procedural",
+   "source": "procedural texture (2 m repeat)"
+  },
+  {
+   "id": "stone-terrazzo-floor",
+   "name": "Terrazzo (poured)",
+   "category": "stone",
+   "surfaces": [
+    "floor"
+   ],
+   "baseColor": "#d9d3c8",
+   "textureSet": {
+    "type": "terrazzo",
+    "grout": 0,
+    "groutColor": "#d9d3c8",
+    "chips": [
+     "#8e877b",
+     "#bba48b",
+     "#5f6364",
+     "#a56d58"
+    ]
+   },
+   "physicalSize": [
+    1.0,
+    1.0
+   ],
+   "repeat": [
+    1,
+    1
+   ],
+   "rotation": 0,
+   "roughness": 0.4,
+   "metalness": 0,
+   "normalScale": 0.2,
+   "thumbnail": "auto:procedural",
+   "source": "poured terrazzo floor"
+  },
+  {
+   "id": "fabric-grey",
+   "name": "Grey fabric",
+   "category": "fabric",
+   "surfaces": [
+    "furniture"
+   ],
+   "baseColor": "#8a8b8d",
+   "textureSet": {
+    "type": "weave",
+    "accent": "#7a7b7d"
+   },
+   "physicalSize": [
+    0.12,
+    0.12
+   ],
+   "repeat": [
+    1,
+    1
+   ],
+   "rotation": 0,
+   "roughness": 0.95,
+   "metalness": 0,
+   "normalScale": 0.4,
+   "thumbnail": "auto:procedural",
+   "source": "upholstery fabric (procedural)"
+  },
+  {
+   "id": "fabric-charcoal",
+   "name": "Graphite fabric",
+   "category": "fabric",
+   "surfaces": [
+    "furniture"
+   ],
+   "baseColor": "#45474b",
+   "textureSet": {
+    "type": "weave",
+    "accent": "#3a3c40"
+   },
+   "physicalSize": [
+    0.12,
+    0.12
+   ],
+   "repeat": [
+    1,
+    1
+   ],
+   "rotation": 0,
+   "roughness": 0.95,
+   "metalness": 0,
+   "normalScale": 0.4,
+   "thumbnail": "auto:procedural",
+   "source": "upholstery fabric (procedural)"
+  },
+  {
+   "id": "fabric-beige",
+   "name": "Beige fabric",
+   "category": "fabric",
+   "surfaces": [
+    "furniture"
+   ],
+   "baseColor": "#cbbba3",
+   "textureSet": {
+    "type": "weave",
+    "accent": "#bba98f"
+   },
+   "physicalSize": [
+    0.12,
+    0.12
+   ],
+   "repeat": [
+    1,
+    1
+   ],
+   "rotation": 0,
+   "roughness": 0.95,
+   "metalness": 0,
+   "normalScale": 0.4,
+   "thumbnail": "auto:procedural",
+   "source": "upholstery fabric (procedural)"
+  },
+  {
+   "id": "fabric-blue",
+   "name": "Navy fabric",
+   "category": "fabric",
+   "surfaces": [
+    "furniture"
+   ],
+   "baseColor": "#3e5370",
+   "textureSet": {
+    "type": "weave",
+    "accent": "#344761"
+   },
+   "physicalSize": [
+    0.12,
+    0.12
+   ],
+   "repeat": [
+    1,
+    1
+   ],
+   "rotation": 0,
+   "roughness": 0.95,
+   "metalness": 0,
+   "normalScale": 0.4,
+   "thumbnail": "auto:procedural",
+   "source": "upholstery fabric (procedural)"
+  },
+  {
+   "id": "fabric-green",
+   "name": "Bottle green fabric",
+   "category": "fabric",
+   "surfaces": [
+    "furniture"
+   ],
+   "baseColor": "#4f6b58",
+   "textureSet": {
+    "type": "weave",
+    "accent": "#445d4c"
+   },
+   "physicalSize": [
+    0.12,
+    0.12
+   ],
+   "repeat": [
+    1,
+    1
+   ],
+   "rotation": 0,
+   "roughness": 0.95,
+   "metalness": 0,
+   "normalScale": 0.4,
+   "thumbnail": "auto:procedural",
+   "source": "upholstery fabric (procedural)"
+  },
+  {
+   "id": "fabric-terracotta",
+   "name": "Rust fabric",
+   "category": "fabric",
+   "surfaces": [
+    "furniture"
+   ],
+   "baseColor": "#b06a4c",
+   "textureSet": {
+    "type": "weave",
+    "accent": "#9b5b40"
+   },
+   "physicalSize": [
+    0.12,
+    0.12
+   ],
+   "repeat": [
+    1,
+    1
+   ],
+   "rotation": 0,
+   "roughness": 0.95,
+   "metalness": 0,
+   "normalScale": 0.4,
+   "thumbnail": "auto:procedural",
+   "source": "upholstery fabric (procedural)"
+  },
+  {
+   "id": "wood-oak",
+   "name": "Oak",
+   "category": "wood",
+   "surfaces": [
+    "furniture"
+   ],
+   "baseColor": "#c09468",
+   "textureSet": {
+    "type": "planks",
+    "boardWidth": 0.6,
+    "boardLength": 3.2,
+    "pattern": "straight",
+    "grain": 0.7,
+    "variation": 0.012,
+    "gap": 0,
+    "gapColor": "#c09468"
+   },
+   "physicalSize": [
+    3.2,
+    0.6
+   ],
+   "repeat": [
+    1,
+    1
+   ],
+   "rotation": 0,
+   "roughness": 0.55,
+   "metalness": 0,
+   "normalScale": 0.15,
+   "thumbnail": "auto:procedural",
+   "source": "oak veneer (procedural), continuous veneer without board joints"
+  },
+  {
+   "id": "wood-oak-light",
+   "name": "Light oak",
+   "category": "wood",
+   "surfaces": [
+    "furniture"
+   ],
+   "baseColor": "#d8bd96",
+   "textureSet": {
+    "type": "planks",
+    "boardWidth": 0.6,
+    "boardLength": 3.2,
+    "pattern": "straight",
+    "grain": 0.6,
+    "variation": 0.012,
+    "gap": 0,
+    "gapColor": "#d8bd96"
+   },
+   "physicalSize": [
+    3.2,
+    0.6
+   ],
+   "repeat": [
+    1,
+    1
+   ],
+   "rotation": 0,
+   "roughness": 0.55,
+   "metalness": 0,
+   "normalScale": 0.15,
+   "thumbnail": "auto:procedural",
+   "source": "veneer (procedural), continuous veneer without board joints"
+  },
+  {
+   "id": "wood-walnut",
+   "name": "Walnut",
+   "category": "wood",
+   "surfaces": [
+    "furniture"
+   ],
+   "baseColor": "#71503a",
+   "textureSet": {
+    "type": "planks",
+    "boardWidth": 0.6,
+    "boardLength": 3.2,
+    "pattern": "straight",
+    "grain": 0.7,
+    "variation": 0.012,
+    "gap": 0,
+    "gapColor": "#71503a"
+   },
+   "physicalSize": [
+    3.2,
+    0.6
+   ],
+   "repeat": [
+    1,
+    1
+   ],
+   "rotation": 0,
+   "roughness": 0.5,
+   "metalness": 0,
+   "normalScale": 0.15,
+   "thumbnail": "auto:procedural",
+   "source": "walnut veneer (procedural), continuous veneer without board joints"
+  },
+  {
+   "id": "wood-white",
+   "name": "Matt white",
+   "category": "wood",
+   "surfaces": [
+    "furniture"
+   ],
+   "baseColor": "#eeece7",
+   "textureSet": {
+    "type": "solid"
+   },
+   "physicalSize": [
+    1,
+    1
+   ],
+   "repeat": [
+    1,
+    1
+   ],
+   "rotation": 0,
+   "roughness": 0.6,
+   "metalness": 0,
+   "normalScale": 0,
+   "thumbnail": "auto:procedural",
+   "source": "white lacquered board"
+  },
+  {
+   "id": "wood-black",
+   "name": "Matt black",
+   "category": "wood",
+   "surfaces": [
+    "furniture"
+   ],
+   "baseColor": "#2a2a2c",
+   "textureSet": {
+    "type": "solid"
+   },
+   "physicalSize": [
+    1,
+    1
+   ],
+   "repeat": [
+    1,
+    1
+   ],
+   "rotation": 0,
+   "roughness": 0.6,
+   "metalness": 0,
+   "normalScale": 0,
+   "thumbnail": "auto:procedural",
+   "source": "black lacquered board"
+  },
+  {
+   "id": "wood-sage",
+   "name": "Matt sage",
+   "category": "wood",
+   "surfaces": [
+    "furniture"
+   ],
+   "baseColor": "#9fac94",
+   "textureSet": {
+    "type": "solid"
+   },
+   "physicalSize": [
+    1,
+    1
+   ],
+   "repeat": [
+    1,
+    1
+   ],
+   "rotation": 0,
+   "roughness": 0.6,
+   "metalness": 0,
+   "normalScale": 0,
+   "thumbnail": "auto:procedural",
+   "source": "lacquered board"
+  },
+  {
+   "id": "metal-black",
+   "name": "Black metal",
+   "category": "metal",
+   "surfaces": [
+    "furniture"
+   ],
+   "baseColor": "#232426",
+   "textureSet": {
+    "type": "solid"
+   },
+   "physicalSize": [
+    1,
+    1
+   ],
+   "repeat": [
+    1,
+    1
+   ],
+   "rotation": 0,
+   "roughness": 0.45,
+   "metalness": 0.6,
+   "normalScale": 0,
+   "thumbnail": "auto:procedural",
+   "source": "powder-coated steel"
+  },
+  {
+   "id": "metal-steel",
+   "name": "Brushed steel",
+   "category": "metal",
+   "surfaces": [
+    "furniture"
+   ],
+   "baseColor": "#b4b7ba",
+   "textureSet": {
+    "type": "solid"
+   },
+   "physicalSize": [
+    1,
+    1
+   ],
+   "repeat": [
+    1,
+    1
+   ],
+   "rotation": 0,
+   "roughness": 0.35,
+   "metalness": 0.85,
+   "normalScale": 0,
+   "thumbnail": "auto:procedural",
+   "source": "steel"
+  },
+  {
+   "id": "rug-wool-grey",
+   "name": "Grey wool",
+   "category": "rug",
+   "surfaces": [
+    "rug"
+   ],
+   "baseColor": "#9b9a96",
+   "textureSet": {
+    "type": "rug",
+    "motif": "plain",
+    "accent": "#8a8985"
+   },
+   "physicalSize": [
+    0.3,
+    0.3
+   ],
+   "repeat": [
+    1,
+    1
+   ],
+   "rotation": 0,
+   "roughness": 1.0,
+   "metalness": 0,
+   "normalScale": 0.6,
+   "thumbnail": "auto:procedural",
+   "source": "wool rug (procedural)"
+  },
+  {
+   "id": "rug-beige-stripes",
+   "name": "Beige stripes",
+   "category": "rug",
+   "surfaces": [
+    "rug"
+   ],
+   "baseColor": "#d7cbb6",
+   "textureSet": {
+    "type": "rug",
+    "motif": "stripes",
+    "accent": "#b9a688"
+   },
+   "physicalSize": [
+    0.4,
+    0.4
+   ],
+   "repeat": [
+    1,
+    1
+   ],
+   "rotation": 0,
+   "roughness": 1.0,
+   "metalness": 0,
+   "normalScale": 0.6,
+   "thumbnail": "auto:procedural",
+   "source": "striped rug (procedural)"
+  },
+  {
+   "id": "rug-blue-geo",
+   "name": "Blue geometric",
+   "category": "rug",
+   "surfaces": [
+    "rug"
+   ],
+   "baseColor": "#5d7590",
+   "textureSet": {
+    "type": "rug",
+    "motif": "geo",
+    "accent": "#d8d3c6"
+   },
+   "physicalSize": [
+    0.5,
+    0.5
+   ],
+   "repeat": [
+    1,
+    1
+   ],
+   "rotation": 0,
+   "roughness": 1.0,
+   "metalness": 0,
+   "normalScale": 0.6,
+   "thumbnail": "auto:procedural",
+   "source": "geometric rug (procedural)"
+  },
+  {
+   "id": "rug-terracotta",
+   "name": "Terracotta diamonds",
+   "category": "rug",
+   "surfaces": [
+    "rug"
+   ],
+   "baseColor": "#b5694c",
+   "textureSet": {
+    "type": "rug",
+    "motif": "diamonds",
+    "accent": "#e3cdb5"
+   },
+   "physicalSize": [
+    0.4,
+    0.4
+   ],
+   "repeat": [
+    1,
+    1
+   ],
+   "rotation": 0,
+   "roughness": 1.0,
+   "metalness": 0,
+   "normalScale": 0.6,
+   "thumbnail": "auto:procedural",
+   "source": "rug (procedural)"
+  },
+  {
+   "id": "mattress-white",
+   "name": "Mattress",
+   "category": "accessory",
+   "surfaces": [
+    "furniture"
+   ],
+   "baseColor": "#f1efe9",
+   "textureSet": {
+    "type": "weave",
+    "accent": "#e4e1d9"
+   },
+   "physicalSize": [
+    0.2,
+    0.2
+   ],
+   "repeat": [
+    1,
+    1
+   ],
+   "rotation": 0,
+   "roughness": 0.95,
+   "metalness": 0,
+   "normalScale": 0.3,
+   "thumbnail": "auto:procedural",
+   "source": "mattress cover"
+  },
+  {
+   "id": "bedding-white",
+   "name": "White bedding",
+   "category": "accessory",
+   "surfaces": [
+    "furniture"
+   ],
+   "baseColor": "#f6f5f1",
+   "textureSet": {
+    "type": "weave",
+    "accent": "#ebe9e3"
+   },
+   "physicalSize": [
+    0.2,
+    0.2
+   ],
+   "repeat": [
+    1,
+    1
+   ],
+   "rotation": 0,
+   "roughness": 0.95,
+   "metalness": 0,
+   "normalScale": 0.2,
+   "thumbnail": "auto:procedural",
+   "source": "bedding"
+  },
+  {
+   "id": "plant-green",
+   "name": "Leaves",
+   "category": "accessory",
+   "surfaces": [
+    "furniture"
+   ],
+   "baseColor": "#4f7d3f",
+   "textureSet": {
+    "type": "noise",
+    "scale": 0.05,
+    "amount": 0.18,
+    "accent": "#3c6531"
+   },
+   "physicalSize": [
+    0.3,
+    0.3
+   ],
+   "repeat": [
+    1,
+    1
+   ],
+   "rotation": 0,
+   "roughness": 0.85,
+   "metalness": 0,
+   "normalScale": 0.3,
+   "thumbnail": "auto:procedural",
+   "source": "greenery symbol"
+  },
+  {
+   "id": "pot-terracotta",
+   "name": "Terracotta pot",
+   "category": "accessory",
+   "surfaces": [
+    "furniture"
+   ],
+   "baseColor": "#b8704e",
+   "textureSet": {
+    "type": "solid"
+   },
+   "physicalSize": [
+    1,
+    1
+   ],
+   "repeat": [
+    1,
+    1
+   ],
+   "rotation": 0,
+   "roughness": 0.8,
+   "metalness": 0,
+   "normalScale": 0,
+   "thumbnail": "auto:procedural",
+   "source": "ceramic pot"
+  },
+  {
+   "id": "pot-white",
+   "name": "White pot",
+   "category": "accessory",
+   "surfaces": [
+    "furniture"
+   ],
+   "baseColor": "#ecebe7",
+   "textureSet": {
+    "type": "solid"
+   },
+   "physicalSize": [
+    1,
+    1
+   ],
+   "repeat": [
+    1,
+    1
+   ],
+   "rotation": 0,
+   "roughness": 0.5,
+   "metalness": 0,
+   "normalScale": 0,
+   "thumbnail": "auto:procedural",
+   "source": "ceramic pot"
+  },
+  {
+   "id": "lamp-shade-linen",
+   "name": "Linen lampshade",
+   "category": "accessory",
+   "surfaces": [
+    "furniture"
+   ],
+   "baseColor": "#efe6d4",
+   "textureSet": {
+    "type": "weave",
+    "accent": "#e2d7c2"
+   },
+   "physicalSize": [
+    0.1,
+    0.1
+   ],
+   "repeat": [
+    1,
+    1
+   ],
+   "rotation": 0,
+   "roughness": 0.9,
+   "metalness": 0,
+   "normalScale": 0.2,
+   "emissive": "#fff3d6",
+   "emissiveIntensity": 0.35,
+   "thumbnail": "auto:procedural",
+   "source": "fabric lampshade"
+  },
+  {
+   "id": "herringbone-oak-natural",
+   "name": "Herringbone natural oak",
+   "category": "parquet",
+   "surfaces": [
+    "floor",
+    "wall"
+   ],
+   "baseColor": "#c29a68",
+   "textureSet": {
+    "type": "herringbone",
+    "boardWidth": 0.09,
+    "boardLength": 0.54,
+    "grain": 0.6,
+    "variation": 0.08,
+    "gap": 0.0012
+   },
+   "physicalSize": [
+    0.7637,
+    0.1273
+   ],
+   "repeat": [
+    1,
+    1
+   ],
+   "rotation": 0,
+   "roughness": 0.55,
+   "metalness": 0,
+   "normalScale": 0.35,
+   "thumbnail": "auto:procedural",
+   "source": "classic herringbone, 9 × 54 cm staves, matt lacquered oak"
+  },
+  {
+   "id": "herringbone-oak-bleached",
+   "name": "Herringbone white-washed oak",
+   "category": "parquet",
+   "surfaces": [
+    "floor",
+    "wall"
+   ],
+   "baseColor": "#ddc9ab",
+   "textureSet": {
+    "type": "herringbone",
+    "boardWidth": 0.09,
+    "boardLength": 0.54,
+    "grain": 0.6,
+    "variation": 0.06,
+    "gap": 0.0012,
+    "gapColor": "#b9a587"
+   },
+   "physicalSize": [
+    0.7637,
+    0.1273
+   ],
+   "repeat": [
+    1,
+    1
+   ],
+   "rotation": 0,
+   "roughness": 0.55,
+   "metalness": 0,
+   "normalScale": 0.35,
+   "thumbnail": "auto:procedural",
+   "source": "classic herringbone, 9 × 54 cm staves, white-oiled oak"
+  },
+  {
+   "id": "herringbone-oak-smoked",
+   "name": "Herringbone smoked oak",
+   "category": "parquet",
+   "surfaces": [
+    "floor",
+    "wall"
+   ],
+   "baseColor": "#7b5a3e",
+   "textureSet": {
+    "type": "herringbone",
+    "boardWidth": 0.09,
+    "boardLength": 0.54,
+    "grain": 0.6,
+    "variation": 0.1,
+    "gap": 0.0012
+   },
+   "physicalSize": [
+    0.7637,
+    0.1273
+   ],
+   "repeat": [
+    1,
+    1
+   ],
+   "rotation": 0,
+   "roughness": 0.55,
+   "metalness": 0,
+   "normalScale": 0.35,
+   "thumbnail": "auto:procedural",
+   "source": "classic herringbone, 9 × 54 cm staves, smoked oak"
+  },
+  {
+   "id": "herringbone-oak-grey",
+   "name": "Herringbone grey oak",
+   "category": "parquet",
+   "surfaces": [
+    "floor",
+    "wall"
+   ],
+   "baseColor": "#a59a8c",
+   "textureSet": {
+    "type": "herringbone",
+    "boardWidth": 0.09,
+    "boardLength": 0.54,
+    "grain": 0.6,
+    "variation": 0.07,
+    "gap": 0.0012
+   },
+   "physicalSize": [
+    0.7637,
+    0.1273
+   ],
+   "repeat": [
+    1,
+    1
+   ],
+   "rotation": 0,
+   "roughness": 0.55,
+   "metalness": 0,
+   "normalScale": 0.35,
+   "thumbnail": "auto:procedural",
+   "source": "classic herringbone, 9 × 54 cm staves, brushed grey oak"
+  },
+  {
+   "id": "herringbone-oak-honey",
+   "name": "Herringbone honey oak 12 × 60",
+   "category": "parquet",
+   "surfaces": [
+    "floor",
+    "wall"
+   ],
+   "baseColor": "#b8823f",
+   "textureSet": {
+    "type": "herringbone",
+    "boardWidth": 0.12,
+    "boardLength": 0.6,
+    "grain": 0.6,
+    "variation": 0.09,
+    "gap": 0.0012
+   },
+   "physicalSize": [
+    0.8485,
+    0.1697
+   ],
+   "repeat": [
+    1,
+    1
+   ],
+   "rotation": 0,
+   "roughness": 0.55,
+   "metalness": 0,
+   "normalScale": 0.35,
+   "thumbnail": "auto:procedural",
+   "source": "classic herringbone, wide 12 × 60 cm staves"
+  },
+  {
+   "id": "herringbone-oak-small",
+   "name": "Herringbone oak fine 7 × 35",
+   "category": "parquet",
+   "surfaces": [
+    "floor",
+    "wall"
+   ],
+   "baseColor": "#c4a073",
+   "textureSet": {
+    "type": "herringbone",
+    "boardWidth": 0.07,
+    "boardLength": 0.35,
+    "grain": 0.6,
+    "variation": 0.1,
+    "gap": 0.0012
+   },
+   "physicalSize": [
+    0.495,
+    0.099
+   ],
+   "repeat": [
+    1,
+    1
+   ],
+   "rotation": 0,
+   "roughness": 0.55,
+   "metalness": 0,
+   "normalScale": 0.35,
+   "thumbnail": "auto:procedural",
+   "source": "classic herringbone, fine 7 × 35 cm staves (period style)"
+  },
+  {
+   "id": "herringbone-walnut",
+   "name": "Herringbone American walnut",
+   "category": "parquet",
+   "surfaces": [
+    "floor",
+    "wall"
+   ],
+   "baseColor": "#6e4c34",
+   "textureSet": {
+    "type": "herringbone",
+    "boardWidth": 0.09,
+    "boardLength": 0.54,
+    "grain": 0.6,
+    "variation": 0.1,
+    "gap": 0.0012
+   },
+   "physicalSize": [
+    0.7637,
+    0.1273
+   ],
+   "repeat": [
+    1,
+    1
+   ],
+   "rotation": 0,
+   "roughness": 0.55,
+   "metalness": 0,
+   "normalScale": 0.35,
+   "thumbnail": "auto:procedural",
+   "source": "classic herringbone, American walnut 9 × 54 cm"
+  },
+  {
+   "id": "herringbone-double-oak",
+   "name": "Double herringbone oak",
+   "category": "parquet",
+   "surfaces": [
+    "floor",
+    "wall"
+   ],
+   "baseColor": "#c09566",
+   "textureSet": {
+    "type": "herringbone",
+    "boardWidth": 0.14,
+    "boardLength": 0.56,
+    "grain": 0.6,
+    "variation": 0.08,
+    "gap": 0.0012,
+    "pattern": "double"
+   },
+   "physicalSize": [
+    0.792,
+    0.198
+   ],
+   "repeat": [
+    1,
+    1
+   ],
+   "rotation": 0,
+   "roughness": 0.55,
+   "metalness": 0,
+   "normalScale": 0.35,
+   "thumbnail": "auto:procedural",
+   "source": "double herringbone — staves of two 7 × 56 cm strips"
+  },
+  {
+   "id": "chevron-oak-natural",
+   "name": "Chevron natural oak",
+   "category": "parquet",
+   "surfaces": [
+    "floor",
+    "wall"
+   ],
+   "baseColor": "#c39c6b",
+   "textureSet": {
+    "type": "chevron",
+    "boardWidth": 0.12,
+    "boardLength": 0.6,
+    "grain": 0.6,
+    "variation": 0.08,
+    "gap": 0.0012
+   },
+   "physicalSize": [
+    0.8485,
+    0.1697
+   ],
+   "repeat": [
+    1,
+    1
+   ],
+   "rotation": 0,
+   "roughness": 0.55,
+   "metalness": 0,
+   "normalScale": 0.35,
+   "thumbnail": "auto:procedural",
+   "source": "chevron 45°, 12 × 60 cm staves"
+  },
+  {
+   "id": "chevron-oak-bleached",
+   "name": "Chevron white-washed oak",
+   "category": "parquet",
+   "surfaces": [
+    "floor",
+    "wall"
+   ],
+   "baseColor": "#dccaae",
+   "textureSet": {
+    "type": "chevron",
+    "boardWidth": 0.12,
+    "boardLength": 0.6,
+    "grain": 0.6,
+    "variation": 0.06,
+    "gap": 0.0012,
+    "gapColor": "#b8a688"
+   },
+   "physicalSize": [
+    0.8485,
+    0.1697
+   ],
+   "repeat": [
+    1,
+    1
+   ],
+   "rotation": 0,
+   "roughness": 0.55,
+   "metalness": 0,
+   "normalScale": 0.35,
+   "thumbnail": "auto:procedural",
+   "source": "chevron 45°, white-oiled oak"
+  },
+  {
+   "id": "chevron-oak-smoked",
+   "name": "Chevron smoked oak",
+   "category": "parquet",
+   "surfaces": [
+    "floor",
+    "wall"
+   ],
+   "baseColor": "#76563b",
+   "textureSet": {
+    "type": "chevron",
+    "boardWidth": 0.12,
+    "boardLength": 0.6,
+    "grain": 0.6,
+    "variation": 0.1,
+    "gap": 0.0012
+   },
+   "physicalSize": [
+    0.8485,
+    0.1697
+   ],
+   "repeat": [
+    1,
+    1
+   ],
+   "rotation": 0,
+   "roughness": 0.55,
+   "metalness": 0,
+   "normalScale": 0.35,
+   "thumbnail": "auto:procedural",
+   "source": "chevron 45°, smoked oak"
+  },
+  {
+   "id": "chevron-walnut",
+   "name": "Chevron walnut",
+   "category": "parquet",
+   "surfaces": [
+    "floor",
+    "wall"
+   ],
+   "baseColor": "#6b4a33",
+   "textureSet": {
+    "type": "chevron",
+    "boardWidth": 0.12,
+    "boardLength": 0.6,
+    "grain": 0.6,
+    "variation": 0.1,
+    "gap": 0.0012
+   },
+   "physicalSize": [
+    0.8485,
+    0.1697
+   ],
+   "repeat": [
+    1,
+    1
+   ],
+   "rotation": 0,
+   "roughness": 0.55,
+   "metalness": 0,
+   "normalScale": 0.35,
+   "thumbnail": "auto:procedural",
+   "source": "chevron 45°, American walnut"
+  },
+  {
+   "id": "herringbone-vinyl-oak",
+   "name": "Vinyl herringbone oak",
+   "category": "vinyl",
+   "surfaces": [
+    "floor"
+   ],
+   "baseColor": "#bf9a6c",
+   "textureSet": {
+    "type": "herringbone",
+    "boardWidth": 0.12,
+    "boardLength": 0.6,
+    "grain": 0.6,
+    "variation": 0.06,
+    "gap": 0.0012
+   },
+   "physicalSize": [
+    0.8485,
+    0.1697
+   ],
+   "repeat": [
+    1,
+    1
+   ],
+   "rotation": 0,
+   "roughness": 0.6,
+   "metalness": 0,
+   "normalScale": 0.35,
+   "thumbnail": "auto:procedural",
+   "source": "SPC vinyl herringbone plank 12 × 60 cm"
+  },
+  {
+   "id": "chevron-vinyl-oak",
+   "name": "Vinyl chevron",
+   "category": "vinyl",
+   "surfaces": [
+    "floor"
+   ],
+   "baseColor": "#c7a57a",
+   "textureSet": {
+    "type": "chevron",
+    "boardWidth": 0.12,
+    "boardLength": 0.6,
+    "grain": 0.6,
+    "variation": 0.06,
+    "gap": 0.0012
+   },
+   "physicalSize": [
+    0.8485,
+    0.1697
+   ],
+   "repeat": [
+    1,
+    1
+   ],
+   "rotation": 0,
+   "roughness": 0.6,
+   "metalness": 0,
+   "normalScale": 0.35,
+   "thumbnail": "auto:procedural",
+   "source": "vinyl chevron plank 12 × 60 cm"
+  },
+  {
+   "id": "herringbone-laminate-oak",
+   "name": "Laminate herringbone light oak",
+   "category": "laminate",
+   "surfaces": [
+    "floor"
+   ],
+   "baseColor": "#d2b58c",
+   "textureSet": {
+    "type": "herringbone",
+    "boardWidth": 0.12,
+    "boardLength": 0.6,
+    "grain": 0.6,
+    "variation": 0.05,
+    "gap": 0.0012
+   },
+   "physicalSize": [
+    0.8485,
+    0.1697
+   ],
+   "repeat": [
+    1,
+    1
+   ],
+   "rotation": 0,
+   "roughness": 0.5,
+   "metalness": 0,
+   "normalScale": 0.35,
+   "thumbnail": "auto:procedural",
+   "source": "laminate herringbone plank 12 × 60 cm"
+  },
+  {
+   "id": "front-white-matt",
+   "name": "Front matt white",
+   "category": "fronts",
+   "surfaces": [
+    "furniture"
+   ],
+   "baseColor": "#efeee9",
+   "textureSet": {
+    "type": "solid"
+   },
+   "physicalSize": [
+    1,
+    1
+   ],
+   "repeat": [
+    1,
+    1
+   ],
+   "rotation": 0,
+   "roughness": 0.6,
+   "metalness": 0,
+   "normalScale": 0,
+   "thumbnail": "auto:procedural",
+   "source": "lacquered / matt laminate front"
+  },
+  {
+   "id": "front-greige",
+   "name": "Front greige",
+   "category": "fronts",
+   "surfaces": [
+    "furniture"
+   ],
+   "baseColor": "#bdb3a6",
+   "textureSet": {
+    "type": "solid"
+   },
+   "physicalSize": [
+    1,
+    1
+   ],
+   "repeat": [
+    1,
+    1
+   ],
+   "rotation": 0,
+   "roughness": 0.6,
+   "metalness": 0,
+   "normalScale": 0,
+   "thumbnail": "auto:procedural",
+   "source": "matt lacquered front"
+  },
+  {
+   "id": "front-sage",
+   "name": "Front sage",
+   "category": "fronts",
+   "surfaces": [
+    "furniture"
+   ],
+   "baseColor": "#93a289",
+   "textureSet": {
+    "type": "solid"
+   },
+   "physicalSize": [
+    1,
+    1
+   ],
+   "repeat": [
+    1,
+    1
+   ],
+   "rotation": 0,
+   "roughness": 0.6,
+   "metalness": 0,
+   "normalScale": 0,
+   "thumbnail": "auto:procedural",
+   "source": "matt lacquered front"
+  },
+  {
+   "id": "front-navy",
+   "name": "Front navy",
+   "category": "fronts",
+   "surfaces": [
+    "furniture"
+   ],
+   "baseColor": "#2f3d52",
+   "textureSet": {
+    "type": "solid"
+   },
+   "physicalSize": [
+    1,
+    1
+   ],
+   "repeat": [
+    1,
+    1
+   ],
+   "rotation": 0,
+   "roughness": 0.55,
+   "metalness": 0,
+   "normalScale": 0,
+   "thumbnail": "auto:procedural",
+   "source": "matt lacquered front"
+  },
+  {
+   "id": "front-graphite",
+   "name": "Front graphite",
+   "category": "fronts",
+   "surfaces": [
+    "furniture"
+   ],
+   "baseColor": "#3a3c40",
+   "textureSet": {
+    "type": "solid"
+   },
+   "physicalSize": [
+    1,
+    1
+   ],
+   "repeat": [
+    1,
+    1
+   ],
+   "rotation": 0,
+   "roughness": 0.55,
+   "metalness": 0,
+   "normalScale": 0,
+   "thumbnail": "auto:procedural",
+   "source": "matt lacquered front"
+  },
+  {
+   "id": "front-oak",
+   "name": "Front natural oak",
+   "category": "fronts",
+   "surfaces": [
+    "furniture"
+   ],
+   "baseColor": "#c49a6a",
+   "textureSet": {
+    "type": "planks",
+    "boardWidth": 0.6,
+    "boardLength": 3.2,
+    "grain": 0.7,
+    "variation": 0.012,
+    "gap": 0
+   },
+   "physicalSize": [
+    3.2,
+    0.6
+   ],
+   "repeat": [
+    1,
+    1
+   ],
+   "rotation": 0,
+   "roughness": 0.6,
+   "metalness": 0,
+   "normalScale": 0.25,
+   "thumbnail": "auto:procedural",
+   "source": "oak veneer"
+  },
+  {
+   "id": "front-walnut",
+   "name": "Front walnut",
+   "category": "fronts",
+   "surfaces": [
+    "furniture"
+   ],
+   "baseColor": "#6f4f39",
+   "textureSet": {
+    "type": "planks",
+    "boardWidth": 0.6,
+    "boardLength": 3.2,
+    "grain": 0.7,
+    "variation": 0.012,
+    "gap": 0
+   },
+   "physicalSize": [
+    3.2,
+    0.6
+   ],
+   "repeat": [
+    1,
+    1
+   ],
+   "rotation": 0,
+   "roughness": 0.6,
+   "metalness": 0,
+   "normalScale": 0.25,
+   "thumbnail": "auto:procedural",
+   "source": "walnut veneer"
+  },
+  {
+   "id": "quartz-white",
+   "name": "White quartz",
+   "category": "countertop",
+   "surfaces": [
+    "furniture"
+   ],
+   "baseColor": "#ecebe6",
+   "textureSet": {
+    "type": "noise",
+    "scale": 0.25,
+    "amount": 0.04,
+    "accent": "#d9d6cf"
+   },
+   "physicalSize": [
+    1,
+    1
+   ],
+   "repeat": [
+    1,
+    1
+   ],
+   "rotation": 0,
+   "roughness": 0.25,
+   "metalness": 0,
+   "normalScale": 0,
+   "thumbnail": "auto:procedural",
+   "source": "quartz worktop"
+  },
+  {
+   "id": "quartz-calacatta",
+   "name": "Calacatta quartz",
+   "category": "countertop",
+   "surfaces": [
+    "furniture"
+   ],
+   "baseColor": "#efede8",
+   "textureSet": {
+    "type": "noise",
+    "scale": 0.6,
+    "amount": 0.05,
+    "accent": "#b9b3a8"
+   },
+   "physicalSize": [
+    1,
+    1
+   ],
+   "repeat": [
+    1,
+    1
+   ],
+   "rotation": 0,
+   "roughness": 0.2,
+   "metalness": 0,
+   "normalScale": 0,
+   "thumbnail": "auto:procedural",
+   "source": "veined quartz worktop"
+  },
+  {
+   "id": "quartz-black",
+   "name": "Black quartz",
+   "category": "countertop",
+   "surfaces": [
+    "furniture"
+   ],
+   "baseColor": "#232325",
+   "textureSet": {
+    "type": "noise",
+    "scale": 0.3,
+    "amount": 0.05,
+    "accent": "#3a3a3d"
+   },
+   "physicalSize": [
+    1,
+    1
+   ],
+   "repeat": [
+    1,
+    1
+   ],
+   "rotation": 0,
+   "roughness": 0.25,
+   "metalness": 0,
+   "normalScale": 0,
+   "thumbnail": "auto:procedural",
+   "source": "black quartz worktop"
+  },
+  {
+   "id": "countertop-concrete",
+   "name": "Concrete worktop",
+   "category": "countertop",
+   "surfaces": [
+    "furniture"
+   ],
+   "baseColor": "#9c9a95",
+   "textureSet": {
+    "type": "noise",
+    "scale": 0.4,
+    "amount": 0.08,
+    "accent": "#86847f"
+   },
+   "physicalSize": [
+    1,
+    1
+   ],
+   "repeat": [
+    1,
+    1
+   ],
+   "rotation": 0,
+   "roughness": 0.7,
+   "metalness": 0,
+   "normalScale": 0,
+   "thumbnail": "auto:procedural",
+   "source": "sintered stone / architectural concrete"
+  },
+  {
+   "id": "countertop-oak",
+   "name": "Oak worktop",
+   "category": "countertop",
+   "surfaces": [
+    "furniture"
+   ],
+   "baseColor": "#c09468",
+   "textureSet": {
+    "type": "planks",
+    "boardWidth": 0.06,
+    "boardLength": 3.0,
+    "grain": 0.6,
+    "variation": 0.05,
+    "gap": 0
+   },
+   "physicalSize": [
+    3,
+    0.06
+   ],
+   "repeat": [
+    1,
+    1
+   ],
+   "rotation": 0,
+   "roughness": 0.55,
+   "metalness": 0,
+   "normalScale": 0.2,
+   "thumbnail": "auto:procedural",
+   "source": "solid oak worktop"
+  },
+  {
+   "id": "ceramic-white",
+   "name": "White ceramic",
+   "category": "accessory",
+   "surfaces": [
+    "furniture"
+   ],
+   "baseColor": "#f6f6f3",
+   "textureSet": {
+    "type": "solid"
+   },
+   "physicalSize": [
+    1,
+    1
+   ],
+   "repeat": [
+    1,
+    1
+   ],
+   "rotation": 0,
+   "roughness": 0.12,
+   "metalness": 0,
+   "normalScale": 0,
+   "thumbnail": "auto:procedural",
+   "source": "sanitary ceramic"
+  },
+  {
+   "id": "glass-clear",
+   "name": "Glass",
+   "category": "accessory",
+   "surfaces": [
+    "furniture"
+   ],
+   "baseColor": "#d6e9ef",
+   "textureSet": {
+    "type": "solid"
+   },
+   "physicalSize": [
+    1,
+    1
+   ],
+   "repeat": [
+    1,
+    1
+   ],
+   "rotation": 0,
+   "roughness": 0.05,
+   "metalness": 0,
+   "normalScale": 0,
+   "thumbnail": "auto:procedural",
+   "source": "tempered glass",
+   "opacity": 0.3
+  },
+  {
+   "id": "glass-dark",
+   "name": "Tinted glass",
+   "category": "accessory",
+   "surfaces": [
+    "furniture"
+   ],
+   "baseColor": "#16191c",
+   "textureSet": {
+    "type": "solid"
+   },
+   "physicalSize": [
+    1,
+    1
+   ],
+   "repeat": [
+    1,
+    1
+   ],
+   "rotation": 0,
+   "roughness": 0.08,
+   "metalness": 0.2,
+   "normalScale": 0,
+   "thumbnail": "auto:procedural",
+   "source": "black glass / screen"
+  },
+  {
+   "id": "mirror-glass",
+   "name": "Mirror",
+   "category": "accessory",
+   "surfaces": [
+    "furniture"
+   ],
+   "baseColor": "#c9d3d8",
+   "textureSet": {
+    "type": "solid"
+   },
+   "physicalSize": [
+    1,
+    1
+   ],
+   "repeat": [
+    1,
+    1
+   ],
+   "rotation": 0,
+   "roughness": 0.04,
+   "metalness": 0.95,
+   "normalScale": 0,
+   "thumbnail": "auto:procedural",
+   "source": "mirror"
+  },
+  {
+   "id": "water",
+   "name": "Water",
+   "category": "accessory",
+   "surfaces": [
+    "furniture"
+   ],
+   "baseColor": "#9cc4d3",
+   "textureSet": {
+    "type": "solid"
+   },
+   "physicalSize": [
+    1,
+    1
+   ],
+   "repeat": [
+    1,
+    1
+   ],
+   "rotation": 0,
+   "roughness": 0.05,
+   "metalness": 0,
+   "normalScale": 0,
+   "thumbnail": "auto:procedural",
+   "source": "water surface",
+   "opacity": 0.55
+  },
+  {
+   "id": "fire",
+   "name": "Flame",
+   "category": "accessory",
+   "surfaces": [
+    "furniture"
+   ],
+   "baseColor": "#ffae5c",
+   "textureSet": {
+    "type": "solid"
+   },
+   "physicalSize": [
+    1,
+    1
+   ],
+   "repeat": [
+    1,
+    1
+   ],
+   "rotation": 0,
+   "roughness": 1,
+   "metalness": 0,
+   "normalScale": 0,
+   "thumbnail": "auto:procedural",
+   "source": "flame (light)",
+   "emissive": "#ff7a1a",
+   "emissiveIntensity": 1.6
+  },
+  {
+   "id": "chrome",
+   "name": "Chrome",
+   "category": "metal",
+   "surfaces": [
+    "furniture"
+   ],
+   "baseColor": "#d9dcdf",
+   "textureSet": {
+    "type": "solid"
+   },
+   "physicalSize": [
+    1,
+    1
+   ],
+   "repeat": [
+    1,
+    1
+   ],
+   "rotation": 0,
+   "roughness": 0.12,
+   "metalness": 1,
+   "normalScale": 0,
+   "thumbnail": "auto:procedural",
+   "source": "chrome fittings"
+  },
+  {
+   "id": "rubber",
+   "name": "Rubber (tyre)",
+   "category": "accessory",
+   "surfaces": [
+    "furniture"
+   ],
+   "baseColor": "#1c1d1f",
+   "textureSet": {
+    "type": "solid"
+   },
+   "physicalSize": [
+    1,
+    1
+   ],
+   "repeat": [
+    1,
+    1
+   ],
+   "rotation": 0,
+   "roughness": 0.9,
+   "metalness": 0,
+   "normalScale": 0,
+   "thumbnail": "auto:procedural",
+   "source": "tyre"
+  },
+  {
+   "id": "appliance-white",
+   "name": "White appliance",
+   "category": "accessory",
+   "surfaces": [
+    "furniture"
+   ],
+   "baseColor": "#f1f1ee",
+   "textureSet": {
+    "type": "solid"
+   },
+   "physicalSize": [
+    1,
+    1
+   ],
+   "repeat": [
+    1,
+    1
+   ],
+   "rotation": 0,
+   "roughness": 0.35,
+   "metalness": 0,
+   "normalScale": 0,
+   "thumbnail": "auto:procedural",
+   "source": "appliance casing"
+  },
+  {
+   "id": "plastic-black",
+   "name": "Black plastic",
+   "category": "accessory",
+   "surfaces": [
+    "furniture"
+   ],
+   "baseColor": "#18191b",
+   "textureSet": {
+    "type": "solid"
+   },
+   "physicalSize": [
+    1,
+    1
+   ],
+   "repeat": [
+    1,
+    1
+   ],
+   "rotation": 0,
+   "roughness": 0.6,
+   "metalness": 0,
+   "normalScale": 0,
+   "thumbnail": "auto:procedural",
+   "source": "plastic / grille"
+  },
+  {
+   "id": "lights-red",
+   "name": "Tail light lens",
+   "category": "accessory",
+   "surfaces": [
+    "furniture"
+   ],
+   "baseColor": "#a3141b",
+   "textureSet": {
+    "type": "solid"
+   },
+   "physicalSize": [
+    1,
+    1
+   ],
+   "repeat": [
+    1,
+    1
+   ],
+   "rotation": 0,
+   "roughness": 0.2,
+   "metalness": 0,
+   "normalScale": 0,
+   "thumbnail": "auto:procedural",
+   "source": "tail lights",
+   "emissive": "#5a0004",
+   "emissiveIntensity": 0.4
+  },
+  {
+   "id": "stone-graphite",
+   "name": "Graphite stone",
+   "category": "countertop",
+   "surfaces": [
+    "furniture"
+   ],
+   "baseColor": "#4a4b4e",
+   "textureSet": {
+    "type": "noise",
+    "scale": 0.35,
+    "amount": 0.07,
+    "accent": "#5b5c60"
+   },
+   "physicalSize": [
+    1,
+    1
+   ],
+   "repeat": [
+    1,
+    1
+   ],
+   "rotation": 0,
+   "roughness": 0.6,
+   "metalness": 0,
+   "normalScale": 0,
+   "thumbnail": "auto:procedural",
+   "source": "sintered / fireplace stone"
+  },
+  {
+   "id": "car-orange",
+   "name": "Orange",
+   "category": "car-paint",
+   "surfaces": [
+    "furniture"
+   ],
+   "baseColor": "#e05a1c",
+   "textureSet": {
+    "type": "solid"
+   },
+   "physicalSize": [
+    1,
+    1
+   ],
+   "repeat": [
+    1,
+    1
+   ],
+   "rotation": 0,
+   "roughness": 0.25,
+   "metalness": 0.45,
+   "normalScale": 0,
+   "thumbnail": "auto:procedural",
+   "source": "metallic car paint"
+  },
+  {
+   "id": "car-red",
+   "name": "Red",
+   "category": "car-paint",
+   "surfaces": [
+    "furniture"
+   ],
+   "baseColor": "#ad151b",
+   "textureSet": {
+    "type": "solid"
+   },
+   "physicalSize": [
+    1,
+    1
+   ],
+   "repeat": [
+    1,
+    1
+   ],
+   "rotation": 0,
+   "roughness": 0.25,
+   "metalness": 0.45,
+   "normalScale": 0,
+   "thumbnail": "auto:procedural",
+   "source": "metallic car paint"
+  },
+  {
+   "id": "car-grey",
+   "name": "Grey",
+   "category": "car-paint",
+   "surfaces": [
+    "furniture"
+   ],
+   "baseColor": "#6c7075",
+   "textureSet": {
+    "type": "solid"
+   },
+   "physicalSize": [
+    1,
+    1
+   ],
+   "repeat": [
+    1,
+    1
+   ],
+   "rotation": 0,
+   "roughness": 0.25,
+   "metalness": 0.55,
+   "normalScale": 0,
+   "thumbnail": "auto:procedural",
+   "source": "metallic car paint"
+  },
+  {
+   "id": "car-white",
+   "name": "White",
+   "category": "car-paint",
+   "surfaces": [
+    "furniture"
+   ],
+   "baseColor": "#f0f1ef",
+   "textureSet": {
+    "type": "solid"
+   },
+   "physicalSize": [
+    1,
+    1
+   ],
+   "repeat": [
+    1,
+    1
+   ],
+   "rotation": 0,
+   "roughness": 0.18,
+   "metalness": 0.05,
+   "normalScale": 0,
+   "thumbnail": "auto:procedural",
+   "source": "solid car paint"
+  },
+  {
+   "id": "car-black",
+   "name": "Black",
+   "category": "car-paint",
+   "surfaces": [
+    "furniture"
+   ],
+   "baseColor": "#141517",
+   "textureSet": {
+    "type": "solid"
+   },
+   "physicalSize": [
+    1,
+    1
+   ],
+   "repeat": [
+    1,
+    1
+   ],
+   "rotation": 0,
+   "roughness": 0.22,
+   "metalness": 0.5,
+   "normalScale": 0,
+   "thumbnail": "auto:procedural",
+   "source": "metallic car paint"
+  },
+  {
+   "id": "car-blue",
+   "name": "Blue",
+   "category": "car-paint",
+   "surfaces": [
+    "furniture"
+   ],
+   "baseColor": "#2a3c55",
+   "textureSet": {
+    "type": "solid"
+   },
+   "physicalSize": [
+    1,
+    1
+   ],
+   "repeat": [
+    1,
+    1
+   ],
+   "rotation": 0,
+   "roughness": 0.25,
+   "metalness": 0.5,
+   "normalScale": 0,
+   "thumbnail": "auto:procedural",
+   "source": "metallic car paint"
+  },
+  {
+   "id": "lights-white",
+   "name": "Headlight lens",
+   "category": "accessory",
+   "surfaces": [
+    "furniture"
+   ],
+   "baseColor": "#e9eef2",
+   "textureSet": {
+    "type": "solid"
+   },
+   "physicalSize": [
+    1,
+    1
+   ],
+   "repeat": [
+    1,
+    1
+   ],
+   "rotation": 0,
+   "roughness": 0.1,
+   "metalness": 0,
+   "normalScale": 0,
+   "thumbnail": "auto:procedural",
+   "source": "LED headlights",
+   "emissive": "#cfe3ff",
+   "emissiveIntensity": 0.35
+  },
+  {
+   "id": "plate-white",
+   "name": "Licence plate",
+   "category": "accessory",
+   "surfaces": [
+    "furniture"
+   ],
+   "baseColor": "#f2f2f0",
+   "textureSet": {
+    "type": "solid"
+   },
+   "physicalSize": [
+    1,
+    1
+   ],
+   "repeat": [
+    1,
+    1
+   ],
+   "rotation": 0,
+   "roughness": 0.6,
+   "metalness": 0,
+   "normalScale": 0,
+   "thumbnail": "auto:procedural",
+   "source": "licence plate"
+  },
+  {
+   "id": "brick-red-klinker",
+   "name": "Red clinker brick",
+   "category": "brick",
+   "surfaces": [
+    "wall"
+   ],
+   "baseColor": "#a9553a",
+   "textureSet": {
+    "type": "brick",
+    "boardLength": 0.25,
+    "boardWidth": 0.065,
+    "grout": 0.01,
+    "groutColor": "#c9c3b9",
+    "variation": 0.06,
+    "chips": [
+     "#a8573d",
+     "#b8674a",
+     "#934636",
+     "#c27556",
+     "#9e5137"
+    ]
+   },
+   "physicalSize": [
+    0.26,
+    0.15
+   ],
+   "repeat": [
+    1,
+    1
+   ],
+   "rotation": 0,
+   "roughness": 0.86,
+   "metalness": 0,
+   "normalScale": 0.9,
+   "thumbnail": "auto:procedural",
+   "source": "clinker brick 250 × 65 mm, 10 mm light grey joint"
+  },
+  {
+   "id": "brick-antique",
+   "name": "Reclaimed brick",
+   "category": "brick",
+   "surfaces": [
+    "wall"
+   ],
+   "baseColor": "#8e5a43",
+   "textureSet": {
+    "type": "brick",
+    "boardLength": 0.25,
+    "boardWidth": 0.065,
+    "grout": 0.01,
+    "groutColor": "#b8ae9f",
+    "variation": 0.12,
+    "chips": [
+     "#8e5a43",
+     "#a06a4c",
+     "#7a4a38",
+     "#b07a5a",
+     "#6e4434",
+     "#9a7b62"
+    ]
+   },
+   "physicalSize": [
+    0.26,
+    0.15
+   ],
+   "repeat": [
+    1,
+    1
+   ],
+   "rotation": 0,
+   "roughness": 0.86,
+   "metalness": 0,
+   "normalScale": 0.9,
+   "thumbnail": "auto:procedural",
+   "source": "reclaimed / hand-moulded brick 250 × 65 mm"
+  },
+  {
+   "id": "brick-white",
+   "name": "White-painted brick",
+   "category": "brick",
+   "surfaces": [
+    "wall"
+   ],
+   "baseColor": "#eeeae2",
+   "textureSet": {
+    "type": "brick",
+    "boardLength": 0.25,
+    "boardWidth": 0.065,
+    "grout": 0.01,
+    "groutColor": "#dcd7cd",
+    "variation": 0.03
+   },
+   "physicalSize": [
+    0.26,
+    0.15
+   ],
+   "repeat": [
+    1,
+    1
+   ],
+   "rotation": 0,
+   "roughness": 0.86,
+   "metalness": 0,
+   "normalScale": 0.9,
+   "thumbnail": "auto:procedural",
+   "source": "brick painted white 250 × 65 mm"
+  },
+  {
+   "id": "brick-anthracite",
+   "name": "Anthracite clinker",
+   "category": "brick",
+   "surfaces": [
+    "wall"
+   ],
+   "baseColor": "#3f3e40",
+   "textureSet": {
+    "type": "brick",
+    "boardLength": 0.25,
+    "boardWidth": 0.065,
+    "grout": 0.01,
+    "groutColor": "#8d8a85",
+    "variation": 0.06,
+    "chips": [
+     "#3f3e40",
+     "#4a4849",
+     "#353436",
+     "#55524f"
+    ]
+   },
+   "physicalSize": [
+    0.26,
+    0.15
+   ],
+   "repeat": [
+    1,
+    1
+   ],
+   "rotation": 0,
+   "roughness": 0.86,
+   "metalness": 0,
+   "normalScale": 0.9,
+   "thumbnail": "auto:procedural",
+   "source": "anthracite clinker 250 × 65 mm, grey joint"
+  }
+ ]
+}

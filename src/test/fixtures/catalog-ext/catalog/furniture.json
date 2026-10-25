@@ -1,0 +1,65 @@
+{
+ "categories": [
+  {
+   "id": "catalog-ext:entry",
+   "name": "Entry",
+   "names": {
+    "pl": "Wejscie"
+   },
+   "icon": "door"
+  }
+ ],
+ "items": [
+  {
+   "id": "catalog-ext:bench",
+   "name": "Entry bench",
+   "names": {
+    "pl": "Lawka"
+   },
+   "category": "catalog-ext:entry",
+   "tags": [
+    "bench"
+   ],
+   "dimensions": {
+    "w": 1.2,
+    "d": 0.4,
+    "h": 0.45
+   },
+   "runtimeModel": {
+    "type": "parametric",
+    "generator": "bench"
+   },
+   "defaultMaterial": "catalog-ext:oak-oiled",
+   "materialCategories": [
+    "wood"
+   ],
+   "materialSlots": {
+    "main": "catalog-ext:oak-oiled"
+   },
+   "placement": "wall",
+   "clearance": {
+    "front": 0.5
+   },
+   "source": "fixture",
+   "license": "MIT"
+  },
+  {
+   "id": "catalog-ext:kitchen",
+   "name": "Real kitchen",
+   "category": "kitchen",
+   "dimensions": {
+    "w": 3,
+    "d": 0.6,
+    "h": 0.9
+   },
+   "runtimeModel": {
+    "type": "glb",
+    "url": "models/kitchen.glb"
+   },
+   "defaultMaterial": "paint-white",
+   "placement": "wall",
+   "source": "fixture",
+   "license": "MIT"
+  }
+ ]
+}

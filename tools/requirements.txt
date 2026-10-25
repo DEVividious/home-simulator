@@ -1,0 +1,8 @@
+# Import tools for the home-from-plan skill (Python 3.11+). The engine itself needs only Node.
+#   python3 -m venv .venv && .venv/bin/pip install -r tools/requirements.txt
+# Raster plans need only pillow + numpy; CAD needs ezdxf + shapely; PDF sheets need poppler-utils on the system
+# (pdftotext, pdftocairo, pdftoppm); DWG needs the ODA File Converter (env ODA_FILE_CONVERTER).
+pillow>=10
+numpy>=1.26
+shapely>=2.0
+ezdxf>=1.3

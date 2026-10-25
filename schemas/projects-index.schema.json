@@ -1,0 +1,53 @@
+{
+ "title": "Home Simulator project index (projects/index.json, generated)",
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "type": "object",
+ "properties": {
+  "schema": {
+   "type": "string",
+   "const": "home-simulator/projects-index"
+  },
+  "version": {
+   "type": "number",
+   "const": 1
+  },
+  "default": {
+   "type": "string",
+   "minLength": 1
+  },
+  "projects": {
+   "type": "array",
+   "items": {
+    "type": "object",
+    "properties": {
+     "id": {
+      "type": "string",
+      "minLength": 1
+     },
+     "name": {
+      "type": "string"
+     },
+     "description": {
+      "type": "string"
+     },
+     "dir": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "id",
+     "name",
+     "dir"
+    ],
+    "additionalProperties": false
+   }
+  }
+ },
+ "required": [
+  "schema",
+  "version",
+  "default",
+  "projects"
+ ],
+ "additionalProperties": false
+}

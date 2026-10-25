@@ -1,0 +1,6 @@
+---
+description: Home Simulator — skills and rules for building homes from floor plans
+alwaysApply: true
+---
+Read AGENTS.md in the repository root. Skills are in skills/<name>/SKILL.md: home-from-plan (build a home from CAD, PDF or
+plan images), home-check (validate, preview, run), home-to-phone (install on Android). Read the SKILL.md before acting.

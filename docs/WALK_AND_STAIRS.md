@@ -1,0 +1,148 @@
+# Walk mode and stairs
+
+Walk mode moves a person-height camera through the building, between levels by the stairs and out onto the plot — with keys,
+mouse look or a touch joystick, without teleporting. The walk model is pure TypeScript and is tested without a browser.
+
+## 1. Two walks
+
+| Walk | Started from | Covers |
+|---|---|---|
+| **Building walk** | Building → "Walk" (or an eye-level viewpoint, or a bookmark saved in a walk) | every level, the stairs, passable exterior doors and the plot (project with a site) |
+| **Room walk** | the Walk button of the room view (3D · Top · Walk) | the current arrangement, including a live preview of edits; doors between rooms of the level switch the room in the panel |
+
+A room walk **hands over seamlessly to the building walk** — same position and view direction — when the camera comes within
+25 cm of the stair outline or stands in the threshold of an open exterior door (`CameraController.tsx`). From there the stairs,
+exterior doors and the plot work. The walk command carries the room it started in (`WalkGo.from`): furniture reacts in every
+walk, the surfaces of the room underfoot stay selectable in a walk started in a room, and ending the walk (`exitWalk`) returns
+to the 3D view of the room the user stands in (from the stairs or the plot — to the room they left). The handover is one-way:
+the two walks light the scene differently, and switching back at every pass of the stairs would flicker.
+
+## 2. Controls
+
+| Input | Action |
+|---|---|
+| **W A S D** / arrows | walk (forward, back, sideways) |
+| Shift | faster: 4.58 m/s instead of 2.0 m/s (`WALK_SPEED`, the same in both walks) |
+| mouse drag (left or right button) | look around (yaw and pitch) |
+| wheel | step forward / back |
+| click / tap a door | open / close (hold — door card; [DOOR_SYSTEM.md](DOOR_SYSTEM.md)) |
+| click furniture | select; dragging the SELECTED item moves it (on its wall or on the floor), a drag beside it looks around |
+| Esc | deselect; with nothing selected — end the walk |
+| "‹ Building view" | end the walk; a walk started in a room returns to that room's 3D view |
+| phone | joystick bottom-left (116 px, 104 px in landscape, 12% dead zone) + look around with another finger ([MOBILE_UX.md](MOBILE_UX.md)) |
+
+- **Field of view** 70° (`WALK_FOV`, or the FOV of the viewpoint / bookmark), set on every start and resume of a walk.
+- **Eye height** 1.68 m above the floor or ground, adjustable in the settings (the same value for both walks). The eyes follow
+  the feet with exponential smoothing, so steps, thresholds and terrace edges do not jolt the image.
+- A status line at the top of the scene shows the place (level and room, "Stairs", an exterior opening, or the site surface
+  under the feet) and the foot level relative to ±0.00.
+- Indoors a soft walk lamp at the camera (`WalkLamp`) keeps ceilings and walls in the sun's shadow from turning black.
+
+## 3. The walk model — `src/home/model/walk.ts`, `src/home/model/walkWorld.ts`
+
+The walkable surface consists of:
+
+| Part | Source | Behaviour |
+|---|---|---|
+| rooms of all levels | room outlines of the package (`walk.ts`) | clearance from walls = body radius 0.22 m (`BODY_R`); under a sloped ceiling, places where the ceiling is lower than eye height + 12 cm are not walkable; doors and passages are corridors through the wall thickness |
+| door gates | `DoorDef` + door state | a closed leaf blocks the corridor; open ≥ 60% or "Show doors" off — passable |
+| exterior openings | doors with `rooms: [x, "exterior"]`, windows with `passable: true` (`doorFacts.passableOpenings`) | corridors from the room out through the wall to the plot, gated by the door state |
+| plot | `project().site` (module `site`) | outside the building outline (with the body clearance), within `walkBounds` (default: bounding box of the plot boundary); foot height from the ground probe |
+| stairs | `project().building.stairs` (module `stairs`, section 4) | ramp over the tread nosings, landing, divider between flights |
+
+**Collisions and ground.** A step is allowed when the target point belongs to the walkable surface **and** the foot height
+changes by at most **0.30 m per 8 cm segment** (`MAX_STEP`). Longer steps are split into segments, so a wall cannot be
+"jumped". At an obstacle the motion slides along it (X and Y separately). This one rule also gives:
+
+- from a lower level you cannot walk under the upper flight or onto the landing — the height would jump by more than 0.30 m;
+- from an upper level you cannot fall into the stair opening — it acts as a balustrade;
+- thresholds (terrain a few cm below the floor) and terrace edges are passable.
+
+**Ground height** (`GroundProbe`, `src/home/scene/WalkLayer.tsx`): a vertical raycast on the site model (meshes listed in
+`assets.groundMeshes`, or all), the highest hit, with a 5 cm cache; a site without a terrain model is flat at
+`site.groundLevel` (`FlatGround`). The probe is also available to tests as `sceneApi.ground(x, y)`.
+
+**Main walls.** Collisions come from room outlines, i.e. inner wall faces. Furniture does not block the walk — it is an obstacle
+only in the arrangement editor. Levels change by foot height (`levelAtZ`: above the midpoint between two floor levels the upper level applies), and the UI
+switches to it.
+
+A project without a site has no corridors to the outside and no walking on the ground; a project without stairs keeps the walk
+on its single level.
+
+## 4. Stairs — `src/home/model/stairs.ts`
+
+The engine supports one stair kind: **two-flight U-turn stairs with a landing** (`kind: "u-turn"`), flights along the project
+Y axis. In `plan.json`:
+
+```json
+"stairs": [{ "id": "S1", "from": "L0", "to": "L1", "box": [x0, y0, x1, y1],
+             "risers": 9, "tread": 0.255, "flightWidth": 0.9, "gap": 0.05 }]
+```
+
+- `box` — the plan outline (floor opening), walls at `x0` and `y0`; the **lower flight** starts at `y1` on the larger-X side
+  (beyond the split line) and rises towards −Y; the **landing** is at the smaller-Y edge; the **upper flight** returns on the
+  smaller-X side towards +Y and arrives on the upper level.
+- `risers` per flight (two flights); the riser height follows from the level heights (`StairDef.riser`, `landingZ`, `topZ`).
+- `gap` — the divider between the flights.
+
+Another shape or rotation requires extending this module.
+
+**Walking on stairs.** The rendered steps are real; navigation uses an **invisible ramp** over the step nosings that matches the
+flights (`stairZ`): flight 1 from the lower floor to the landing, the landing flat, flight 2 to the upper floor. Single steps are
+not obstacles, and with 8 cm segments a 17.5 cm riser is about 5.5 cm of height change per segment — well under `MAX_STEP`. Edges
+do not catch: motion slides along the divider or a wall (walking up diagonally works). Movement between flights is possible only
+via the landing (divider + balustrade). Typical climb on a keyboard: forward (W) up the lower flight to the landing, turn with the
+mouse or step sideways (A / D) along the landing, forward up the upper flight; on a phone the joystick does the same.
+
+### 4.1 Stairs finishes
+
+The structure — number and size of steps, landing, outline — is package data that configuration does not change. The
+**finish** is a user choice stored in the variant (`Variant.stairs`, optional; missing = bare concrete), modelled in
+`src/home/model/stairsConfig.ts`:
+
+| Element | Options |
+|---|---|
+| treads and landing | cladding: concrete, oak, dark oak, walnut, ash, white, graphite, black, steel — or a custom colour; thickness 0–6 cm (0 = bare concrete), nosing 0–4 cm |
+| risers | no cladding or any finish / colour |
+| handrail | none · outer side of the flights · by the divider · both; height 0.80–1.10 m; round or rectangular profile; finish |
+| balustrade | none · bars · glass · solid; height 0.90–1.20 m; finish — divider between flights, open side of the lower flight and landing, railing around the stair opening on the upper level |
+
+Presets: "Concrete", "Oak + wall handrail", "Oak + black steel", "Ash + glass", "Walnut + solid balustrade". The stairs card opens
+by clicking / tapping the stairs in the section or a room, from the Interiors panel, or by a long press in walk mode. Every change
+is one history entry and is saved and exported with the variant. Cladding does not change the step levels (the concrete under
+it is lower by its thickness), so the walking surface stays the same. Geometry: `src/home/three/stairGeometry.ts` (at most six
+meshes merged by material).
+
+## 5. Eye-level viewpoints and bookmarks
+
+**Viewpoints** come from the package (`project().viewpoints`, compiled from `viewpoints` in `plan.json`: `id`, `name`, `level`
+(or the site), `at`, `look` (a point with height), `fov`, `hint`), and are listed in Building → walk. On opening, each point is
+settled in the walk model (`WalkWorld.settle`): moved off walls (spiral search up to 3 m) and matched to the floor or ground
+height. View direction: `lookAngles(p, look, eye)` — yaw with forward = `(−sin yaw, cos yaw)` in LCS, pitch upwards.
+
+**User bookmarks** saved during a walk have `view: "walk"`; opening one resumes the walk at the same spot, view direction and
+level ([VARIANTS_AND_ARRANGEMENTS.md](VARIANTS_AND_ARRANGEMENTS.md)).
+
+## 6. Scene modes
+
+`sceneMode` (`src/home/scene/sceneMode.ts`) has a `walk` kind: the whole building without a section, room ceilings visible,
+surroundings per the switch. The camera is then driven by `WalkController` (`src/home/scene/WalkLayer.tsx`), the orbit
+controller is off. Room walk is a view of the room mode (`roomView: "walk"`) driven by `CameraController.tsx`. Both read the
+joystick through `src/home/scene/walkInput.ts`.
+
+## 7. Limitations
+
+- Furniture is not an obstacle in the walk; collisions are with wall faces (room outlines), the building outline and the plot
+  bounds.
+- Walking on the plot is limited to `walkBounds`; beyond it there is no walkable surface.
+- Only U-turn stairs along the Y axis.
+- Photo matching, garage doors and gates are not part of the engine.
+
+## Files and tests
+
+- Model: `src/home/model/walk.ts`, `walkWorld.ts`, `stairs.ts`, `stairsConfig.ts`, `viewpoints.ts`.
+- Scene: `src/home/scene/WalkLayer.tsx` (`GroundProbe`, stairs mesh, `WalkController`, `WalkLamp`), `CameraController.tsx`
+  (room walk, handover), `walkInput.ts`, `sceneMode.ts`. State: `src/home/store/walk.ts`, `src/home/store/ui.ts`.
+- Tests: `src/home/tests/walkWorld.test.ts` (ramp and flights, up and down, no entry under the upper flight or into the opening,
+  exits to the plot), `stairs.test.ts` (finish config, presets, validation, cladding geometry, room walk → building walk zone),
+  `walkInput.test.ts`, `walkEdit.test.ts` (editing in walk mode).
