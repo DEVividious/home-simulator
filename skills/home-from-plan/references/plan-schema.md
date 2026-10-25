@@ -55,4 +55,13 @@ Field notes:
   shell, terrain, surroundings — the last one switches on the `environment` module), `views` (camera presets with `pose`),
   `catalog` (the project's own furniture / material files, ids `<project id>:…`, docs/PROJECT_PACKAGE_SPEC.md), `capabilities`
   (sections the app offers; default all four). Use them only when the user brings such files or asks for it.
+- Attic levels (sloped ceilings under a pitched roof): add `slope` to the level —
+  `{ "ridge": "X", "lines": [ { "at": 120, "height": 1.4 }, { "at": 210, "height": 2.2 } ], "flat": 2.5 }`. `ridge` is the plan
+  axis the ridge runs along; `lines` are the height lines drawn on attic plans (typically 1.40 and 2.20, often dashed, labelled
+  at the margin), `at` is their coordinate across the ridge (px in a px plan), both on the same side of the ridge; `ridgeAt`
+  defaults to the middle of the level. With only one line give `pitch` (degrees). Every room of the level gets the slope unless
+  it has its own `ceiling`. Printed attic areas are often *usable* areas (50 % under 1.40–2.20 m) — use the floor area (usually
+  in brackets) for `areaPrinted`.
+- `roofWindows`: `[ { "id": "RW1", "room": "R5", "rect": [x0, y0, x1, y1] } ]` — windows in a sloped ceiling, seen from above
+  (on Polish plans a rectangle labelled like 78/140).
 - Unknown fields are errors — check spelling against the schema.

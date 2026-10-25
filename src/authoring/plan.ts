@@ -43,6 +43,16 @@ const DoorSchema = z.strictObject({
   confidence: z.enum(['confirmed', 'probable', 'unknown']).optional(), source: z.string().optional(),
 });
 
+/** sloped ceiling of a level (attic under a pitched roof): the ridge, and how the ceiling falls away from it */
+export const SlopeSchema = z.strictObject({
+  ridge: z.enum(['X', 'Y']).describe('the ridge line runs along this plan axis (X: left–right on the plan, Y: up–down)'),
+  ridgeAt: num.optional().describe('coordinate of the ridge line on the other axis (a point coordinate: px in a px plan); default: middle of the level'),
+  lines: z.array(z.strictObject({ at: num.describe('coordinate across the ridge (point units)'), height: num.positive().describe('ceiling height on this line [m]') })).min(1).max(2)
+    .describe('height lines drawn on the plan (e.g. knee wall 1.40 and 2.20); two lines on one side of the ridge give the slope'),
+  pitch: num.positive().lt(80).optional().describe('roof pitch [°] — needed when only one line is given'),
+  flat: num.positive().optional().describe('height of the flat ceiling top (collar beams) [m]; default: the level ceiling'),
+}).refine((s) => s.lines.length === 2 || s.pitch !== undefined, 'give two height lines, or one line and the pitch');
+
 const PassageSchema = z.strictObject({ between: z.tuple([id, id]), at: pt, width: num.positive(), height: num.positive().optional() });
 
 const WindowSchema = z.strictObject({
@@ -95,11 +105,12 @@ export const PlanSchema = z.strictObject({
     doorHeight: num.positive().default(2.05), leafHeight: num.positive().default(2.0), sill: num.min(0).default(0.85), head: num.positive().default(2.35),
     confidence: z.enum(['confirmed', 'probable', 'unknown']).default('probable'), basis: z.enum(['dimensioned', 'drawn', 'approximate']).default('approximate'),
   }).prefault({}),
-  levels: z.array(z.strictObject({ id, name: z.string(), floorZ: num, ceiling: num.positive().describe('ceiling height above the floor [m]'), cutHeight: num.positive().optional().describe('section height above the floor [m]; default: 10 cm above the highest window head, at least 2.30, below the ceiling') })).min(1),
+  levels: z.array(z.strictObject({ id, name: z.string(), floorZ: num, ceiling: num.positive().describe('ceiling height above the floor [m]'), cutHeight: num.positive().optional().describe('section height above the floor [m]; default: 10 cm above the highest window head, at least 2.30, below the ceiling'), slope: SlopeSchema.optional().describe('sloped ceilings of every room on this level (attic); a room with its own `ceiling` stays flat') })).min(1),
   rooms: z.array(RoomSchema).min(1),
   doors: z.array(DoorSchema).default([]),
   passages: z.array(PassageSchema).default([]),
   windows: z.array(WindowSchema).default([]),
+  roofWindows: z.array(z.strictObject({ id, room: id, rect: z.tuple([num, num, num, num]).describe('[x0, y0, x1, y1] of the window in the sloped ceiling, seen from above') })).default([]),
   stairs: z.array(StairSchema).default([]),
   furniture: z.array(FurnitureSchema).default([]),
   notIncluded: z.array(z.strictObject({ room: id, what: z.string(), why: z.string() })).default([]),

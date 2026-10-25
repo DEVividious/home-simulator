@@ -84,7 +84,7 @@ Architecture: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). Decisions: [docs/adr
 
 ## Limits
 
-Generated walls need orthogonal plans; ceilings are flat and there is no roof unless the project brings a GLB model; stairs are
+Generated walls need orthogonal plans; attic ceilings slope inside but there is no roof outside unless the project brings a GLB model; stairs are
 two-flight U-turn only; iOS is not covered by the phone flow. Full list: [docs/KNOWN_LIMITATIONS.md](docs/KNOWN_LIMITATIONS.md).
 
 ## Contributing

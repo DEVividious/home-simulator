@@ -9,7 +9,8 @@ import type { LevelId, Vec2 } from './types';
 
 interface DoorJson { along: 'X' | 'Y'; from_: number; to: number; across: number[]; width: number; door_id: string | null; leaf: number | null; height: number | null }
 interface OpeningJson { id: string; kind: string; plane_axis: 'X' | 'Y'; inner: number; from_: number; to: number; sill_z?: number; head_z?: number; polygon_YZ?: number[][] }
-interface CeilingJson { kind: 'flat' | 'attic'; z?: number; flat_z?: number; ridge_y?: number; z_at_ridge?: number; slope?: number }
+/** attic: the ridge runs along X at y = ridge_y, or along Y at x = ridge_x; the ceiling falls by `slope` per metre away from it */
+interface CeilingJson { kind: 'flat' | 'attic'; z?: number; flat_z?: number; ridge_y?: number; ridge_x?: number; z_at_ridge?: number; slope?: number }
 /** room kind: default finishes, icons, plan colours — from the project data (field `kind`), never from the name */
 export type RoomKind = 'bath' | 'kitchen' | 'garage' | 'tech' | 'hall' | 'bed' | 'living' | 'office' | 'storage' | 'room';
 /** room record in the package data */
@@ -55,9 +56,10 @@ export interface CeilingProfile {
   kind: 'flat' | 'attic';
   /** ceiling height above the room floor at LCS point (x, y) */
   heightAt: (x: number, y: number) => number;
-  /** sloped-ceiling parameters (absolute z): flat top, ridge, slope */
+  /** sloped-ceiling parameters (absolute z): flat top, ridge, slope; the ridge runs along X (ridgeY) or along Y (ridgeX) */
   flatZ?: number;
   ridgeY?: number;
+  ridgeX?: number;
   zAtRidge?: number;
   slope?: number;
 }
@@ -103,7 +105,9 @@ export interface Level {
 
 function ceilingOf(c: CeilingJson, floorZ: number): CeilingProfile {
   if (c.kind === 'flat') { const z = c.z!; return { kind: 'flat', heightAt: () => z - floorZ }; }
-  const flat = c.flat_z!, ry = c.ridge_y!, zr = c.z_at_ridge!, k = c.slope!;
+  const flat = c.flat_z!, zr = c.z_at_ridge!, k = c.slope!;
+  if (c.ridge_x !== undefined) { const rx = c.ridge_x; return { kind: 'attic', flatZ: flat, ridgeX: rx, zAtRidge: zr, slope: k, heightAt: (x) => Math.min(flat, zr - k * Math.abs(x - rx)) - floorZ }; }
+  const ry = c.ridge_y!;
   return { kind: 'attic', flatZ: flat, ridgeY: ry, zAtRidge: zr, slope: k, heightAt: (_x, y) => Math.min(flat, zr - k * Math.abs(y - ry)) - floorZ };
 }
 

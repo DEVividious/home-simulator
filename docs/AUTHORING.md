@@ -18,5 +18,5 @@ The human version of the `home-from-plan` skill. You write `projects/<id>/source
    ```
 5. **Release**: `npm run project:build -- projects/<id> --lock` once you start using the project — wall ids are then frozen.
 
-Things the format cannot express yet (slanted walls without a model, sloped ceilings, other stair shapes, roofs) are listed in
+Things the format cannot express yet (slanted walls without a model, hips and dormers, other stair shapes, roofs) are listed in
 docs/KNOWN_LIMITATIONS.md. A building with such geometry can supply a GLB model (`assets.model` in `plan.json`, copied into the package; docs/PROJECT_PACKAGE_SPEC.md).

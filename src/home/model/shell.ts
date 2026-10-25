@@ -93,7 +93,12 @@ function surface(xs: number[], ys: number[], zs: number[], solid: (i: number, j:
 /** wall height of a level: the highest ceiling of its rooms above the level floor */
 function wallTop(rooms: HomeRoom[], floorZ: number): number {
   let top = 0;
-  for (const r of rooms) for (const q of r.polygon) top = Math.max(top, r.floorZ + r.ceiling.heightAt(q[0], q[1]));
+  for (const r of rooms) {
+    for (const q of r.polygon) top = Math.max(top, r.floorZ + r.ceiling.heightAt(q[0], q[1]));
+    // sloped ceiling: highest where the room comes closest to the ridge (the corners lie on the knee walls)
+    const c = r.ceiling, [x0, y0, x1, y1] = r.bbox;
+    if (c.kind === 'attic') top = Math.max(top, r.floorZ + c.heightAt(Math.min(x1, Math.max(x0, c.ridgeX ?? x0)), Math.min(y1, Math.max(y0, c.ridgeY ?? y0))));
+  }
   return top > floorZ ? top : floorZ + 2.6;
 }
 

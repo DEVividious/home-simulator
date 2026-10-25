@@ -9,8 +9,10 @@ the behaviour is named in brackets. When a limit is lifted, remove it here in th
   rectangular grid spanned by the room outlines. Every room edge must run along X or Y. The compiler rejects a slanted edge
   (`room.orthogonal`), and validation rejects a package without `assets.model` whose outlines are not axis-aligned
   (`src/home/model/shell.ts`, `src/authoring/compile.ts`, `src/project/validate.ts`).
-- **Flat ceilings in the generated shell.** The shell draws walls, a floor slab under every level and a flat slab over the top
-  level. Sloped ceilings are not drawn, even though a room in a package may describe one (`ceiling.kind: "attic"`).
+- **The generated shell is a box.** It draws walls, a floor slab under every level and a flat slab over the top level, up to
+  the highest ceiling of the level. Sloped attic ceilings (level `slope` in `plan.json`) are drawn inside as ceiling and gable
+  finishes, but the outside shows no pitched roof. A sloped ceiling is one symmetric roof per level with its ridge along X or
+  Y; hips, dormers, valleys and different pitches on each side are not supported.
 - **No roof without a model.** There is no pitched roof, gable or chimney in the generated shell. A building that needs them
   must bring a GLB model (`assets.model`).
 - **One stair type.** `StairDef` supports only `kind: "u-turn"`: two flights with the same number of risers, a landing and a

@@ -221,6 +221,65 @@
       "description": "section height above the floor [m]; default: 10 cm above the highest window head, at least 2.30, below the ceiling",
       "type": "number",
       "exclusiveMinimum": 0
+     },
+     "slope": {
+      "description": "sloped ceilings of every room on this level (attic); a room with its own `ceiling` stays flat",
+      "type": "object",
+      "properties": {
+       "ridge": {
+        "type": "string",
+        "enum": [
+         "X",
+         "Y"
+        ],
+        "description": "the ridge line runs along this plan axis (X: left–right on the plan, Y: up–down)"
+       },
+       "ridgeAt": {
+        "description": "coordinate of the ridge line on the other axis (a point coordinate: px in a px plan); default: middle of the level",
+        "type": "number"
+       },
+       "lines": {
+        "minItems": 1,
+        "maxItems": 2,
+        "type": "array",
+        "items": {
+         "type": "object",
+         "properties": {
+          "at": {
+           "type": "number",
+           "description": "coordinate across the ridge (point units)"
+          },
+          "height": {
+           "type": "number",
+           "exclusiveMinimum": 0,
+           "description": "ceiling height on this line [m]"
+          }
+         },
+         "required": [
+          "at",
+          "height"
+         ],
+         "additionalProperties": false
+        },
+        "description": "height lines drawn on the plan (e.g. knee wall 1.40 and 2.20); two lines on one side of the ridge give the slope"
+       },
+       "pitch": {
+        "description": "roof pitch [°] — needed when only one line is given",
+        "type": "number",
+        "exclusiveMinimum": 0,
+        "exclusiveMaximum": 80
+       },
+       "flat": {
+        "description": "height of the flat ceiling top (collar beams) [m]; default: the level ceiling",
+        "type": "number",
+        "exclusiveMinimum": 0
+       }
+      },
+      "required": [
+       "ridge",
+       "lines"
+      ],
+      "additionalProperties": false
      }
     },
     "required": [
@@ -547,6 +606,50 @@
      "room",
      "at",
      "width"
+    ],
+    "additionalProperties": false
+   }
+  },
+  "roofWindows": {
+   "default": [],
+   "type": "array",
+   "items": {
+    "type": "object",
+    "properties": {
+     "id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
+     },
+     "room": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
+     },
+     "rect": {
+      "type": "array",
+      "prefixItems": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "number"
+       },
+       {
+        "type": "number"
+       },
+       {
+        "type": "number"
+       }
+      ],
+      "items": false,
+      "minItems": 4,
+      "maxItems": 4,
+      "description": "[x0, y0, x1, y1] of the window in the sloped ceiling, seen from above"
+     }
+    },
+    "required": [
+     "id",
+     "room",
+     "rect"
     ],
     "additionalProperties": false
    }
@@ -996,6 +1099,231 @@
    "additionalProperties": {
     "type": "string"
    }
+  },
+  "capabilities": {
+   "description": "sections the app offers for this building (default: all four)",
+   "type": "array",
+   "items": {
+    "type": "string",
+    "enum": [
+     "interiors",
+     "electrical",
+     "variants",
+     "walk"
+    ]
+   }
+  },
+  "assets": {
+   "description": "model files in the project directory, copied to project.json: model (building GLB instead of the generated shell), site (terrain GLB, needs \"site\"), environment (surroundings GLB — enables the environment module), bounds, sectionCaps, plinthExtra, groundMeshes",
+   "type": "object",
+   "properties": {
+    "model": {
+     "type": "string"
+    },
+    "site": {
+     "type": "string"
+    },
+    "environment": {
+     "type": "string"
+    },
+    "bounds": {
+     "type": "object",
+     "properties": {
+      "min": {
+       "type": "array",
+       "prefixItems": [
+        {
+         "type": "number"
+        },
+        {
+         "type": "number"
+        },
+        {
+         "type": "number"
+        }
+       ],
+       "items": false,
+       "minItems": 3,
+       "maxItems": 3
+      },
+      "max": {
+       "type": "array",
+       "prefixItems": [
+        {
+         "type": "number"
+        },
+        {
+         "type": "number"
+        },
+        {
+         "type": "number"
+        }
+       ],
+       "items": false,
+       "minItems": 3,
+       "maxItems": 3
+      }
+     },
+     "required": [
+      "min",
+      "max"
+     ],
+     "additionalProperties": false
+    },
+    "sectionCaps": {
+     "type": "object",
+     "propertyNames": {
+      "type": "string"
+     },
+     "additionalProperties": {
+      "type": "array",
+      "items": {
+       "type": "string"
+      }
+     }
+    },
+    "plinthExtra": {
+     "type": "object",
+     "propertyNames": {
+      "type": "string"
+     },
+     "additionalProperties": {
+      "type": "array",
+      "items": {
+       "type": "string"
+      }
+     }
+    },
+    "groundMeshes": {
+     "type": "array",
+     "items": {
+      "type": "string"
+     }
+    }
+   },
+   "additionalProperties": false
+  },
+  "views": {
+   "description": "camera presets, copied to project.json (default: the engine views)",
+   "type": "object",
+   "properties": {
+    "presets": {
+     "type": "array",
+     "items": {
+      "type": "object",
+      "properties": {
+       "id": {
+        "type": "string",
+        "minLength": 1
+       },
+       "label": {
+        "type": "string"
+       },
+       "icon": {
+        "type": "string"
+       },
+       "hint": {
+        "type": "string"
+       },
+       "dir": {
+        "type": "array",
+        "prefixItems": [
+         {
+          "type": "number"
+         },
+         {
+          "type": "number"
+         },
+         {
+          "type": "number"
+         }
+        ],
+        "items": false,
+        "minItems": 3,
+        "maxItems": 3
+       },
+       "pose": {
+        "type": "object",
+        "properties": {
+         "position": {
+          "type": "array",
+          "prefixItems": [
+           {
+            "type": "number"
+           },
+           {
+            "type": "number"
+           },
+           {
+            "type": "number"
+           }
+          ],
+          "items": false,
+          "minItems": 3,
+          "maxItems": 3
+         },
+         "target": {
+          "type": "array",
+          "prefixItems": [
+           {
+            "type": "number"
+           },
+           {
+            "type": "number"
+           },
+           {
+            "type": "number"
+           }
+          ],
+          "items": false,
+          "minItems": 3,
+          "maxItems": 3
+         },
+         "fov": {
+          "type": "number"
+         }
+        },
+        "required": [
+         "position",
+         "target",
+         "fov"
+        ],
+        "additionalProperties": {}
+       },
+       "fit": {
+        "type": "number"
+       }
+      },
+      "required": [
+       "id",
+       "label",
+       "icon",
+       "hint"
+      ],
+      "additionalProperties": {}
+     }
+    },
+    "home": {
+     "type": "string"
+    }
+   },
+   "required": [
+    "presets"
+   ],
+   "additionalProperties": false
+  },
+  "catalog": {
+   "description": "the project's own furniture / material catalog files (ids \"<project id>:…\"), copied to project.json",
+   "type": "object",
+   "properties": {
+    "furniture": {
+     "type": "string"
+    },
+    "materials": {
+     "type": "string"
+    }
+   },
+   "additionalProperties": false
   },
   "dataSources": {
    "type": "object",

@@ -32,8 +32,8 @@ section height above the floor (the compiler writes it 10 cm above the highest w
 below the ceiling, unless `plan.json` sets `cutHeight`); `plan_wall_offset` half the wall thickness drawn on plans.
 
 Room: `id`, `name`, `label?`, `level`, `floor_z`, `polygon` (inner wall faces), `bbox`, `rectangular`, `area`, `area_data`
-(printed area or `area`), `id_source`, `ceiling` (`{ kind: "flat", z }` absolute height, or `{ kind: "attic", flat_z, ridge_y,
-z_at_ridge, slope }`), `doors[]` (gaps: `{ along: "X"|"Y", from_, to, across: [face, face], width, door_id | null, leaf, height }`
+(printed area or `area`), `id_source`, `ceiling` (`{ kind: "flat", z }` absolute height, or `{ kind: "attic", flat_z, ridge_y | ridge_x,
+z_at_ridge, slope }` — ridge along X at `ridge_y` or along Y at `ridge_x`, absolute heights, `slope` in m per m), `doors[]` (gaps: `{ along: "X"|"Y", from_, to, across: [face, face], width, door_id | null, leaf, height }`
 — the same gap appears in both rooms; `door_id: null` = passage), `openings[]` (windows: `{ id, kind, plane_axis, inner, from_, to,
 sill_z, head_z }` — `plane_axis` is the axis whose coordinate is constant on the wall, `inner` the room-side face; `sill_z`,
 `head_z` and `polygon_YZ` heights are absolute project Z like `ceiling.z`, while door gap `height` is above the room floor),

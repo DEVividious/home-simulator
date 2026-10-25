@@ -24,6 +24,12 @@
 | Radiator, plant, rug | thin rectangle at a window / decorative symbol | usually skip (rug: `rug`) |
 | Room label | name + area "12.4 m²" | `name`, `areaPrinted` (calibration!) |
 | Arrow triangle at an entrance | entrance marker | the exterior door is there |
+| Dimension chain | numbers along a line with ticks, in cm on most European plans (e.g. "458", "1500") | the best scale evidence: `calibrate.py points` with `--length`; room sizes like "458 × 341" are inner faces |
+| Window label | circle / oval with "width/height" in cm, e.g. "180/230", "78/140" | window width and head height (sill = head − height); a label inside the roof area means a roof window |
+| Attic height lines | dashed or thin lines parallel to the eaves, labelled 140 / 220 (cm) at the margin, grey band between | level `slope.lines` (1.40 and 2.20 m above the floor); the ridge runs parallel to them |
+| Roof window | rectangle in the sloped zone with a "78/140"-style label | `roofWindows[]` |
+| Car outline, garden plants, terrace paving | context drawings | not furniture — garage (`kind: "garage"`), terrace as a note |
+| Watermark / logo | large diagonal text or a logo over the drawing | ignore |
 
 Size priors for calibration (`tools/image/calibrate.py symbol`): door 0.9 (0.8–1.0), bathtub 1.7 (1.5–1.8), bed length 2.0,
 WC depth 0.65. Symbols are weak evidence — prefer printed areas and dimensions.

@@ -9,6 +9,7 @@ const ROOT = path.resolve(__dirname, '..', '..', '..');
 const catalog = (JSON.parse(fs.readFileSync(path.join(ROOT, 'data/furnitureCatalog.json'), 'utf8')) as { items: CatalogItemInfo[] }).items;
 const read = (p: string) => JSON.parse(fs.readFileSync(path.join(ROOT, p), 'utf8'));
 const compile = (plan: unknown, lock?: Parameters<typeof compilePlan>[1]['lock']) => compilePlan(plan, { catalog, lock });
+const r3 = (x: number) => Math.round(x * 1000) / 1000;
 const errors = (r: ReturnType<typeof compile>) => r.issues.filter((i) => i.level === 'error').map((i) => i.code);
 
 /** minimal two-room plan in metres: R1 (0.3…4.3 × 0.3…3.3) | 0.12 wall | R2 (4.42…7.7 × 0.3…3.3) */
@@ -179,6 +180,47 @@ describe('heights and pass-through blocks', () => {
     expect(p.manifest.capabilities).toEqual(['interiors', 'walk']);
     expect(p.manifest.modules).toContain('environment');
     expect(errors(compile({ ...base(), assets: { site: 'site.glb' } }))).toContain('assets.site');
+  });
+});
+
+describe('sloped ceilings (attic levels)', () => {
+  // one 8 m deep attic room: knee wall 1.40 at y = 0.3, the 2.20 line 1 m further in, ridge in the middle (y = 4.3)
+  const attic = (slope: Record<string, unknown>, extra: Record<string, unknown> = {}) => ({
+    ...base(), doors: [],
+    levels: [{ id: 'L1', name: 'Attic', floorZ: 3, ceiling: 2.5, slope }],
+    rooms: [{ id: 'A1', name: 'Attic room', level: 'L1', kind: 'bed', rect: [0.3, 0.3, 6.3, 8.3] }],
+    ...extra,
+  });
+  const ceilingOf = (r: ReturnType<typeof compile>) => r.project!.building.rooms.rooms[0].ceiling;
+  it('two height lines give the slope; the ridge defaults to the middle of the level', () => {
+    const r = compile(attic({ ridge: 'X', lines: [{ at: 0.3, height: 1.4 }, { at: 1.3, height: 2.2 }] }));
+    expect(errors(r)).toEqual([]);
+    expect(ceilingOf(r)).toEqual({ kind: 'attic', flat_z: 5.5, ridge_y: 4.3, z_at_ridge: r3(3 + 1.4 + 0.8 * 4), slope: 0.8 });
+    expect(packageErrors(r.project, 'test-flat', new Set(catalog.map((c) => c.id)))).toEqual([]);
+  });
+  it('a ridge along Y uses x; one line and the pitch work too', () => {
+    const r = compile(attic({ ridge: 'Y', ridgeAt: 3.3, lines: [{ at: 0.3, height: 1.2 }], pitch: 45 }));
+    expect(errors(r)).toEqual([]);
+    expect(ceilingOf(r)).toMatchObject({ kind: 'attic', ridge_x: 3.3, z_at_ridge: 7.2, slope: 1 });
+    expect(ceilingOf(r)).not.toHaveProperty('ridge_y');
+  });
+  it('lines on both sides of the ridge, or one line without the pitch, are errors', () => {
+    expect(errors(compile(attic({ ridge: 'X', lines: [{ at: 0.3, height: 1.4 }, { at: 8.3, height: 1.4 }] })))).toContain('level.slope');
+    expect(errors(compile(attic({ ridge: 'X', lines: [{ at: 0.3, height: 1.4 }] })))).toContain('schema');
+  });
+  it('a room with its own ceiling stays flat; roof windows are cut into the sloped ceiling', () => {
+    const r = compile(attic({ ridge: 'X', lines: [{ at: 0.3, height: 1.4 }, { at: 1.3, height: 2.2 }] }, {
+      rooms: [
+        { id: 'A1', name: 'Attic room', level: 'L1', kind: 'bed', rect: [0.3, 0.3, 4.3, 8.3] },
+        { id: 'A2', name: 'Store', level: 'L1', kind: 'storage', rect: [4.42, 0.3, 6.3, 8.3], ceiling: 2.2 },
+      ],
+      roofWindows: [{ id: 'RW1', room: 'A1', rect: [1.5, 1.0, 2.28, 2.4] }],
+    }));
+    expect(errors(r)).toEqual([]);
+    const [a1, a2] = r.project!.building.rooms.rooms;
+    expect(a1.ceiling.kind).toBe('attic');
+    expect(a2.ceiling).toEqual({ kind: 'flat', z: 5.2 });
+    expect(a1.roof_windows).toEqual([{ id: 'RW1', plan_rect: [1.5, 1, 2.28, 2.4] }]);
   });
 });
 

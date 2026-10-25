@@ -303,6 +303,9 @@
            "ridge_y": {
             "type": "number"
            },
+           "ridge_x": {
+            "type": "number"
+           },
            "z_at_ridge": {
             "type": "number"
            },

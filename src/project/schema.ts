@@ -23,9 +23,13 @@ const WindowSchema = z.looseObject({
   sill_z: num.optional(), head_z: num.optional(), polygon_YZ: z.array(z.array(num)).optional(),
 });
 
+/** flat: absolute height z; attic (sloped): flat top flat_z, ridge along X at y = ridge_y or along Y at x = ridge_x, height
+ *  z_at_ridge on the ridge line, fall `slope` [m per m] away from it */
 const CeilingSchema = z.looseObject({
-  kind: z.enum(['flat', 'attic']), z: num.optional(), flat_z: num.optional(), ridge_y: num.optional(), z_at_ridge: num.optional(), slope: num.optional(),
-});
+  kind: z.enum(['flat', 'attic']), z: num.optional(), flat_z: num.optional(), ridge_y: num.optional(), ridge_x: num.optional(), z_at_ridge: num.optional(), slope: num.optional(),
+}).refine((c) => c.kind !== 'flat' || c.z !== undefined, 'a flat ceiling needs "z"')
+  .refine((c) => c.kind !== 'attic' || (c.flat_z !== undefined && c.z_at_ridge !== undefined && (c.slope ?? 0) > 0 && (c.ridge_x === undefined) !== (c.ridge_y === undefined)),
+    'a sloped ceiling needs flat_z, z_at_ridge, slope > 0 and exactly one of ridge_x / ridge_y');
 
 export const RoomSchema = z.looseObject({
   id, name: z.string(), label: z.string().optional(), level: id, floor_z: num,

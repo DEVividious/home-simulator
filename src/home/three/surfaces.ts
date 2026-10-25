@@ -13,12 +13,12 @@ export const SURFACE_OFFSET = 0.003;
 
 const lcs = (x: number, y: number, z: number): [number, number, number] => [x, z, -y];
 
-/** Y values where a sloped ceiling profile breaks (edges of the flat ceiling, ridge) */
-function ceilingBreaksY(room: HomeRoom): number[] {
+/** where a sloped ceiling profile breaks (edges of the flat ceiling, ridge): coordinates on axis 1 (y, ridge along X) or 0 (x) */
+function ceilingBreaks(room: HomeRoom): { axis: 0 | 1; at: number[] } {
   const c = room.ceiling;
-  if (c.kind !== 'attic') return [];
-  const dy = (c.zAtRidge! - c.flatZ!) / c.slope!;
-  return [c.ridgeY! - dy, c.ridgeY!, c.ridgeY! + dy];
+  if (c.kind !== 'attic') return { axis: 1, at: [] };
+  const d = (c.zAtRidge! - c.flatZ!) / c.slope!, axis = c.ridgeX !== undefined ? 0 : 1, r = axis === 0 ? c.ridgeX! : c.ridgeY!;
+  return { axis, at: [r - d, r, r + d] };
 }
 
 /** ceiling height above the floor at wall position t */
@@ -54,7 +54,8 @@ function solidAt(top: number, holes: WallHole[], t: number): [number, number][] 
 export function wallGeometry(room: HomeRoom, w: RoomWall, offset = SURFACE_OFFSET): THREE.BufferGeometry {
   const ts = new Set<number>([0, w.length]);
   for (const h of w.holes) { ts.add(Math.max(0, h.t0)); ts.add(Math.min(w.length, h.t1)); h.polygon?.forEach((p) => ts.add(Math.min(w.length, Math.max(0, p[0])))); }
-  if (Math.abs(w.dir[1]) > 0.5) for (const y of ceilingBreaksY(room)) { const t = (y - w.a[1]) / w.dir[1]; if (t > 0 && t < w.length) ts.add(t); }
+  const br = ceilingBreaks(room);
+  if (Math.abs(w.dir[br.axis]) > 0.5) for (const v of br.at) { const t = (v - w.a[br.axis]) / w.dir[br.axis]; if (t > 0 && t < w.length) ts.add(t); }
   const T = [...ts].sort((a, b) => a - b).filter((t, i, arr) => i === 0 || t - arr[i - 1] > 1e-4);
   const pos: number[] = [], uv: number[] = [];
   const P = (t: number, z: number) => {
@@ -82,13 +83,18 @@ export function wallGeometry(room: HomeRoom, w: RoomWall, offset = SURFACE_OFFSE
 }
 
 /** clips a polygon by the half-plane y ≥ y0 (sign 1) / y ≤ y0 (sign −1) — Sutherland–Hodgman */
-function clipY(poly: Vec2[], y0: number, sign: 1 | -1): Vec2[] {
-  const out: Vec2[] = [];
-  const inside = (p: Vec2) => (p[1] - y0) * sign >= -1e-9;
+/** part of a polygon on one side of the line (axis coordinate = v0): sign 1 — the larger values */
+function clipAxis(poly: Vec2[], axis: 0 | 1, v0: number, sign: 1 | -1): Vec2[] {
+  const out: Vec2[] = [], o = 1 - axis;
+  const inside = (p: Vec2) => (p[axis] - v0) * sign >= -1e-9;
   for (let i = 0; i < poly.length; i++) {
     const a = poly[i], b = poly[(i + 1) % poly.length];
     if (inside(a)) out.push(a);
-    if (inside(a) !== inside(b)) { const t = (y0 - a[1]) / (b[1] - a[1]); out.push([a[0] + t * (b[0] - a[0]), y0]); }
+    if (inside(a) !== inside(b)) {
+      const t = (v0 - a[axis]) / (b[axis] - a[axis]), q: Vec2 = [0, 0];
+      q[axis] = v0; q[o] = a[o] + t * (b[o] - a[o]);
+      out.push(q);
+    }
   }
   return out;
 }
@@ -136,7 +142,7 @@ export function revealGeometry(room: HomeRoom, w: RoomWall, depth = revealDepth(
   const P = (t: number, z: number, d: number): [number, number, number] => lcs(w.a[0] + w.dir[0] * t - w.inward[0] * d, w.a[1] + w.dir[1] * t - w.inward[1] * d, room.floorZ + z);
   for (const h of w.holes) {
     if (!h.polygon) continue;
-    const poly = clipY(h.polygon, 0, 1);                                       // part of the opening above the room floor
+    const poly = clipAxis(h.polygon, 1, 0, 1);                                       // part of the opening above the room floor
     if (poly.length < 3) continue;
     const ct = poly.reduce((n, q) => n + q[0], 0) / poly.length, cz = poly.reduce((n, q) => n + q[1], 0) / poly.length;
     for (let i = 0; i < poly.length; i++) {
@@ -175,14 +181,14 @@ export function ceilingGeometry(room: HomeRoom, offset = SURFACE_OFFSET): THREE.
     const holes = room.stairOpening ? [rectPoly(room.stairOpening)] : [];
     return toGeometry([flatGeometry(room.polygon, holes, zOf, true)]);
   }
-  const ys = [-Infinity, ...ceilingBreaksY(room), Infinity];
+  const br = ceilingBreaks(room), vs = [-Infinity, ...br.at, Infinity], ax = br.axis;
   const parts = [];
-  for (let i = 0; i < ys.length - 1; i++) {
+  for (let i = 0; i < vs.length - 1; i++) {
     let piece = room.polygon;
-    if (Number.isFinite(ys[i])) piece = clipY(piece, ys[i], 1);
-    if (Number.isFinite(ys[i + 1])) piece = clipY(piece, ys[i + 1], -1);
+    if (Number.isFinite(vs[i])) piece = clipAxis(piece, ax, vs[i], 1);
+    if (Number.isFinite(vs[i + 1])) piece = clipAxis(piece, ax, vs[i + 1], -1);
     if (piece.length < 3) continue;
-    const holes = room.roofWindows.map((w) => w.rect).filter((r) => r[1] >= ys[i] - 1e-6 && r[3] <= ys[i + 1] + 1e-6).map(rectPoly);
+    const holes = room.roofWindows.map((w) => w.rect).filter((r) => r[ax] >= vs[i] - 1e-6 && r[ax + 2] <= vs[i + 1] + 1e-6).map(rectPoly);
     parts.push(flatGeometry(piece, holes, zOf, true));
   }
   return toGeometry(parts);

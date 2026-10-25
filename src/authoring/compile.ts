@@ -279,6 +279,39 @@ export function compilePlan(input: PlanInput | unknown, opts: CompileOptions): C
     if (!lower) err('stairs.start', `stairs "${s.id}": no room of level "${s.from}" contains the stair box`);
   }
 
+  // ---- sloped ceilings (per level) and roof windows
+  const along = (axis: 0 | 1, c: number) => (axis === 0 ? P([c, 0])[0] : P([0, c])[1]);
+  const attics = new Map<string, RoomJson['ceiling']>();
+  for (const lv of plan.levels) {
+    if (!lv.slope) continue;
+    const s = lv.slope, ax: 0 | 1 = s.ridge === 'X' ? 1 : 0;          // ridge along X → heights vary with y
+    const outline = plan.rooms.filter((r) => r.level === lv.id).flatMap((r) => polys.get(r.id) ?? []);
+    if (!outline.length) continue;
+    const lo = Math.min(...outline.map((q) => q[ax])), hi = Math.max(...outline.map((q) => q[ax]));
+    const ridge = s.ridgeAt !== undefined ? along(ax, s.ridgeAt) : (lo + hi) / 2;
+    const lines = s.lines.map((l) => ({ at: along(ax, l.at), height: l.height }));
+    let k: number;
+    if (lines.length === 2) {
+      const [a, b] = lines;
+      if ((a.at - ridge) * (b.at - ridge) < 0) { err('level.slope', `level "${lv.id}": both slope lines must lie on one side of the ridge`); continue; }
+      k = Math.abs(b.height - a.height) / Math.max(1e-6, Math.abs(b.at - a.at));
+      if (Math.abs(b.at - ridge) < Math.abs(a.at - ridge) !== b.height > a.height) err('level.slope', `level "${lv.id}": the ceiling must rise towards the ridge`);
+    } else k = Math.tan((s.pitch! * Math.PI) / 180);
+    if (lines.length === 2 && s.pitch !== undefined && Math.abs(Math.atan(k) * 180 / Math.PI - s.pitch) > 5) warn('level.slope', `level "${lv.id}": the lines give a ${r2(Math.atan(k) * 180 / Math.PI)}° slope, the pitch says ${s.pitch}°`);
+    const fz = lv.floorZ, flat = s.flat ?? lv.ceiling, l0 = lines[0];
+    const zRidge = fz + l0.height + k * Math.abs(ridge - l0.at);
+    if (zRidge - fz < flat) warn('level.slope', `level "${lv.id}": the slope does not reach the flat ceiling at ${flat} m — check the lines or the pitch`);
+    const ceiling = { kind: 'attic' as const, flat_z: r3(fz + flat), ...(ax === 1 ? { ridge_y: r3(ridge) } : { ridge_x: r3(ridge) }), z_at_ridge: r3(zRidge), slope: r3(k) };
+    for (const r of plan.rooms) if (r.level === lv.id && r.ceiling === undefined) attics.set(r.id, ceiling as RoomJson['ceiling']);
+  }
+  const roofWindows = new Map<string, RoomJson['roof_windows']>();
+  for (const w of plan.roofWindows) {
+    if (!polys.has(w.room)) { err('ref', `roof window "${w.id}": unknown room "${w.room}"`); continue; }
+    if (!attics.has(w.room)) warn('roofWindow.flat', `roof window "${w.id}": room "${w.room}" has no sloped ceiling`);
+    const a = P([w.rect[0], w.rect[1]]), b = P([w.rect[2], w.rect[3]]);
+    roofWindows.set(w.room, [...(roofWindows.get(w.room) ?? []), { id: w.id, plan_rect: [Math.min(a[0], b[0]), Math.min(a[1], b[1]), Math.max(a[0], b[0]), Math.max(a[1], b[1])].map(r3) }]);
+  }
+
   // ---- rooms
   const rooms: RoomJson[] = plan.rooms.map((r) => {
     const poly = polys.get(r.id)!, lv = levels.get(r.level), floorZ = lv?.floorZ ?? 0, area = r2(Math.abs(area2(poly)) / 2);
@@ -286,8 +319,8 @@ export function compilePlan(input: PlanInput | unknown, opts: CompileOptions): C
     if (r.areaPrinted && Math.abs(area - r.areaPrinted) / r.areaPrinted > 0.1) warn('room.area', `room "${r.id}": computed area ${area} m² differs from the printed ${r.areaPrinted} m² by more than 10 %`);
     return {
       id: r.id, name: r.name, ...(r.label ? { label: r.label } : {}), level: r.level, floor_z: floorZ, area, area_data: r.areaPrinted ?? area, id_source: r.source ?? source,
-      bbox: bb, polygon: poly, rectangular: poly.length === 4, ceiling: { kind: 'flat', z: r3(floorZ + (r.ceiling ?? lv?.ceiling ?? 2.6)) },
-      stair_opening: stairOpenings.get(r.id) ?? null, doors: gaps.get(r.id) ?? [], openings: windows.get(r.id) ?? [], roof_windows: [], kind: r.kind, tags: r.tags ?? [],
+      bbox: bb, polygon: poly, rectangular: poly.length === 4, ceiling: attics.get(r.id) ?? { kind: 'flat', z: r3(floorZ + (r.ceiling ?? lv?.ceiling ?? 2.6)) },
+      stair_opening: stairOpenings.get(r.id) ?? null, doors: gaps.get(r.id) ?? [], openings: windows.get(r.id) ?? [], roof_windows: roofWindows.get(r.id) ?? [], kind: r.kind, tags: r.tags ?? [],
     } as RoomJson;
   });
 
