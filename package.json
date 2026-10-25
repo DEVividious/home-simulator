@@ -12,6 +12,7 @@
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
+    "test:e2e": "node scripts/verify/run_suite.mjs",
     "audit:genericity": "node scripts/audit/no-house-refs.mjs",
     "project:build": "vite-node scripts/project/build.ts --",
     "project:validate": "vite-node scripts/project/validate.ts --",
