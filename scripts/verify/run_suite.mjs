@@ -28,7 +28,7 @@ const unknown = only.filter((n) => !ALL.some(([x]) => x === n));
 if (unknown.length) { console.error(`unknown test(s): ${unknown.join(', ')} — available: ${ALL.map(([n]) => n).join(', ')}`); process.exit(2); }
 const TESTS = ALL.filter(([n]) => !only.length || only.includes(n));
 
-const fmt = (ms) => `${Math.floor(ms / 60000)}:${String(Math.round((ms % 60000) / 1000)).padStart(2, '0')}`;
+const fmt = (ms) => { const s = Math.round(ms / 1000); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`; };
 const t0 = Date.now();
 let buildMs = 0;
 if (!process.argv.includes('--no-build')) {
@@ -52,7 +52,7 @@ function runOne([name, script]) {
     p.on('close', (code) => {
       const ms = Date.now() - start;
       const all = [...out.matchAll(/(\d+) PASS, (\d+) FAIL/g)], m = all.at(-1);
-      const renderer = (out.match(/^\[browser\] (.*)$/m) ?? [])[1] ?? null;
+      const renderer = (out.match(/^\[browser\] (.*)$/m) ?? out.match(/^renderer: (.*)$/m) ?? [])[1] ?? null;
       const fails = out.split('\n').filter((l) => /^\s*FAIL \|/.test(l)).map((l) => l.trim().slice(0, 240));
       const r = { name, script, ms, time: fmt(ms), pass: m ? Number(m[1]) : null, fail: m ? Number(m[2]) : null, code, renderer, fails, ...(m ? {} : { tail: out.trim().split('\n').slice(-15).join('\n') }) };
       writeFileSync(resolve(OUT, `${name}.log`), out);

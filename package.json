@@ -24,7 +24,7 @@
     "audit:i18n": "node scripts/audit/i18n-check.mjs"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=22.12"
   },
   "dependencies": {
     "@react-three/drei": "10.7.9",
@@ -42,9 +42,10 @@
     "@types/three": "0.181.0",
     "@vitejs/plugin-react": "5.2.0",
     "fake-indexeddb": "^6.2.5",
-    "puppeteer-core": "24.43.1",
+    "puppeteer-core": "25.16.0",
     "typescript": "5.9.3",
     "vite": "7.3.7",
-    "vitest": "3.2.7"
+    "vite-node": "5.3.0",
+    "vitest": "4.1.12"
   }
 }

@@ -3,7 +3,7 @@
 cd "$(dirname "$0")/../../.." || exit 1
 ok() { printf '  ✓ %s\n' "$1"; }; no() { printf '  ✗ %s — %s\n' "$1" "$2"; }
 echo "home-from-plan preflight"
-command -v node >/dev/null && ok "node $(node --version)" || no node "install Node.js ≥ 20"
+command -v node >/dev/null && ok "node $(node --version)" || no node "install Node.js ≥ 22.12"
 [ -d node_modules ] && ok "node_modules" || no "node_modules" "run: npm install"
 PY=.venv/bin/python; [ -x "$PY" ] || PY=python3
 if "$PY" -c 'import PIL, numpy' 2>/dev/null; then ok "python image tools ($PY)"; else no "python image tools" "python3 -m venv .venv && .venv/bin/pip install -r tools/requirements.txt (only for plan images, PDF and CAD)"; fi

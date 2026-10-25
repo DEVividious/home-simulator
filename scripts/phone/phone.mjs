@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Install, update and check the app on an Android phone over USB (ADR 0018). The phone runs the same web app as an installed PWA
+// Install, update and check the app on an Android phone over USB. The phone runs the same web app as an installed PWA
 // served by `vite preview` on port 4170 of this computer, tunnelled with `adb reverse` — localhost is a secure context, so no
 // certificates are needed. Saves made while the phone is connected also reach userdata/<id>/document.json on this computer.
 //
@@ -12,7 +12,6 @@
 //   node scripts/phone/phone.mjs reset --confirm           open the app with ?pwa=off (drops the offline cache of the app)
 // Exit codes: 0 ok · 2 a requirement is missing (the message says how to fix it) · 3 the app is not open on the phone.
 import { execFileSync, spawn } from 'node:child_process';
-import { createRequire } from 'node:module';
 import { existsSync, mkdirSync, statSync, readdirSync, writeFileSync } from 'node:fs';
 import { createServer } from 'node:net';
 import { dirname, join, resolve } from 'node:path';
@@ -120,7 +119,7 @@ userdata/<id>/document.json on this computer. Keep this running while you use th
 }
 
 async function attach() {
-  const puppeteer = createRequire(join(ROOT, 'package.json'))('puppeteer-core');
+  const { default: puppeteer } = await import('puppeteer-core');   // only needed with a phone attached
   adb('forward', `tcp:${DEVTOOLS}`, 'localabstract:chrome_devtools_remote');
   const browser = await puppeteer.connect({ browserURL: `http://127.0.0.1:${DEVTOOLS}`, defaultViewport: null, protocolTimeout: 60000 });
   let page = null;

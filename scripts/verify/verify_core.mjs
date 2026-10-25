@@ -371,7 +371,7 @@ async function runProject(F) {
     const nb = v1.list.find((v) => v.name === 'Variant B');
     check(`[${tag}] variants: "New" creates a variant with the given name and makes it active`, v1.list.length === v0.list.length + 1 && !!nb && v1.active === nb.id, v1.list.map((v) => v.name).join(' / '));
     await click(T('variant-rename'), 400);
-    await page.click(T('variant-name'), { clickCount: 3 }); await page.keyboard.type('Variant B2'); await page.keyboard.press('Enter'); await sleep(800);
+    await page.click(T('variant-name'), { count: 3 }); await page.keyboard.type('Variant B2'); await page.keyboard.press('Enter'); await sleep(800);
     const v2 = await page.evaluate(() => window.__home.variants());
     check(`[${tag}] rename: the active variant gets the new name`, v2.list.find((v) => v.id === nb?.id)?.name === 'Variant B2' && (await exists(T('variant-Variant B2'))), v2.list.map((v) => v.name).join(' / '));
     const first = v2.list[0];

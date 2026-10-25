@@ -243,7 +243,7 @@ async function runProject(PROJECT) {
     const h1 = (await pt(G1.id)).heightAFFL;
     await click(T('el-height-minus'), 250); await click(T('el-height-minus'), 250);
     const h2 = (await pt(G1.id)).heightAFFL;
-    const hv = await page.$(T('el-height-value')); await hv.click({ clickCount: 3 }); await page.keyboard.type('112'); await page.keyboard.press('Enter'); await sleep(300);
+    const hv = await page.$(T('el-height-value')); await hv.click({ count: 3 }); await page.keyboard.type('112'); await page.keyboard.press('Enter'); await sleep(300);
     const h3 = (await pt(G1.id)).heightAFFL;
     const presets = await page.$$eval(`${T('el-height-presets')} button`, (b) => b.map((x) => x.textContent.trim()));
     await click(T('el-height-115'), 300);
@@ -351,7 +351,7 @@ async function runProject(PROJECT) {
     await tap(await symAt(G1.id));
     await click(T('el-more'), 300);
     const form = await text(T('el-form'));
-    const setTxt = async (id, v) => { const el = await page.$(T(id)); await el.click({ clickCount: 3 }); await page.keyboard.type(v); await page.keyboard.press('Enter'); await sleep(250); };
+    const setTxt = async (id, v) => { const el = await page.$(T(id)); await el.click({ count: 3 }); await page.keyboard.type(v); await page.keyboard.press('Enter'); await sleep(250); };
     await setTxt('el-label', 'by the desk'); await setTxt('el-circuit', 'C-04');
     const typed = await pt(G1.id);
     check('28. "More": type, label, Smart Home, circuit, notes, status — no technical fields; edits change the same device',
