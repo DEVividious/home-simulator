@@ -23,3 +23,10 @@ projects/*/preview/
 .DS_Store
 *.log
 *.tsbuildinfo
+
+# development notes kept locally, not published: architecture decisions and developer guides
+docs/adr/
+docs/ARCHITECTURE.md
+docs/DEVELOPER_GUIDE.md
+docs/PERFORMANCE_BUDGETS.md
+docs/MOBILE_UX.md
