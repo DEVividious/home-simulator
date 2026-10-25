@@ -56,7 +56,9 @@ Field notes:
   −Y (down), 270 = +X. `elevation` (metres above the floor) works on any item, e.g. a TV on a stand or a wall cabinet.
 - Doors to the outside open inwards by default; `"swingInto": "exterior"` makes one open outwards (the arc is drawn outside).
 - `regularize` (default true for px plans) snaps to 5 mm, aligns faces within 4 cm and sets shared walls within 8 cm of the
-  interior thickness to exactly that thickness — the build prints every adjustment.
+  interior thickness to exactly that thickness, keeping the wall's centre line — the build prints every adjustment. When a
+  printed size or area says which side is right (the centre line may move a face by 2.5 mm), put both faces where they belong
+  (exactly the interior thickness apart) and the build leaves them.
 - Electrical point `along` is metres in project coordinates (the compiler does not convert it) — prefer `at` in px plans.
 - Optional pass-through blocks, copied into `project.json` unchanged: `assets` (a GLB of the building instead of the generated
   shell, terrain, surroundings — the last one switches on the `environment` module), `views` (camera presets with `pose`),
@@ -71,5 +73,6 @@ Field notes:
   in brackets) for `areaPrinted`.
 - `roofWindows`: `[ { "id": "RW1", "room": "R5", "rect": [x0, y0, x1, y1] } ]` — windows in a sloped ceiling, seen from above
   (on Polish plans a rectangle labelled like 78/140).
-- `notes` keys are room ids (a note about a door goes under the room it opens from).
+- `notes` keys are room ids (a note about a door goes under the room it opens from); the app shows them to the user with the
+  room's furnishings, so write them for the user, not as working notes.
 - Unknown fields are errors — check spelling against the schema.

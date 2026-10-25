@@ -13,7 +13,8 @@ Two synthetic examples ship with it: `demo-apartment` (a 52 m² flat) and `sampl
 
 ```bash
 npm install
-npm run dev              # http://localhost:5173/  (?project=sample-house for the other example)
+npm run dev              # http://localhost:5173/ — your own project if there is one, else sample-house;
+                         # ?project=demo-apartment (or any id) opens another; port busy: npm run dev -- --port 5180
 ```
 
 Requirements: Node.js ≥ 20. For importing plans: Python 3.11 + `tools/requirements.txt`; poppler for PDF sheets; the ODA File
@@ -57,11 +58,16 @@ yourself — see [docs/SKILLS.md](docs/SKILLS.md).
 `projects/<id>/project.json` (read by the engine). Spec: [docs/PROJECT_PACKAGE_SPEC.md](docs/PROJECT_PACKAGE_SPEC.md);
 authoring guide: [docs/AUTHORING.md](docs/AUTHORING.md); schemas: `schemas/`.
 
+Without an agent: copy `projects/demo-apartment/source/plan.json` to `projects/<id>/source/plan.json` (the directory name is
+the project id), set `project.id` and `project.name`, and edit it — format and a commented example:
+[skills/home-from-plan/references/plan-schema.md](skills/home-from-plan/references/plan-schema.md). Then:
+
 ```bash
 npm run project:build -- projects/<id>       # plan.json → project.json (errors and warnings explained)
 npm run project:validate -- projects/<id>    # the checks the app runs at load time
-npm run project:preview -- projects/<id>     # plan per level + 3D view as PNG
+npm run project:preview -- projects/<id>     # projects/<id>/preview/plan-<level>.png + 3d.png (git-ignored)
 ```
+Write down in `projects/<id>/README.md` where the facts come from and what you assumed — the skills do the same.
 
 ## Phone
 

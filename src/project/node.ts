@@ -50,9 +50,11 @@ export function projectDirs(root: string): string[] {
     .map((e) => e.name).sort();
 }
 
+/** the example packages shipped with the engine — a user's own project opens before them */
+const EXAMPLES = ['sample-house', 'demo-apartment'];
 /**
  * projects/index.json built from the project directories. Default project: HOME_SIM_DEFAULT_PROJECT, then the first
- * project that is not the shipped demo, then the demo.
+ * project that is not a shipped example, then the examples in the order of EXAMPLES.
  */
 export function buildProjectIndex(root: string): ProjectIndex {
   const projects = projectDirs(root).map((d) => {
@@ -61,6 +63,6 @@ export function buildProjectIndex(root: string): ProjectIndex {
     return { id: d, name, ...(description ? { description } : {}), dir: `${PROJECTS_DIR}/${d}/` };
   });
   const env = process.env.HOME_SIM_DEFAULT_PROJECT;
-  const def = (env && projects.some((p) => p.id === env) ? env : undefined) ?? projects.find((p) => p.id !== 'demo-apartment')?.id ?? projects[0]?.id ?? 'demo-apartment';
+  const def = (env && projects.some((p) => p.id === env) ? env : undefined) ?? projects.find((p) => !EXAMPLES.includes(p.id))?.id ?? EXAMPLES.find((e) => projects.some((p) => p.id === e)) ?? projects[0]?.id ?? 'demo-apartment';
   return { schema: 'home-simulator/projects-index', version: 1, default: def, projects };
 }

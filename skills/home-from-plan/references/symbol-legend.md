@@ -34,6 +34,7 @@
 | Garage door | wide gap in the garage's exterior wall, label like "500/225" | `"type": "sliding"` door of that width and `height` (no sectional door type; note it) |
 | Watermark / logo | large diagonal text or a logo over the drawing | ignore |
 
-Size priors for calibration (`tools/image/calibrate.py symbol --kind …`): `door` 0.8 (0.7–0.9, interior leaf), `entrance-door`
+Size priors for calibration (`tools/image/calibrate.py symbol --kind …`) — for doors measure the **arc radius** (hinge to the tip
+of the leaf = the leaf width; `width` in plan.json is the clear opening ≈ leaf + 0.10): `door` 0.8 (0.7–0.9), `entrance-door`
 0.9 (0.85–1.0), `bathtub` 1.7 (1.5–1.8), `bed` length 2.0, `wc` depth 0.65. Symbols are weak evidence — prefer printed areas and
 dimensions; with symbols only, use at least three estimates of two different kinds.

@@ -209,11 +209,14 @@ describe('project directories and the project index', () => {
     expect(schemaErrors(ProjectIndexSchema, i)).toEqual([]);
   });
 
-  it('default project: HOME_SIM_DEFAULT_PROJECT (when installed) → first project that is not the demo → the demo', () => {
+  it('default project: HOME_SIM_DEFAULT_PROJECT (when installed) → the user\'s first project → sample-house → the demo', () => {
     put('demo-apartment', demo);
     expect(buildProjectIndex(dir).default).toBe('demo-apartment');
-    put('my-flat', { manifest: { name: 'My flat' } });
+    put('sample-house', { manifest: { name: 'Sample house' } });
+    expect(buildProjectIndex(dir).default).toBe('sample-house');
     put('zeta-house', { manifest: { name: 'Zeta' } });
+    expect(buildProjectIndex(dir).default).toBe('zeta-house');          // sorts after the examples, still opens first
+    put('my-flat', { manifest: { name: 'My flat' } });
     expect(buildProjectIndex(dir).default).toBe('my-flat');
     process.env.HOME_SIM_DEFAULT_PROJECT = 'zeta-house';
     expect(buildProjectIndex(dir).default).toBe('zeta-house');

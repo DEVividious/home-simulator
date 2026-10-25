@@ -33,7 +33,7 @@
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "three": "0.181.0",
-    "zod": "4.6.5"
+    "zod": "4.6.7"
   },
   "devDependencies": {
     "@types/node": "24.19.0",
@@ -44,7 +44,7 @@
     "fake-indexeddb": "^6.2.5",
     "puppeteer-core": "24.43.1",
     "typescript": "5.9.3",
-    "vite": "7.3.6",
+    "vite": "7.3.7",
     "vitest": "3.2.7"
   }
 }

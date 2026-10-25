@@ -53,7 +53,7 @@ function planSvg(levelId) {
   for (let x = Math.ceil(x0); x <= x1; x++) g += `<line x1="${X(x)}" y1="0" x2="${X(x)}" y2="${H}" stroke="#e5e7eb"/><text x="${X(x)}" y="12" font-size="10" fill="#9ca3af" text-anchor="middle">${x}</text>`;
   for (let y = Math.ceil(y0); y <= y1; y++) g += `<line x1="0" y1="${Y(y)}" x2="${W}" y2="${Y(y)}" stroke="#e5e7eb"/><text x="3" y="${Y(y)}" font-size="10" fill="#9ca3af" dy="-2">${y}</text>`;
   // wall mass: every room grown by the exterior wall thickness (fills the walls between rooms too), then the rooms on top
-  for (const r of rooms) g += `<polygon points="${pts(grow(r.polygon, ext))}" fill="#374151"/>`;
+  for (const r of rooms) g += `<polygon points="${pts(grow(r.polygon, ext))}" fill="#374151" stroke="#374151" stroke-width="1"/>`;   // stroke: no anti-aliasing seams between rooms
   for (const r of rooms) g += `<polygon points="${pts(r.polygon)}" fill="#ffffff" stroke="#111827" stroke-width="1"/>`;
   // door gaps (cut through the wall mass) and windows
   for (const r of rooms) {

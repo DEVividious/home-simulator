@@ -3,9 +3,12 @@
 The human version of the `home-from-plan` skill. You write `projects/<id>/source/plan.json`; the compiler writes
 `project.json`.
 
-1. **Start from an example**: copy `projects/demo-apartment/` (flat, metres) or `projects/sample-house/` (house, stairs, plot)
-   to `projects/<your-id>/` and edit `source/plan.json` (format: skills/home-from-plan/references/plan-schema.md; rules:
-   skills/home-from-plan/references/authoring-conventions.md).
+1. **Start from an example**: copy `source/plan.json` of `projects/demo-apartment/` (flat, metres) or `projects/sample-house/`
+   (house, stairs, plot) to `projects/<your-id>/source/plan.json`, set `project.id` (= the directory name) and `project.name`,
+   and edit it (format: skills/home-from-plan/references/plan-schema.md; rules:
+   skills/home-from-plan/references/authoring-conventions.md). `project.json` is written by the build — never copy or edit it.
+   **From a description** (no drawing): the same, in metres, with `defaults.confidence: "unknown"`; say in the project's
+   `README.md` that the geometry is approximate.
 2. **From an image**: `.venv/bin/python tools/image/prepare.py plan.png --out projects/<id>/source/prep`, read pixel coordinates
    from `grid.png`, calibrate (docs/IMPORT_RASTER.md) and write the plan with `"units": "px"`.
 3. **From a PDF or CAD drawing**: docs/IMPORT_PDF.md, docs/IMPORT_CAD.md.
