@@ -14,7 +14,12 @@ These rules make a package correct for the engine and stable for the user's save
   plans). Use `rect` for rectangles, `polygon` for L / U shapes. No holes.
 - Neighbouring rooms are separated by the wall thickness: interior 0.12 m, exterior 0.30 m (`defaults` if the building differs —
   record the source). Faces that should line up must have the same coordinate.
-- An open kitchen + living room is ONE room with `"tags": ["kitchen"]`. A hall with stairs is one room containing the stair box.
+- An open kitchen + living room is ONE room with `"tags": ["kitchen"]`, even when the plan numbers them separately; put the
+  sum of their printed areas in `areaPrinted` and both numbers in the README. A hall with stairs is one room containing the stair
+  box.
+- A room that opens fully into another (a corridor arm ending in the living room, no wall line between them) is either part of
+  that room (an L / U outline) or a separate room with a `passages` entry as wide as the opening — choose what the plan numbers
+  as rooms. The second leaves short wall stubs at the ends of the passage.
 - `kind` is mandatory and explicit — bath, kitchen, garage, tech, hall, bed, living, office, storage, room. Nothing is inferred
   from names. Tags: `kitchen` (built-in kitchen behaviour), `garage`.
 - Room ids: `R1…` in reading order (top-left → bottom-right) per level, or the numbers printed on the plan (verbatim, recorded in
@@ -25,9 +30,13 @@ These rules make a package correct for the engine and stable for the user's save
   in the masonry (typical: 0.8 interior, 0.9 kitchen / living, 1.0 entrance). The compiler finds the wall and writes the gap into
   BOTH rooms.
 - Hinged doors: `swingInto` = the room the leaf opens into (on drawings: the side the arc is drawn), `hinge` = left / right as
-  seen standing in that room looking at the wall (the arc's centre is the hinge). Exterior doors open into the building.
+  seen standing in that room looking at the wall (the arc's centre is the hinge). Exterior doors open into the building unless
+  the arc is drawn outside: then `"swingInto": "exterior"`.
 - Sliding / pocket: `"type": "sliding"`, `slideTo: "start" | "end"` (towards the smaller / larger coordinate along the wall).
 - An opening without a door leaf → `passages` (no door id).
+- Garage door (sectional, up-and-over, roller): no such door type — a `"type": "sliding"` door of the full width in the garage's
+  exterior wall (`height` ≈ the printed height, e.g. 2.25), noted in the README. Cars drawn in a garage are context, not
+  furniture, unless the user wants them: the catalog item `car` fits one.
 - Heights default to 2.05 m opening / 2.00 m leaf.
 
 ## Windows
@@ -37,10 +46,20 @@ These rules make a package correct for the engine and stable for the user's save
 - Windows belong on exterior walls (the compiler warns otherwise).
 
 ## Stairs
-- Only two-flight U-turn stairs are modelled: `box` [x0, y0, x1, y1] with walls at x0 and y0, the lower flight starting at y1 on
-  the x > split side. Width of the box = 2 × flightWidth + gap; depth ≥ (risers − 1) × tread + landing.
-- The box must lie inside a room of the lower level and inside a room of the upper level (the opening in its floor).
-- Other stair shapes: model the opening as a room or leave a note in `notIncluded`; say it in the README.
+- Only two-flight U-turn stairs are modelled: `box` [x0, y0, x1, y1] = both flights and the landing. `up` = the direction one
+  walks up the lower flight (on drawings: the arrow, from the "start" dot towards the landing; N = plan up), `turn` = left /
+  right on the landing. Width across the flights = 2 × flightWidth + gap; length ≥ (risers − 1) × tread + landing.
+- The centre of the box must lie in a room of the lower level and in a room of the upper level (the opening in its floor). On
+  the lower level the space under the upper flight belongs to the room around the foot of the stairs; printed areas usually
+  leave the stair out — say so in the README when `areaPrinted` differs for that reason.
+- Draw the box on the inner faces; a box reaching a few centimetres into a wall is clipped to the room.
+- Other stair shapes (straight, L-shaped, winding): the nearest U-turn of the same footprint, or the opening as a room plus a
+  `notIncluded` note; say it in the README.
+
+## Walls that are not orthogonal
+- The generated shell needs axis-aligned walls. A 45° corner (a chamfered hall, a wall under the stairs) becomes a right angle:
+  keep the room's area close (cut the corner at its middle) and move a door in such a wall onto the nearest orthogonal wall.
+  List every such change in the README.
 
 ## Provenance [0021]
 - `source` (plan-level default) says where the facts come from; per item `source` when it differs.

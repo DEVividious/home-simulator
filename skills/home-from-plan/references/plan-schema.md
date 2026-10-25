@@ -29,7 +29,7 @@ Worked examples: `projects/demo-apartment/source/plan.json` (flat, metres, expli
     { "id": "W1", "room": "R1", "at": [210, 340], "width": 1.4 },
     { "id": "W2", "room": "R2", "at": [1860, 850], "width": 2.0, "sill": 0, "passable": true }
   ],
-  "stairs": [ { "id": "S1", "from": "L0", "to": "L1", "box": [x0, y0, x1, y1], "risers": 9, "tread": 0.27, "flightWidth": 0.95, "gap": 0.05 } ],
+  "stairs": [ { "id": "S1", "from": "L0", "to": "L1", "box": [x0, y0, x1, y1], "up": "N", "turn": "left", "risers": 9, "tread": 0.27, "flightWidth": 0.95, "gap": 0.05 } ],
   "furniture": [
     { "room": "R1", "catalogId": "bed", "variant": "160", "wall": "W", "along": 300, "basis": "drawn" },   // along: px in a px plan
     { "room": "R2", "catalogId": "sofa", "variant": "3", "at": [1630, 700], "rot": 180, "basis": "drawn" },
@@ -48,6 +48,13 @@ Field notes:
 - `rect` / `polygon` / `at` / `box` / `boundary` / `along` are points (pixels in a px plan); `width`, `sill`, `head`, `height`,
   `elevation`, `dims`, `ceiling`, `tread`, `flightWidth`, `margin` are metres — always.
 - `look` of a viewpoint: [x, y, height above the floor in metres] — x, y are points.
+- One image per level (px plans): give each level its own `calibration` (same block as the plan's) with `originPx` at the SAME
+  building corner on every image — usually the outer bottom-left corner of the walls, which stay in place between floors.
+  Every point converts with the calibration of its level (rooms, doors, windows, furniture of rooms on that level; a stair box
+  with its `from` level). Check the alignment on the previews: outer walls and chimneys must coincide.
+- `rot` (furniture) is in degrees in project axes, also in a px plan: 0 = the front faces +Y (up on the image), 90 = −X, 180 =
+  −Y (down), 270 = +X. `elevation` (metres above the floor) works on any item, e.g. a TV on a stand or a wall cabinet.
+- Doors to the outside open inwards by default; `"swingInto": "exterior"` makes one open outwards (the arc is drawn outside).
 - `regularize` (default true for px plans) snaps to 5 mm, aligns faces within 4 cm and sets shared walls within 8 cm of the
   interior thickness to exactly that thickness — the build prints every adjustment.
 - Electrical point `along` is metres in project coordinates (the compiler does not convert it) — prefer `at` in px plans.
@@ -64,4 +71,5 @@ Field notes:
   in brackets) for `areaPrinted`.
 - `roofWindows`: `[ { "id": "RW1", "room": "R5", "rect": [x0, y0, x1, y1] } ]` — windows in a sloped ceiling, seen from above
   (on Polish plans a rectangle labelled like 78/140).
+- `notes` keys are room ids (a note about a door goes under the room it opens from).
 - Unknown fields are errors — check spelling against the schema.

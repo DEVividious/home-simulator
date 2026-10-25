@@ -19,7 +19,7 @@
 .hm-top { display: flex; align-items: center; gap: 14px; padding: 0 14px; background: var(--hm-panel); border-bottom: 1px solid var(--hm-line); z-index: 5; }
 .hm-brand { display: flex; align-items: center; gap: 9px; min-width: 190px; color: var(--hm-accent); }
 .hm-brand span { display: flex; flex-direction: column; line-height: 1.15; color: var(--hm-ink); }
-.hm-brand b { font-size: 15px; }
+.hm-brand b { font-size: 15px; max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .hm-brand small { font-size: 11px; color: var(--hm-muted); max-width: 170px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .hm-nav { flex: 1; display: flex; justify-content: center; gap: 4px; }
 .hm-nav button { display: flex; align-items: center; gap: 7px; border: 0; background: transparent; padding: 8px 13px; border-radius: 10px; cursor: pointer; color: var(--hm-muted); font-weight: 600; }

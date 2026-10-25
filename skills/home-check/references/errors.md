@@ -9,12 +9,14 @@
 | `calibration.methods` / `calibration.agreement` (warning) | fewer than two scale estimates / they differ by > 5 % | add an independent estimate or ask the user for one real dimension |
 | `room.orthogonal` | an outline edge is slanted | make edges horizontal / vertical (the generated shell needs it) or provide a GLB model |
 | `room.overlap` | two rooms of a level overlap | outlines are inner faces — rooms must be separated by the wall |
-| `wall.thickness` (warning) | a shared wall is neither the interior nor the exterior thickness | align the faces, or set `defaults.interiorWall` if the building really has such walls |
+| `wall.thickness` (warning) | a shared wall is neither the interior nor the exterior thickness | align the faces if the drawing shows the standard thickness; if most interior walls have that thickness set `defaults.interiorWall`; a few thicker walls (load-bearing, installation walls) are fine as drawn — the generated shell fills the real gap; say so in the README |
+| `door.swingOverlap` (warning) | two door leaves sweep the same floor | re-read the arcs on the drawing (hinge side, which room); an entrance door drawn with its arc outside opens outwards: `"swingInto": "exterior"`; a real clash stays — note it in the README |
 | `door.wall` | no wall between the two rooms holds an opening of that width at `at` | move `at` into the wall between them; check the room ids; check that the width fits the shared wall length |
-| `door.swing` | `swingInto` is not one of the two rooms / points to `exterior` | the leaf opens into one of the rooms (exterior doors open inwards) |
+| `door.swing` | `swingInto` is not one of the two rooms (or `exterior` for an outside door) | use a room id of `between`; for an outside door that opens outwards, `"exterior"` |
 | `window.wall` / `window.span` | `at` is not on a wall of the room / the window is longer than the wall | put `at` on the wall line; check the width |
 | `window.interior` (warning) | a window on a wall shared with another room | probably the wrong room or wall |
-| `stairs.*` | box too short / not inside rooms of both levels / unusual riser | see authoring-conventions.md § Stairs |
+| `stairs.*` | box too short / centre not in a room of both levels / unusual riser / box width across the flights | see authoring-conventions.md § Stairs; `up` and `turn` set the direction |
+| `furniture.ceiling` (warning) | an item is taller than the sloped ceiling above part of it | move it towards the ridge, choose a lower variant or give `dims.h`; a knee-wall cupboard is fine below 1.40 |
 | `furniture.catalog` / `furniture.variant` | unknown catalog id / variant | skills/home-from-plan/references/catalog-ids.md |
 | `furniture.outside` (warning) | the centre of an item is outside its room | wrong room id or coordinates |
 | `electrical.wall` (warning) | a point is not on a wall of its room | use `wall` + `along` |

@@ -3,7 +3,7 @@
 // (≤ 6 draw calls). three.js frame: (x, height, −y LCS). The walking surface in walk mode remains the ramp from model/stairs.ts.
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
-import { stairs, type StairDef } from '../model/stairs';
+import { stairFrame, stairs, type StairDef } from '../model/stairs';
 import type { StairsConfig } from '../model/stairsConfig';
 
 export type StairPart = 'concrete' | 'tread' | 'riser' | 'rail' | 'balustrade' | 'glass';
@@ -32,9 +32,10 @@ function bar(a: [number, number, number], b: [number, number, number], profile: 
   return g;
 }
 
-/** flight layout in LCS — shared by the geometry and the tests */
+/** flight layout in the canonical frame of the stairs (model/stairs.ts stairFrame) — shared by the geometry and the tests */
 export function stairLayout(def: StairDef = stairs()[0]) {
-  const { bbox: [x0, y0, x1, y1], tread: T, riser: R, risers: N, landingZ, topZ, split, gap, landingEdge: le } = def;
+  const [x0, y0, x1, y1] = stairFrame(def).box;
+  const { tread: T, riser: R, risers: N, landingZ, topZ, split, gap, landingEdge: le } = def;
   return {
     x0, y0, x1, y1, T, R, N, landingZ, topZ, le,
     /** lower flight (at +X): up towards −Y; upper flight (at −X): up towards +Y */
@@ -116,13 +117,29 @@ export function buildStairs(c: StairsConfig, def: StairDef = stairs()[0]): Stair
     }
   }
 
+  // canonical frame → plan (turn / mirror): the affine map of model/stairs.ts in the three.js frame (x, height, −y)
+  const f = stairFrame(def), o = f.toWorld([x0, y0]), ex = f.toWorld([x0 + 1, y0]), ey = f.toWorld([x0, y0 + 1]);
+  const a00 = ex[0] - o[0], a10 = ex[1] - o[1], a01 = ey[0] - o[0], a11 = ey[1] - o[1];
+  const bx = o[0] - a00 * x0 - a01 * y0, by = o[1] - a10 * x0 - a11 * y0;
+  const turned = a00 !== 1 || a11 !== 1 || a01 !== 0 || a10 !== 0;
+  const M = new THREE.Matrix4().set(a00, 0, -a01, bx, 0, 1, 0, 0, -a10, 0, a11, -by, 0, 0, 0, 1), mirrored = a00 * a11 - a01 * a10 < 0;
+
   const out: StairGeometries = {};
   for (const k of Object.keys(parts) as StairPart[]) {
     if (!parts[k].length) continue;
     // merging: a common attribute set (ExtrudeGeometry and BoxGeometry have the same: position, normal, uv); non-indexed
     const merged = mergeGeometries(parts[k].map((g) => (g.index ? g.toNonIndexed() : g)), false);
     parts[k].forEach((g) => g.dispose());
-    if (merged) out[k] = merged;
+    if (!merged) continue;
+    if (turned) {
+      merged.applyMatrix4(M);
+      // a mirror turns the triangles inside out: swap two corners of each triangle back
+      if (mirrored) for (const name of Object.keys(merged.attributes)) {
+        const at = merged.getAttribute(name), n = at.itemSize, arr = at.array as Float32Array;
+        for (let t = 0; t < at.count; t += 3) for (let c = 0; c < n; c++) { const i = (t + 1) * n + c, j = (t + 2) * n + c, v = arr[i]; arr[i] = arr[j]; arr[j] = v; }
+      }
+    }
+    out[k] = merged;
   }
   return out;
 }

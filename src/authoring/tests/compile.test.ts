@@ -2,7 +2,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { compilePlan, normalizePolygon, type CatalogItemInfo } from '../compile';
+import { compilePlan, normalizePolygon, outerOutline, type CatalogItemInfo } from '../compile';
 import { packageErrors } from '../../project/registry';
 
 const ROOT = path.resolve(__dirname, '..', '..', '..');
@@ -85,6 +85,22 @@ describe('doors', () => {
     expect(d.swingInto).toBe('R1');
     expect(d.openDir).toEqual([1, 0]);
   });
+  it('exterior door with swingInto "exterior" opens outwards from the outer face', () => {
+    const p = base();
+    p.doors = [{ id: 'D0', between: ['R1', 'exterior'], at: [0.15, 1.5], width: 1.0, hinge: 'right', swingInto: 'exterior' }];
+    const d = compile(p).project!.building.doors[0];
+    expect(d.swingInto).toBe('exterior');
+    expect(d.openDir).toEqual([-1, 0]);
+    expect(d.hinge![0]).toBe(0);
+  });
+  it('two leaves sweeping the same floor are a warning', () => {
+    const p = base();
+    p.doors = [{ id: 'D0', between: ['R1', 'exterior'], at: [0.15, 1.5], width: 1.0, hinge: 'right' },
+      { id: 'D9', between: ['R1', 'exterior'], at: [0.15, 2.3], width: 1.0, hinge: 'left' }];
+    expect(compile(p).issues.filter((i) => i.code === 'door.swingOverlap')).toHaveLength(1);
+    (p.doors as Record<string, unknown>[])[1].swingInto = 'exterior';
+    expect(compile(p).issues.filter((i) => i.code === 'door.swingOverlap')).toHaveLength(0);
+  });
   it('a door that is not on a shared wall is an error', () => {
     const p = base();
     (p.doors as Record<string, unknown>[])[0].at = [2, 1.5];
@@ -126,6 +142,15 @@ describe('windows, furniture, stairs, site', () => {
     expect(s.building.stairs![0]).toMatchObject({ riser: 0.164, landingZ: 1.475, topZ: 2.95, run: 2.16, landingEdge: 1.3, split: 1.275 });
     expect(s.building.rooms.rooms.find((r) => r.id === 'H1')!.stair_opening).toEqual([0.3, 0.3, 2.25, 3.46]);
     expect(s.manifest.modules).toEqual(['site', 'sun', 'stairs']);
+  });
+  it('stairs: "up" turns and "turn: left" mirrors the canonical layout; sizes are checked across the flights', () => {
+    const p = read('projects/sample-house/source/plan.json');
+    p.stairs[0] = { ...p.stairs[0], box: [0.3, 0.3, 3.46, 2.25], up: 'E', turn: 'left' };
+    const r = compile(p), st = r.project!.building.stairs![0];
+    expect(st.orient).toEqual({ rotate: 90, mirror: true });
+    expect(st).toMatchObject({ bbox: [0.3, 0.3, 3.46, 2.25], split: 1.275, landingEdge: 1.3 });
+    expect(r.issues.map((i) => i.code)).not.toContain('stairs.width');
+    expect(r.issues.map((i) => i.code)).not.toContain('stairs.depth');
   });
   it('site: footprint = rooms + exterior wall, plot grown by the margin', () => {
     const p = base();
@@ -192,6 +217,12 @@ describe('sloped ceilings (attic levels)', () => {
     ...extra,
   });
   const ceilingOf = (r: ReturnType<typeof compile>) => r.project!.building.rooms.rooms[0].ceiling;
+  it('furniture taller than the sloped ceiling above it is a warning', () => {
+    const lines = { ridge: 'X', lines: [{ at: 0.3, height: 1.4 }, { at: 1.3, height: 2.2 }] };
+    const codes = (y: number) => compile(attic(lines, { furniture: [{ room: 'A1', catalogId: 'wardrobe', at: [3, y], rot: 0 }] })).issues.map((i) => i.code);
+    expect(codes(0.7)).toContain('furniture.ceiling');       // against the knee wall
+    expect(codes(4.3)).not.toContain('furniture.ceiling');   // under the ridge
+  });
   it('two height lines give the slope; the ridge defaults to the middle of the level', () => {
     const r = compile(attic({ ridge: 'X', lines: [{ at: 0.3, height: 1.4 }, { at: 1.3, height: 2.2 }] }));
     expect(errors(r)).toEqual([]);
@@ -267,5 +298,71 @@ describe('released ids', () => {
     q.rooms = [(q.rooms as unknown[])[0]];
     q.doors = [];
     expect(errors(compile(q, lock))).toContain('ids.lock');
+  });
+});
+
+describe('non-rectangular rooms (L-shaped outlines)', () => {
+  // an L corridor wrapping a bathroom: the corridor's bounding-box centre lies inside the bathroom
+  const lPlan = () => ({
+    ...base(), regularize: true,
+    rooms: [
+      { id: 'A', name: 'Corridor', level: 'L1', kind: 'hall', polygon: [[0, 0], [4, 0], [4, 1], [1, 1], [1, 4], [0, 4]] },
+      { id: 'B', name: 'Bath', level: 'L1', kind: 'bath', rect: [1.13, 1.1, 4, 4] },
+    ],
+    doors: [],
+  } as Record<string, unknown>);
+  it('a room inside the notch of an L is not an overlap', () => {
+    expect(errors(compile(lPlan()))).not.toContain('room.overlap');
+  });
+  it('rooms that really overlap are still reported', () => {
+    const p = lPlan();
+    (p.rooms as Record<string, unknown>[])[1].rect = [0.5, 0.5, 4, 4];
+    expect(errors(compile(p))).toContain('room.overlap');
+  });
+  it('walls of an L room are regularised edge by edge', () => {
+    const r = compile(lPlan());
+    // 0.13 m and 0.10 m gaps against the two inner faces of the L → the interior thickness 0.12 m, no warning left
+    expect(r.issues.map((i) => i.code)).not.toContain('wall.thickness');
+    const poly = (id: string) => r.project!.building.rooms.rooms.find((x) => x.id === id)!.polygon;
+    const mid = (v: number[]) => [...new Set(v)].sort((u, w) => u - w)[1];   // the inner corner of the L
+    const bath = poly('B'), [nx, ny] = [mid(poly('A').map((q) => q[0])), mid(poly('A').map((q) => q[1]))];
+    expect(r3(Math.min(...bath.map((q) => q[0])) - nx)).toBe(0.12);
+    expect(r3(Math.min(...bath.map((q) => q[1])) - ny)).toBe(0.12);
+  });
+  it('the site footprint follows an L-shaped building', () => {
+    const f = outerOutline([[[0, 0], [4, 0], [4, 1], [1, 1], [1, 4], [0, 4]]], 0.3);
+    expect(f).toHaveLength(6);
+    expect(f).toContainEqual([-0.3, -0.3]);
+    expect(f).toContainEqual([1.3, 1.3]);
+    expect(f).toContainEqual([4.3, -0.3]);
+  });
+});
+
+describe('calibration', () => {
+  const px = (methods: { method: string; pxPerM: number }[]) => ({ ...base(), units: 'px', calibration: { pxPerM: 100, originPx: [0, 1000], methods },
+    rooms: [{ id: 'R1', name: 'Living', level: 'L1', kind: 'living', rect: [30, 670, 430, 970] }], doors: [] } as Record<string, unknown>);
+  const codes = (p: Record<string, unknown>) => compile(p).issues.map((i) => i.code);
+  it('symbol estimates are ignored when measured ones exist', () => {
+    expect(codes(px([{ method: 'points', pxPerM: 100 }, { method: 'area', pxPerM: 101 }, { method: 'symbol:door', pxPerM: 120 }]))).not.toContain('calibration.agreement');
+  });
+  it('measured estimates that differ are reported', () => {
+    expect(codes(px([{ method: 'points', pxPerM: 100 }, { method: 'area', pxPerM: 110 }]))).toContain('calibration.agreement');
+  });
+});
+
+describe('one image per level', () => {
+  it('each level converts its points with its own calibration; levels without one use the plan calibration', () => {
+    const p = { ...base(), units: 'px', doors: [], calibration: { pxPerM: 100, originPx: [0, 1000] },
+      levels: [{ id: 'L0', name: 'Ground', floorZ: 0, ceiling: 2.6 },
+        // the upper floor image: twice the resolution, building corner at pixel (50, 2050)
+        { id: 'L1', name: 'Upper', floorZ: 2.85, ceiling: 2.5, calibration: { pxPerM: 200, originPx: [50, 2050] } }],
+      rooms: [{ id: 'G1', name: 'Hall', level: 'L0', kind: 'hall', rect: [30, 570, 430, 970] },
+        { id: 'U1', name: 'Room', level: 'L1', kind: 'bed', rect: [110, 1250, 910, 1990] }],
+      windows: [{ id: 'W1', room: 'U1', at: [80, 1600], width: 1.2 }] } as Record<string, unknown>;
+    const r = compile(p), rooms = r.project!.building.rooms.rooms;
+    expect(errors(r)).toEqual([]);
+    expect(rooms.find((x) => x.id === 'G1')!.bbox).toEqual([0.3, 0.3, 4.3, 4.3]);
+    expect(rooms.find((x) => x.id === 'U1')!.bbox).toEqual([0.3, 0.3, 4.3, 4]);
+    expect(rooms.find((x) => x.id === 'U1')!.openings[0]).toMatchObject({ from_: 1.65, to: 2.85 });
   });
 });

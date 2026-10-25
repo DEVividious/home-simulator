@@ -8,6 +8,7 @@ pixel size of images, and the import branch to use (docs/IMPORT_*.md)."""
 from __future__ import annotations
 
 import json
+import re
 import shutil
 import subprocess
 import sys
@@ -15,7 +16,9 @@ from pathlib import Path
 
 BRANCH = {'dwg': 'CAD (convert with tools/cad/dwg2dxf.py, then dxf)', 'dxf': 'CAD (tools/cad/dxf_inspect.py → dxf_walls.py)',
           'pdf-vector': 'PDF sheet (tools/pdf/sheet_text.py, sheet_svg.py, door_arcs.py)', 'pdf-raster': 'raster (render a page with pdftoppm, then tools/image/prepare.py)',
-          'image': 'raster (tools/image/prepare.py → calibrate.py)', 'other': 'not a plan — ask the user'}
+          'image': 'raster (tools/image/prepare.py → calibrate.py)',
+          'room-list': 'room / area list — printed areas for areaPrinted and calibrate.py area / total (not a drawing)',
+          'other': 'not a plan — ask the user'}
 
 
 def run(cmd: list[str]) -> str:
@@ -46,11 +49,18 @@ def classify(p: Path) -> dict:
         info['kind'] = 'pdf-vector' if (words or 0) > 10 and (images or 0) <= 2 else 'pdf-raster'
         if not shutil.which('pdftotext'):
             info['warning'] = 'poppler-utils not installed (pdftotext, pdftocairo, pdftoppm)'
+    elif ext in ('.txt', '.csv', '.md', '.tsv'):
+        text = p.read_text(errors='replace')
+        # lines with an area-like number (12.4, 12,40, 12.4 m2) — a room schedule copied from a listing or a drawing
+        areas = re.findall(r'\d+[.,]\d{1,2}(?!\d)', text)
+        info.update(kind='room-list' if len(areas) >= 3 else 'other', area_values=len(areas))
     else:
         try:
             from PIL import Image
             with Image.open(p) as im:
                 info.update(kind='image', size_px=list(im.size), mode=im.mode)
+                if max(im.size) < 1200:
+                    info['warning'] = 'small image — read wall faces from close-ups (prepare.py --zoom-box); ask for a larger one if available'
         except Exception:  # noqa: BLE001
             info['kind'] = 'other'
     info['branch'] = BRANCH.get(info['kind'], '')

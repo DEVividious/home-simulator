@@ -44,6 +44,63 @@ function inPolygon(p: Vec2, poly: Vec2[]): boolean {
   }
   return inside;
 }
+/**
+ * Outer outline of orthogonal rooms grown by the exterior wall t — the cells of the outline grid within t of a room (as the
+ * generated shell fills them), traced counter-clockwise; the largest loop when the rooms form several buildings.
+ */
+export function outerOutline(rooms: Vec2[][], t: number): Vec2[] {
+  const uniq = (v: number[]) => [...new Set(v.map((x) => Math.round(x * 1e5) / 1e5))].sort((a, b) => a - b);
+  const xs = uniq(rooms.flatMap((p) => p.flatMap((q) => [q[0] - t, q[0], q[0] + t]))), ys = uniq(rooms.flatMap((p) => p.flatMap((q) => [q[1] - t, q[1], q[1] + t])));
+  const nx = xs.length - 1, ny = ys.length - 1;
+  const near = (c: Vec2) => rooms.some((p) => {
+    const [x0, y0, x1, y1] = bboxOf(p);
+    if (c[0] < x0 - t || c[0] > x1 + t || c[1] < y0 - t || c[1] > y1 + t) return false;
+    if (inPolygon(c, p)) return true;
+    // within t (Chebyshev) of an edge: orthogonal edges are their own bounding boxes
+    return p.some((a, i) => { const b = p[(i + 1) % p.length]; return Math.max(a[0], b[0]) >= c[0] - t && Math.min(a[0], b[0]) <= c[0] + t && Math.max(a[1], b[1]) >= c[1] - t && Math.min(a[1], b[1]) <= c[1] + t; });
+  });
+  const full = new Uint8Array(nx * ny);
+  for (let i = 0; i < nx; i++) for (let j = 0; j < ny; j++) full[i * ny + j] = near([(xs[i] + xs[i + 1]) / 2, (ys[j] + ys[j + 1]) / 2]) ? 1 : 0;
+  const on = (i: number, j: number) => i >= 0 && j >= 0 && i < nx && j < ny && full[i * ny + j] === 1;
+  // boundary edges with the filled cell on the left, keyed by their start grid point
+  const next = new Map<string, [number, number][]>(), key = (i: number, j: number) => `${i},${j}`;
+  const add = (a: [number, number], b: [number, number]) => { const k = key(...a); next.set(k, [...(next.get(k) ?? []), b]); };
+  for (let i = 0; i < nx; i++) for (let j = 0; j < ny; j++) {
+    if (!on(i, j)) continue;
+    if (!on(i, j - 1)) add([i, j], [i + 1, j]);
+    if (!on(i + 1, j)) add([i + 1, j], [i + 1, j + 1]);
+    if (!on(i, j + 1)) add([i + 1, j + 1], [i, j + 1]);
+    if (!on(i - 1, j)) add([i, j + 1], [i, j]);
+  }
+  let best: Vec2[] = [], bestArea = 0;
+  for (const k0 of [...next.keys()]) {
+    while (next.get(k0)?.length) {
+      const loop: Vec2[] = [];
+      let k = k0;
+      while (next.get(k)?.length) {
+        const [i, j] = k.split(',').map(Number), b = next.get(k)!.pop()!;
+        loop.push([xs[i], ys[j]]);
+        k = key(...b);
+      }
+      const area = loop.reduce((s, a, i) => { const b = loop[(i + 1) % loop.length]; return s + a[0] * b[1] - b[0] * a[1]; }, 0) / 2;
+      if (area > bestArea) { bestArea = area; best = loop; }
+    }
+  }
+  // drop the vertices in the middle of straight runs
+  return best.filter((p, i) => { const a = best[(i - 1 + best.length) % best.length], b = best[(i + 1) % best.length]; return !((a[0] === p[0] && p[0] === b[0]) || (a[1] === p[1] && p[1] === b[1])); });
+}
+/** area shared by two orthogonal outlines: cells of the grid spanned by both outlines' coordinates, inside both */
+function overlapArea(pa: Vec2[], pb: Vec2[]): number {
+  const [ax0, ay0, ax1, ay1] = bboxOf(pa), [bx0, by0, bx1, by1] = bboxOf(pb);
+  if (Math.min(ax1, bx1) <= Math.max(ax0, bx0) || Math.min(ay1, by1) <= Math.max(ay0, by0)) return 0;
+  const xs = [...new Set([...pa, ...pb].map((q) => q[0]))].sort((u, v) => u - v), ys = [...new Set([...pa, ...pb].map((q) => q[1]))].sort((u, v) => u - v);
+  let area = 0;
+  for (let i = 0; i + 1 < xs.length; i++) for (let j = 0; j + 1 < ys.length; j++) {
+    const c: Vec2 = [(xs[i] + xs[i + 1]) / 2, (ys[j] + ys[j + 1]) / 2];
+    if (inPolygon(c, pa) && inPolygon(c, pb)) area += (xs[i + 1] - xs[i]) * (ys[j + 1] - ys[j]);
+  }
+  return area;
+}
 
 /** an axis-aligned edge of a room outline with its outward side */
 interface Edge { room: string; axis: 'X' | 'Y'; /** coordinate of the face (constant) */ c: number; lo: number; hi: number; /** +1 — the room is on the smaller side of the face, outward = +; −1 — outward = − */ out: 1 | -1 }
@@ -79,20 +136,26 @@ export function compilePlan(input: PlanInput | unknown, opts: CompileOptions): C
   const plan: Plan = parsed.data, D = plan.defaults, source = plan.source;
 
   // ---- units: px → metres (y flipped), sizes stay in metres
-  let toM = (p: Vec2): Vec2 => p;
+  // a px plan may give each level its own calibration (one image per level); points convert with their level's
+  let toM = (p: Vec2, _level?: string): Vec2 => p;
   if (plan.units === 'px') {
-    const c = plan.calibration;
-    if (!c) { err('calibration', 'units "px" need a calibration block (pxPerM, originPx)'); return { project: null, issues, adjustments }; }
-    toM = ([x, y]) => [(x - c.originPx[0]) / c.pxPerM, (c.originPx[1] - y) / c.pxPerM];
-    const ms = c.methods ?? [];
-    if (ms.length < 2) warn('calibration.methods', 'fewer than two independent scale estimates — ask for one known dimension to confirm the scale');
-    else {
-      const vals = ms.map((m) => m.pxPerM), spread = (Math.max(...vals) - Math.min(...vals)) / c.pxPerM;
-      if (spread > 0.05) warn('calibration.agreement', `scale estimates differ by ${(spread * 100).toFixed(1)} % (> 5 %): ${ms.map((m) => `${m.method} ${m.pxPerM.toFixed(2)}`).join(', ')}`);
+    const cal = new Map(plan.levels.flatMap((l) => (l.calibration ? [[l.id, l.calibration] as const] : [])));
+    if (!plan.calibration && cal.size < plan.levels.length) { err('calibration', 'units "px" need a calibration block (pxPerM, originPx) — for the plan or for every level'); return { project: null, issues, adjustments }; }
+    toM = ([x, y], level) => { const c = (level && cal.get(level)) || plan.calibration || [...cal.values()][0]; return [(x - c.originPx[0]) / c.pxPerM, (c.originPx[1] - y) / c.pxPerM]; };
+    for (const [where, c] of [...(plan.calibration ? [['plan', plan.calibration] as const] : []), ...[...cal].map(([l, c]) => [`level ${l}`, c] as const)]) {
+      // symbol priors are weak: they count only when nothing measured exists (as in tools/image/calibrate.py)
+      const all = c.methods ?? [], measured = all.filter((m) => !m.method.startsWith('symbol')), ms = measured.length ? measured : all;
+      if (ms.length < 2) warn('calibration.methods', `${where}: fewer than two independent scale estimates — ask for one known dimension to confirm the scale`);
+      else {
+        const vals = ms.map((m) => m.pxPerM), spread = (Math.max(...vals) - Math.min(...vals)) / c.pxPerM;
+        if (spread > 0.05) warn('calibration.agreement', `${where}: scale estimates differ by ${(spread * 100).toFixed(1)} % (> 5 %): ${ms.map((m) => `${m.method} ${m.pxPerM.toFixed(2)}`).join(', ')}`);
+      }
     }
   }
   const regularize = plan.regularize ?? plan.units === 'px';
-  const P = (p: Vec2): Vec2 => { const q = toM(p); return regularize ? [snap5(q[0]), snap5(q[1])] : [r3(q[0]), r3(q[1])]; };
+  const roomLevel = new Map(plan.rooms.map((r) => [r.id, r.level]));
+  /** a point of the plan in project metres; `at` = the level (or a room of it) whose image it was read from */
+  const P = (p: Vec2, at?: string): Vec2 => { const q = toM(p, at && (roomLevel.get(at) ?? at)); return regularize ? [snap5(q[0]), snap5(q[1])] : [r3(q[0]), r3(q[1])]; };
 
   // ---- levels
   const levels = new Map(plan.levels.map((l) => [l.id, l]));
@@ -104,7 +167,7 @@ export function compilePlan(input: PlanInput | unknown, opts: CompileOptions): C
   for (const r of plan.rooms) {
     if (!levels.has(r.level)) err('room.level', `room "${r.id}": unknown level "${r.level}"`);
     if (outlines.has(r.id)) err('room.id', `room "${r.id}": repeated id`);
-    const raw = r.rect ? rectPoly(r.rect.length === 4 ? [...P([r.rect[0], r.rect[1]]), ...P([r.rect[2], r.rect[3]])] : r.rect) : r.polygon!.map(P);
+    const raw = r.rect ? rectPoly([...P([r.rect[0], r.rect[1]], r.level), ...P([r.rect[2], r.rect[3]], r.level)]) : r.polygon!.map((q) => P(q, r.level));
     outlines.set(r.id, raw);
   }
   if (regularize) regularizeWalls(plan, outlines, D.interiorWall, adjustments);
@@ -123,11 +186,7 @@ export function compilePlan(input: PlanInput | unknown, opts: CompileOptions): C
   // overlapping rooms on a level
   for (const a of plan.rooms) for (const b of plan.rooms) {
     if (a.id >= b.id || a.level !== b.level) continue;
-    const pa = polys.get(a.id)!, pb = polys.get(b.id)!, [ax0, ay0, ax1, ay1] = bboxOf(pa), [bx0, by0, bx1, by1] = bboxOf(pb);
-    if (Math.min(ax1, bx1) - Math.max(ax0, bx0) > 0.02 && Math.min(ay1, by1) - Math.max(ay0, by0) > 0.02) {
-      const probe = pa.some((q) => inPolygon([q[0] + 0.01 * Math.sign(((bx0 + bx1) / 2) - q[0]), q[1] + 0.01 * Math.sign(((by0 + by1) / 2) - q[1])], pb));
-      if (probe || inPolygon([(ax0 + ax1) / 2, (ay0 + ay1) / 2], pb)) err('room.overlap', `rooms "${a.id}" and "${b.id}" overlap`);
-    }
+    if (overlapArea(polys.get(a.id)!, polys.get(b.id)!) > 0.02 * 0.02) err('room.overlap', `rooms "${a.id}" and "${b.id}" overlap`);
   }
 
   // ---- walls between rooms: thickness lint
@@ -137,7 +196,7 @@ export function compilePlan(input: PlanInput | unknown, opts: CompileOptions): C
       if (ea.axis !== eb.axis || ea.out === eb.out) continue;
       const gap = (eb.c - ea.c) * ea.out, overlap = Math.min(ea.hi, eb.hi) - Math.max(ea.lo, eb.lo);
       if (gap > 0.005 && gap < 0.5 && overlap > 0.3 && Math.abs(gap - D.interiorWall) > 0.015 && Math.abs(gap - D.exteriorWall) > 0.015) {
-        warn('wall.thickness', `wall between "${a.id}" and "${b.id}" is ${r3(gap)} m thick (interior ${D.interiorWall}, exterior ${D.exteriorWall}) — check the outlines or record the real thickness`);
+        warn('wall.thickness', `wall between "${a.id}" and "${b.id}" is ${r3(gap)} m thick (interior ${D.interiorWall}, exterior ${D.exteriorWall}) — check the outlines; if the drawing really shows it, keep it (the shell fills the gap) and note it in the README`);
       }
     }
   }
@@ -183,7 +242,7 @@ export function compilePlan(input: PlanInput | unknown, opts: CompileOptions): C
   const doors: DoorDef[] = [];
   for (const d of plan.doors) {
     const [a, b] = d.between, what = `door "${d.id}"`;
-    const p = P(d.at), w = d.width;
+    const p = P(d.at, a), w = d.width;
     const wall = wallBetween(a, b, p, w, what);
     if (!wall) continue;
     const opHeight = d.height ?? D.doorHeight, leafW = r3(w - 0.1);
@@ -197,9 +256,9 @@ export function compilePlan(input: PlanInput | unknown, opts: CompileOptions): C
     if (d.type === 'hinged-single') {
       const into = d.swingInto ?? (b === 'exterior' ? a : b);
       if (into !== a && into !== b) { err('door.swing', `${what}: swingInto "${into}" is not one of ${a} / ${b}`); continue; }
-      if (into === 'exterior') { err('door.swing', `${what}: a door cannot open into the exterior in the engine — let it open into "${a}"`); continue; }
-      // face of the room the door opens into and the normal into that room
-      const intoEdge = into === a ? wall.edgeA : wall.edgeB!, n: Vec2 = wall.axis === 'X' ? [0, -intoEdge.out] : [-intoEdge.out, 0];
+      // face of the room the door opens into and the normal into that room (outwards: the outer face of the exterior wall)
+      const intoEdge = into === a ? wall.edgeA : into === 'exterior' ? { c: r3(wall.edgeA.c + wall.edgeA.out * D.exteriorWall), out: -wall.edgeA.out } : wall.edgeB!;
+      const n: Vec2 = wall.axis === 'X' ? [0, -intoEdge.out] : [-intoEdge.out, 0];
       const view: Vec2 = [-n[0], -n[1]], right: Vec2 = [view[1], -view[0]];
       const side = d.hinge ?? 'left';
       // right side of the opening as seen from the room = end of the gap in the `right` direction
@@ -217,8 +276,24 @@ export function compilePlan(input: PlanInput | unknown, opts: CompileOptions): C
       doors.push({ ...base, hinge: null, closedDir: null, openDir: null, hingeSide: null, swingInto: null, openAngle: null, slide: { origin, dir: dir.map(cleanZero) as Vec2, travel: r2(leafW) } });
     }
   }
+  // two leaves sweeping the same floor usually mean a misread swing (or a real clash worth a note)
+  const inSweep = (d: DoorDef, p: Vec2) => {
+    const dx = p[0] - d.hinge![0], dy = p[1] - d.hinge![1];
+    return dx * d.closedDir![0] + dy * d.closedDir![1] >= 0 && dx * d.openDir![0] + dy * d.openDir![1] >= 0 && Math.hypot(dx, dy) <= d.leafWidth;
+  };
+  const hinged = doors.filter((d) => d.hinge && d.closedDir && d.openDir && d.swingInto !== 'exterior');
+  for (let i = 0; i < hinged.length; i++) for (let j = i + 1; j < hinged.length; j++) {
+    const a = hinged[i], b = hinged[j];
+    if (a.level !== b.level || a.swingInto !== b.swingInto || Math.hypot(a.hinge![0] - b.hinge![0], a.hinge![1] - b.hinge![1]) > a.leafWidth + b.leafWidth) continue;
+    let hits = 0;   // samples of a's quarter disc (10 cm grid) that b's leaf also sweeps
+    for (let u = 0.05; u < a.leafWidth; u += 0.1) for (let v = 0.05; v < a.leafWidth; v += 0.1) {
+      const p: Vec2 = [a.hinge![0] + a.closedDir![0] * u + a.openDir![0] * v, a.hinge![1] + a.closedDir![1] * u + a.openDir![1] * v];
+      if (inSweep(a, p) && inSweep(b, p)) hits++;
+    }
+    if (hits >= 2) warn('door.swingOverlap', `doors "${a.id}" and "${b.id}" sweep the same floor in "${a.swingInto}" — check the swing sides on the drawing (an entrance door may open outwards: swingInto "exterior")`);
+  }
   for (const g of plan.passages) {
-    const [a, b] = g.between, p = P(g.at), wall = wallBetween(a, b, p, g.width, `passage ${a} ↔ ${b}`);
+    const [a, b] = g.between, p = P(g.at, a), wall = wallBetween(a, b, p, g.width, `passage ${a} ↔ ${b}`);
     if (!wall) continue;
     const gap = { along: wall.axis, from_: wall.from, to: wall.to, across: wall.faces, width: r2(g.width), door_id: null, leaf: null, height: g.height ?? null } as RoomJson['doors'][number];
     addGap(a, gap); if (b !== 'exterior') addGap(b, { ...gap });
@@ -229,7 +304,7 @@ export function compilePlan(input: PlanInput | unknown, opts: CompileOptions): C
   for (const w of plan.windows) {
     const es = edges.get(w.room);
     if (!es) { err('ref', `window "${w.id}": unknown room "${w.room}"`); continue; }
-    const p = P(w.at);
+    const p = P(w.at, w.room);
     let best: Edge | null = null, bd = Infinity;
     for (const e of es) {
       const t = alongOf(e, p), dd = Math.abs(acrossOf(e, p) - e.c) + (t < e.lo ? e.lo - t : t > e.hi ? t - e.hi : 0);
@@ -260,16 +335,19 @@ export function compilePlan(input: PlanInput | unknown, opts: CompileOptions): C
   for (const s of plan.stairs) {
     const lf = levels.get(s.from), lt = levels.get(s.to);
     if (!lf || !lt) { err('stairs.level', `stairs "${s.id}": unknown level`); continue; }
-    const [a, b] = [P([s.box[0], s.box[1]]), P([s.box[2], s.box[3]])];
+    const [a, b] = [P([s.box[0], s.box[1]], s.from), P([s.box[2], s.box[3]], s.from)];
     const box: [number, number, number, number] = [Math.min(a[0], b[0]), Math.min(a[1], b[1]), Math.max(a[0], b[0]), Math.max(a[1], b[1])];
     const rise = lt.floorZ - lf.floorZ, riser = r3(rise / (2 * s.risers)), run = r3((s.risers - 1) * s.tread);
     if (riser > 0.2 || riser < 0.14) warn('stairs.riser', `stairs "${s.id}": riser ${riser} m (comfortable: 0.15–0.19)`);
-    const width = 2 * s.flightWidth + s.gap;
-    if (Math.abs(box[2] - box[0] - width) > 0.06) warn('stairs.width', `stairs "${s.id}": box is ${r3(box[2] - box[0])} m wide, flights need ${r3(width)} m`);
-    if (box[3] - box[1] < run + s.flightWidth * 0.8) err('stairs.depth', `stairs "${s.id}": box is too short for ${s.risers - 1} treads of ${s.tread} m plus a landing`);
+    // canonical frame (model/stairs.ts): up the lower flight towards −Y, turning right; `up` turns it, `turn: left` mirrors it
+    const rotate = ({ S: 0, E: 90, N: 180, W: 270 } as const)[s.up], mirror = s.turn === 'left', across = rotate % 180 ? box[3] - box[1] : box[2] - box[0];
+    const deep = rotate % 180 ? box[2] - box[0] : box[3] - box[1], width = 2 * s.flightWidth + s.gap;
+    if (Math.abs(across - width) > 0.06) warn('stairs.width', `stairs "${s.id}": box is ${r3(across)} m wide across the flights, they need ${r3(width)} m`);
+    if (deep < run + s.flightWidth * 0.8) err('stairs.depth', `stairs "${s.id}": box is too short for ${s.risers - 1} treads of ${s.tread} m plus a landing`);
+    const cy1 = box[1] + deep;
     stairs.push({ id: s.id, kind: 'u-turn', fromLevel: s.from, toLevel: s.to, bbox: box, risers: s.risers, riser, tread: s.tread, flightWidth: s.flightWidth, gap: s.gap,
-      landingZ: r3(rise / 2), topZ: r3(rise), split: r3(box[0] + s.flightWidth + s.gap / 2), run, landingEdge: r3(box[3] - run),
-      confidence: s.confidence ?? D.confidence, ...(s.note ? { note: s.note } : {}) });
+      landingZ: r3(rise / 2), topZ: r3(rise), split: r3(box[0] + s.flightWidth + s.gap / 2), run, landingEdge: r3(cy1 - run),
+      confidence: s.confidence ?? D.confidence, ...(s.note ? { note: s.note } : {}), ...(rotate || mirror ? { orient: { rotate, mirror } } : {}) });
     // opening in the floor of the upper level: the room of `to` containing the box centre
     const c: Vec2 = [(box[0] + box[2]) / 2, (box[1] + box[3]) / 2];
     const upper = plan.rooms.find((r) => r.level === s.to && inPolygon(c, polys.get(r.id)!));
@@ -280,7 +358,7 @@ export function compilePlan(input: PlanInput | unknown, opts: CompileOptions): C
   }
 
   // ---- sloped ceilings (per level) and roof windows
-  const along = (axis: 0 | 1, c: number) => (axis === 0 ? P([c, 0])[0] : P([0, c])[1]);
+  const along = (axis: 0 | 1, c: number, level: string) => (axis === 0 ? P([c, 0], level)[0] : P([0, c], level)[1]);
   const attics = new Map<string, RoomJson['ceiling']>();
   for (const lv of plan.levels) {
     if (!lv.slope) continue;
@@ -288,8 +366,8 @@ export function compilePlan(input: PlanInput | unknown, opts: CompileOptions): C
     const outline = plan.rooms.filter((r) => r.level === lv.id).flatMap((r) => polys.get(r.id) ?? []);
     if (!outline.length) continue;
     const lo = Math.min(...outline.map((q) => q[ax])), hi = Math.max(...outline.map((q) => q[ax]));
-    const ridge = s.ridgeAt !== undefined ? along(ax, s.ridgeAt) : (lo + hi) / 2;
-    const lines = s.lines.map((l) => ({ at: along(ax, l.at), height: l.height }));
+    const ridge = s.ridgeAt !== undefined ? along(ax, s.ridgeAt, lv.id) : (lo + hi) / 2;
+    const lines = s.lines.map((l) => ({ at: along(ax, l.at, lv.id), height: l.height }));
     let k: number;
     if (lines.length === 2) {
       const [a, b] = lines;
@@ -308,7 +386,7 @@ export function compilePlan(input: PlanInput | unknown, opts: CompileOptions): C
   for (const w of plan.roofWindows) {
     if (!polys.has(w.room)) { err('ref', `roof window "${w.id}": unknown room "${w.room}"`); continue; }
     if (!attics.has(w.room)) warn('roofWindow.flat', `roof window "${w.id}": room "${w.room}" has no sloped ceiling`);
-    const a = P([w.rect[0], w.rect[1]]), b = P([w.rect[2], w.rect[3]]);
+    const a = P([w.rect[0], w.rect[1]], w.room), b = P([w.rect[2], w.rect[3]], w.room);
     roofWindows.set(w.room, [...(roofWindows.get(w.room) ?? []), { id: w.id, plan_rect: [Math.min(a[0], b[0]), Math.min(a[1], b[1]), Math.max(a[0], b[0]), Math.max(a[1], b[1])].map(r3) }]);
   }
 
@@ -327,6 +405,15 @@ export function compilePlan(input: PlanInput | unknown, opts: CompileOptions): C
   // ---- furniture
   const cat = new Map(opts.catalog.map((c) => [c.id, c]));
   const keys = new Map<string, number>();
+  /** the wall of a room facing a side (N = +Y): the one holding `along`, else the longest; an L room has two west walls */
+  const sideEdge = (room: string, side: 'N' | 'S' | 'E' | 'W', along?: number): Edge => {
+    const axis = side === 'N' || side === 'S' ? 'X' : 'Y', out = side === 'N' || side === 'E' ? 1 : -1;
+    const cand = edges.get(room)!.filter((e) => e.axis === axis && e.out === out);
+    const holding = along === undefined ? [] : cand.filter((e) => along >= e.lo - 0.01 && along <= e.hi + 0.01);
+    // several walls hold it (a U room): the outermost one on that side
+    const pick = holding.length ? holding : cand;
+    return pick.reduce((b, e) => (holding.length ? (e.c - b.c) * out > 0 : e.hi - e.lo > b.hi - b.lo) ? e : b);
+  };
   const items: ArchitectItem[] = [];
   for (const f of plan.furniture) {
     const it = cat.get(f.catalogId), poly = polys.get(f.room);
@@ -337,15 +424,24 @@ export function compilePlan(input: PlanInput | unknown, opts: CompileOptions): C
     if (f.variant && !it.variants?.some((v) => v.id === f.variant)) err('furniture.variant', `furniture "${f.catalogId}" in "${f.room}": unknown variant "${f.variant}" (${(it.variants ?? []).map((v) => v.id).join(', ') || 'no variants'})`);
     let x: number, y: number, rot: number;
     if (f.wall) {
-      const [x0, y0, x1, y1] = bboxOf(poly), gapW = 0.005, half = dims.d / 2 + gapW;
-      const along = f.along !== undefined ? (plan.units === 'px' ? P(f.wall === 'N' || f.wall === 'S' ? [f.along, 0] : [0, f.along])[f.wall === 'N' || f.wall === 'S' ? 0 : 1] : f.along) : undefined;
-      if (f.wall === 'S') { x = along ?? (x0 + x1) / 2; y = y0 + half; rot = 0; }
-      else if (f.wall === 'N') { x = along ?? (x0 + x1) / 2; y = y1 - half; rot = 180; }
-      else if (f.wall === 'W') { x = x0 + half; y = along ?? (y0 + y1) / 2; rot = 270; }
-      else { x = x1 - half; y = along ?? (y0 + y1) / 2; rot = 90; }
-    } else if (f.at) { [x, y] = P(f.at); rot = f.rot ?? 0; }
+      const half = dims.d / 2 + 0.005;
+      const along = f.along !== undefined ? (plan.units === 'px' ? P(f.wall === 'N' || f.wall === 'S' ? [f.along, 0] : [0, f.along], f.room)[f.wall === 'N' || f.wall === 'S' ? 0 : 1] : f.along) : undefined;
+      const e = sideEdge(f.room, f.wall, along), t = along ?? (e.lo + e.hi) / 2;
+      if (f.wall === 'S') { x = t; y = e.c + half; rot = 0; }
+      else if (f.wall === 'N') { x = t; y = e.c - half; rot = 180; }
+      else if (f.wall === 'W') { x = e.c + half; y = t; rot = 270; }
+      else { x = e.c - half; y = t; rot = 90; }
+    } else if (f.at) { [x, y] = P(f.at, f.room); rot = f.rot ?? 0; }
     else { err('furniture.place', `furniture "${f.catalogId}" in "${f.room}": give "at" (+ rot) or "wall" (+ along)`); continue; }
     if (!inPolygon([x, y], poly)) warn('furniture.outside', `furniture "${f.catalogId}" in "${f.room}": centre [${r3(x)}, ${r3(y)}] is outside the room`);
+    // under a sloped ceiling: the top of the item at each corner of its footprint against the ceiling there
+    const ce = attics.get(f.room) as { flat_z: number; ridge_x?: number; ridge_y?: number; z_at_ridge: number; slope: number } | undefined;
+    if (ce) {
+      const fz = levels.get(levelOfRoom(f.room)!)?.floorZ ?? 0, top = fz + (f.elevation ?? 0) + (dims.h ?? 0), a = (rot * Math.PI) / 180;
+      const ceilingAt = (u: number, v: number) => { const px = x + u * Math.cos(a) - v * Math.sin(a), py = y + u * Math.sin(a) + v * Math.cos(a); return Math.min(ce.flat_z, ce.z_at_ridge - ce.slope * Math.abs(ce.ridge_y !== undefined ? py - ce.ridge_y : px - ce.ridge_x!)); };
+      const low = Math.min(...[[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([u, v]) => ceilingAt((u * dims.w) / 2, (v * dims.d) / 2)));
+      if (top > low + 0.02) warn('furniture.ceiling', `furniture "${f.catalogId}" in "${f.room}": ${r3(top - fz)} m high but the sloped ceiling is ${r3(low - fz)} m above part of it — move it towards the ridge, pick a lower variant or give lower "dims"`);
+    }
     const base = `${f.room}-${f.catalogId}`, n = (keys.get(base) ?? 0) + 1;
     keys.set(base, n);
     const key = f.key ?? (n === 1 ? base : `${base}-${n}`);
@@ -364,9 +460,9 @@ export function compilePlan(input: PlanInput | unknown, opts: CompileOptions): C
     if (!poly) { err('ref', `electrical point "${q.label}": unknown room "${q.room}"`); continue; }
     let x: number, y: number;
     if (q.wall) {
-      const [x0, y0, x1, y1] = bboxOf(poly), al = q.along ?? 0;
-      [x, y] = q.wall === 'S' ? [al, y0] : q.wall === 'N' ? [al, y1] : q.wall === 'W' ? [x0, al] : [x1, al];
-    } else if (q.at) [x, y] = P(q.at);
+      const e = sideEdge(q.room, q.wall, q.along), al = q.along ?? (e.lo + e.hi) / 2;
+      [x, y] = q.wall === 'S' || q.wall === 'N' ? [al, e.c] : [e.c, al];
+    } else if (q.at) [x, y] = P(q.at, q.room);
     else { err('electrical.place', `electrical point "${q.label}": give "at" or "wall" + "along"`); continue; }
     const onWall = edges.get(q.room)!.some((e) => Math.abs(acrossOf(e, [x, y]) - e.c) <= 0.05 && alongOf(e, [x, y]) >= e.lo - 0.01 && alongOf(e, [x, y]) <= e.hi + 0.01);
     if (!onWall) warn('electrical.wall', `electrical point "${q.label}" in "${q.room}" is not on a wall (within 5 cm) — the engine skips it`);
@@ -380,9 +476,11 @@ export function compilePlan(input: PlanInput | unknown, opts: CompileOptions): C
   let site: ProjectPackage['site'] = null;
   if (plan.site) {
     const all = [...polys.values()].flat(), [bx0, by0, bx1, by1] = bboxOf(all), t = D.exteriorWall;
-    const footprint: Vec2[] = [[bx0 - t, by0 - t], [bx1 + t, by0 - t], [bx1 + t, by1 + t], [bx0 - t, by1 + t]].map(([x, y]) => [r3(x), r3(y)] as Vec2);
+    // the outer faces of the ground level (an L or U building is not its bounding box)
+    const ground = plan.rooms.filter((r) => r.level === lowest.id).map((r) => polys.get(r.id)!);
+    const footprint = outerOutline(ground, t).map(([x, y]) => [r3(x), r3(y)] as Vec2);
     const m = plan.site.margin ?? 6;
-    const boundary: Vec2[] = plan.site.boundary ? plan.site.boundary.map(P) : footprint.map(([x, y], i) => [r3(x + (i === 1 || i === 2 ? m : -m)), r3(y + (i >= 2 ? m : -m))] as Vec2);
+    const boundary: Vec2[] = plan.site.boundary ? plan.site.boundary.map((q) => P(q, lowest.id)) : [[bx0 - t - m, by0 - t - m], [bx1 + t + m, by0 - t - m], [bx1 + t + m, by1 + t + m], [bx0 - t - m, by1 + t + m]].map(([x, y]) => [r3(x), r3(y)] as Vec2);
     site = { footprint, boundary, groundLevel: plan.site.groundLevel, levelId: lowest.id };
     if (all.some((q) => !inPolygon(q, boundary))) err('site.boundary', 'the building is not inside the plot boundary');
   }
@@ -390,7 +488,7 @@ export function compilePlan(input: PlanInput | unknown, opts: CompileOptions): C
   if (sun) { try { new Intl.DateTimeFormat('en-US', { timeZone: sun.timeZone }); } catch { err('sun.timeZone', `unknown IANA time zone "${sun.timeZone}"`); } }
 
   // ---- viewpoints
-  const viewpoints: Viewpoint[] = plan.viewpoints.map((v) => { const p = P(v.at), look = P([v.look[0], v.look[1]]); return { id: v.id, name: v.name, p, level: v.level, look: [look[0], look[1], v.look[2]], fov: v.fov, hint: v.hint }; });
+  const viewpoints: Viewpoint[] = plan.viewpoints.map((v) => { const lv = v.level === 'SITE' ? lowest.id : v.level, p = P(v.at, lv), look = P([v.look[0], v.look[1]], lv); return { id: v.id, name: v.name, p, level: v.level, look: [look[0], look[1], v.look[2]], fov: v.fov, hint: v.hint }; });
 
   // ---- manifest
   const modules: ProjectModule[] = [...(site ? ['site' as const] : []), ...(plan.assets?.environment ? ['environment' as const] : []), ...(sun ? ['sun' as const] : []), ...(stairs.length ? ['stairs' as const] : [])];
@@ -447,18 +545,22 @@ function regularizeWalls(plan: Plan, outlines: Map<string, Vec2[]>, t: number, l
       for (const c of clusters) { const m = snap5(c.reduce((s, v) => s + v, 0) / c.length); for (const v of c) map.set(v, m); }
       for (const id of ids) outlines.set(id, outlines.get(id)!.map((q) => { const n: Vec2 = [q[0], q[1]]; n[axis] = map.get(q[axis]) ?? q[axis]; return n; }));
     }
-    // (2) shared walls → interior thickness
+    // (2) shared walls → interior thickness: face of a (outward +axis) against a face of b (outward −axis)
+    const along = axis === 0 ? 'Y' : 'X', o = 1 - axis;
     for (const a of plan.rooms) for (const b of plan.rooms) {
       if (a.level !== b.level || a.id === b.id) continue;
-      const pa = outlines.get(a.id)!, pb = outlines.get(b.id)!;
-      const ahi = Math.max(...pa.map((q) => q[axis])), blo = Math.min(...pb.map((q) => q[axis]));
-      const gap = blo - ahi, o = 1 - axis;
-      const overlap = Math.min(Math.max(...pa.map((q) => q[o])), Math.max(...pb.map((q) => q[o]))) - Math.max(Math.min(...pa.map((q) => q[o])), Math.min(...pb.map((q) => q[o])));
-      if (gap <= 0.01 || overlap < 0.3 || Math.abs(gap - t) < 0.002 || Math.abs(gap - t) > 0.08) continue;
-      const c = (ahi + blo) / 2, na = snap5(c - t / 2), nb = r3(na + t);
-      outlines.set(a.id, pa.map((q) => (Math.abs(q[axis] - ahi) < 1e-9 ? (axis === 0 ? [na, q[1]] : [q[0], na]) : q) as Vec2));
-      outlines.set(b.id, pb.map((q) => (Math.abs(q[axis] - blo) < 1e-9 ? (axis === 0 ? [nb, q[1]] : [q[0], nb]) : q) as Vec2));
-      log.push(`wall ${a.id} | ${b.id}: ${r3(gap)} m → ${t} m (centre line kept at ${r3(c)})`);
+      for (const ea of edgesOf(a.id, normalizePolygon(outlines.get(a.id)!)).filter((e) => e.axis === along && e.out === 1)) {
+        for (const eb of edgesOf(b.id, normalizePolygon(outlines.get(b.id)!)).filter((e) => e.axis === along && e.out === -1)) {
+          const gap = eb.c - ea.c, overlap = Math.min(ea.hi, eb.hi) - Math.max(ea.lo, eb.lo);
+          if (gap <= 0.01 || overlap < 0.3 || Math.abs(gap - t) < 0.002 || Math.abs(gap - t) > 0.08) continue;
+          const c = (ea.c + eb.c) / 2, na = snap5(c - t / 2), nb = r3(na + t);
+          // move the vertices of these two faces (the edge end points), nothing else of the outlines
+          const move = (poly: Vec2[], e: Edge, v: number) => poly.map((q) => (Math.abs(q[axis] - e.c) < 1e-9 && q[o] >= e.lo - 1e-9 && q[o] <= e.hi + 1e-9 ? (axis === 0 ? [v, q[1]] : [q[0], v]) : q) as Vec2);
+          outlines.set(a.id, move(outlines.get(a.id)!, ea, na));
+          outlines.set(b.id, move(outlines.get(b.id)!, eb, nb));
+          log.push(`wall ${a.id} | ${b.id}: ${r3(gap)} m → ${t} m (centre line kept at ${r3(c)})`);
+        }
+      }
     }
   }
 }

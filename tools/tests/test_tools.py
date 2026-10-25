@@ -41,6 +41,22 @@ class Calibration(unittest.TestCase):
             self.assertEqual(r.returncode, 3)
             self.assertIn('DISAGREE', r.stdout)
 
+    def test_symbols_only_need_two_kinds(self):
+        with tempfile.TemporaryDirectory() as td:
+            f = str(Path(td) / 'c.json')
+            cal = lambda *a: subprocess.run([PY, str(TOOLS / 'image/calibrate.py'), '--file', f, *a], capture_output=True, text=True)
+            # 100 px per metre: three interior doors (0.80 m) — one symbol kind is not enough
+            for y in (0, 100, 200):
+                cal('symbol', '--kind', 'door', '--a', f'0,{y}', '--b', f'80,{y}')
+            r = cal('summary', '--origin', '0,0')
+            self.assertEqual(r.returncode, 3)
+            self.assertIn('NOT ENOUGH', r.stdout)
+            cal('symbol', '--kind', 'bed', '--a', '0,0', '--b', '0,200')
+            r = cal('summary', '--origin', '0,0')
+            self.assertEqual(r.returncode, 0)
+            self.assertIn('PROBABLE', r.stdout)
+            self.assertEqual(json.loads(Path(f).read_text())['result']['confidence'], 'probable')
+
 
 class Prepare(unittest.TestCase):
     def test_grid_and_tiles(self):

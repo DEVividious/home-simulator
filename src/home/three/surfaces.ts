@@ -102,11 +102,32 @@ function clipAxis(poly: Vec2[], axis: 0 | 1, v0: number, sign: 1 | -1): Vec2[] {
 const rectPoly = (r: [number, number, number, number]): Vec2[] => [[r[0], r[1]], [r[2], r[1]], [r[2], r[3]], [r[0], r[3]]];
 
 /** flat polygon (+ holes) at height z(x, y); UV = (X, Y) */
+/**
+ * A rectangular opening (stair, roof window) kept strictly inside the outline: the triangulation fails silently — no hole at
+ * all — when a hole touches the contour, so its sides on or beyond an edge move 2 mm into the room.
+ */
+function holeInside(h: Vec2[], poly: Vec2[]): Vec2[] {
+  const e = 0.002, xs = poly.map((p) => p[0]), ys = poly.map((p) => p[1]);
+  let x0 = Math.max(Math.min(...h.map((p) => p[0])), Math.min(...xs) + e), x1 = Math.min(Math.max(...h.map((p) => p[0])), Math.max(...xs) - e);
+  let y0 = Math.max(Math.min(...h.map((p) => p[1])), Math.min(...ys) + e), y1 = Math.min(Math.max(...h.map((p) => p[1])), Math.max(...ys) - e);
+  for (let i = 0; i < poly.length; i++) {
+    const a = poly[i], b = poly[(i + 1) % poly.length];
+    if (Math.abs(a[0] - b[0]) < 1e-9 && Math.min(a[1], b[1]) < y1 && Math.max(a[1], b[1]) > y0) {
+      if (Math.abs(a[0] - x0) < e) x0 = a[0] + e;
+      if (Math.abs(a[0] - x1) < e) x1 = a[0] - e;
+    } else if (Math.abs(a[1] - b[1]) < 1e-9 && Math.min(a[0], b[0]) < x1 && Math.max(a[0], b[0]) > x0) {
+      if (Math.abs(a[1] - y0) < e) y0 = a[1] + e;
+      if (Math.abs(a[1] - y1) < e) y1 = a[1] - e;
+    }
+  }
+  return x1 > x0 && y1 > y0 ? rectPoly([x0, y0, x1, y1]) : [];
+}
+
 function flatGeometry(poly: Vec2[], holes: Vec2[][], zOf: (x: number, y: number) => number, flip: boolean): { pos: number[]; uv: number[] } {
   const pos: number[] = [], uv: number[] = [];
   if (polyArea(poly) < 1e-6) return { pos, uv };
   const contour = poly.map((p) => new THREE.Vector2(p[0], p[1]));
-  const hs = holes.filter((h) => polyArea(h) > 1e-6).map((h) => h.map((p) => new THREE.Vector2(p[0], p[1])));
+  const hs = holes.map((h) => holeInside(h, poly)).filter((h) => polyArea(h) > 1e-6).map((h) => h.map((p) => new THREE.Vector2(p[0], p[1])));
   const pts = [...contour, ...hs.flat()];
   const tris = THREE.ShapeUtils.triangulateShape(contour, hs);
   for (const t of tris) {

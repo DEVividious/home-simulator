@@ -71,21 +71,25 @@ on its single level.
 
 ## 4. Stairs — `src/home/model/stairs.ts`
 
-The engine supports one stair kind: **two-flight U-turn stairs with a landing** (`kind: "u-turn"`), flights along the project
-Y axis. In `plan.json`:
+The engine supports one stair kind: **two-flight U-turn stairs with a landing** (`kind: "u-turn"`), in any of four
+directions and turning either way. In `plan.json`:
 
 ```json
-"stairs": [{ "id": "S1", "from": "L0", "to": "L1", "box": [x0, y0, x1, y1],
+"stairs": [{ "id": "S1", "from": "L0", "to": "L1", "box": [x0, y0, x1, y1], "up": "S", "turn": "right",
              "risers": 9, "tread": 0.255, "flightWidth": 0.9, "gap": 0.05 }]
 ```
 
-- `box` — the plan outline (floor opening), walls at `x0` and `y0`; the **lower flight** starts at `y1` on the larger-X side
-  (beyond the split line) and rises towards −Y; the **landing** is at the smaller-Y edge; the **upper flight** returns on the
-  smaller-X side towards +Y and arrives on the upper level.
+- `box` — the plan outline of both flights and the landing (the floor opening of the upper level).
+- `up` — the direction one walks up the **lower flight** (`N` = +Y, `S`, `E`, `W`); the **landing** is at that end of the box.
+- `turn` — which way one turns on the landing going up; the **upper flight** returns beside the lower one and arrives on the
+  upper level at the end where the lower flight starts.
 - `risers` per flight (two flights); the riser height follows from the level heights (`StairDef.riser`, `landingZ`, `topZ`).
 - `gap` — the divider between the flights.
 
-Another shape or rotation requires extending this module.
+The engine computes in one canonical frame (up `S`, turn `right`: lower flight on the larger-X side rising towards −Y, landing
+at the smaller-Y edge, upper flight on the smaller-X side); `StairDef.orient` (`rotate` 0 / 90 / 180 / 270 counter-clockwise,
+`mirror`) maps it onto the plan, and `split` / `landingEdge` are canonical coordinates (`stairFrame` in
+`src/home/model/stairs.ts`). Other shapes (straight, L, winding, spiral) need an engine extension.
 
 **Walking on stairs.** The rendered steps are real; navigation uses an **invisible ramp** over the step nosings that matches the
 flights (`stairZ`): flight 1 from the lower floor to the landing, the landing flat, flight 2 to the upper floor. Single steps are

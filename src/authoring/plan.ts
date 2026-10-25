@@ -13,7 +13,7 @@ import { ProjectSchema, RoomKindSchema } from '../project/schema';
 const num = z.number().finite();
 const pt = z.tuple([num, num]);
 const id = z.string().regex(/^[A-Za-z0-9][A-Za-z0-9_.-]*$/, 'letters, digits, - _ .');
-const side = z.enum(['N', 'S', 'E', 'W']).describe('wall of the room: N = max y, S = min y, E = max x, W = min x (plan up = N)');
+const side = z.enum(['N', 'S', 'E', 'W']).describe('wall of the room facing that side (N = +y, S = −y, E = +x, W = −x; plan up = N); in an L or U room the one that holds "along", else the longest');
 
 export const CalibrationSchema = z.strictObject({
   pxPerM: num.positive().describe('pixels per metre of the source image'),
@@ -36,7 +36,7 @@ const DoorSchema = z.strictObject({
   at: pt.describe('any point in the middle of the door opening (on or inside the wall between the rooms)'),
   width: num.positive().describe('clear opening in the masonry [m]'),
   type: z.enum(['hinged-single', 'sliding', 'pocket']).default('hinged-single'),
-  swingInto: id.optional().describe('hinged: the room the leaf opens into (default: the second room, or the room for an exterior door)'),
+  swingInto: id.optional().describe('hinged: the room the leaf opens into, or "exterior" for an outward-opening outside door (default: the second room, or the room for an exterior door)'),
   hinge: z.enum(['left', 'right']).optional().describe('hinged: hinge side as seen from the room the door opens into, looking at the wall'),
   slideTo: z.enum(['start', 'end']).optional().describe('sliding / pocket: the leaf moves towards the start (smaller coordinate) or end of the opening'),
   height: num.positive().optional(), leafHeight: num.positive().optional(),
@@ -63,7 +63,9 @@ const WindowSchema = z.strictObject({
 
 const StairSchema = z.strictObject({
   id, from: id, to: id,
-  box: z.tuple([num, num, num, num]).describe('[x0, y0, x1, y1] — walls at x0 and y0; the lower flight starts at y1 on the x > split side'),
+  box: z.tuple([num, num, num, num]).describe('[x0, y0, x1, y1] — outline of the whole stair (both flights and the landing)'),
+  up: z.enum(['N', 'S', 'E', 'W']).default('S').describe('direction one walks up the lower flight (N = +y, plan up); the landing is at that end of the box'),
+  turn: z.enum(['left', 'right']).default('right').describe('which way one turns on the landing going up (towards the upper flight)'),
   risers: z.number().int().min(2).describe('risers per flight (two flights, U-turn)'),
   tread: num.positive(), flightWidth: num.positive(), gap: num.min(0).default(0.05),
   note: z.string().optional(), confidence: z.string().optional(),
@@ -105,7 +107,7 @@ export const PlanSchema = z.strictObject({
     doorHeight: num.positive().default(2.05), leafHeight: num.positive().default(2.0), sill: num.min(0).default(0.85), head: num.positive().default(2.35),
     confidence: z.enum(['confirmed', 'probable', 'unknown']).default('probable'), basis: z.enum(['dimensioned', 'drawn', 'approximate']).default('approximate'),
   }).prefault({}),
-  levels: z.array(z.strictObject({ id, name: z.string(), floorZ: num, ceiling: num.positive().describe('ceiling height above the floor [m]'), cutHeight: num.positive().optional().describe('section height above the floor [m]; default: 10 cm above the highest window head, at least 2.30, below the ceiling'), slope: SlopeSchema.optional().describe('sloped ceilings of every room on this level (attic); a room with its own `ceiling` stays flat') })).min(1),
+  levels: z.array(z.strictObject({ id, name: z.string(), floorZ: num, ceiling: num.positive().describe('ceiling height above the floor [m]'), cutHeight: num.positive().optional().describe('section height above the floor [m]; default: 10 cm above the highest window head, at least 2.30, below the ceiling'), slope: SlopeSchema.optional().describe('sloped ceilings of every room on this level (attic); a room with its own `ceiling` stays flat'), calibration: CalibrationSchema.optional().describe('px plans drawn as one image per level: the scale and origin of THIS level\'s image (the origin pixel = the same building corner on every image); default: the plan calibration') })).min(1),
   rooms: z.array(RoomSchema).min(1),
   doors: z.array(DoorSchema).default([]),
   passages: z.array(PassageSchema).default([]),

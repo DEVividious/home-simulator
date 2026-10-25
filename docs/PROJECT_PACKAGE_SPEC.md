@@ -52,7 +52,9 @@ Walls (`<room>-w<n>`, n = edge index of the outline in counter-clockwise order),
 
 `building.doorFacts` (optional): `overrides` (`{ <doorId>: { flush?, source } }`), `passableOpenings` (window ids of floor-level
 glazed doors one can walk through onto the site). `building.stairs`: two-flight U-turn stairs `{ id, kind: "u-turn", fromLevel,
-toLevel, bbox, risers, riser, tread, flightWidth, gap, landingZ, topZ, split, run, landingEdge, confidence, note? }`.
+toLevel, bbox, risers, riser, tread, flightWidth, gap, landingZ, topZ, split, run, landingEdge, confidence, note?, orient? }` —
+`split` and `landingEdge` in the canonical frame (lower flight rising towards −Y on the larger-X side); `orient: { rotate: 0 | 90
+| 180 | 270, mirror }` turns it counter-clockwise onto `bbox` after mirroring (docs/WALK_AND_STAIRS.md).
 `building.shell`: generated-shell parameters `{ exteriorWall = 0.30, slab = 0.25 }`.
 
 ## interiors, electrical

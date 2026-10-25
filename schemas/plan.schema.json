@@ -280,6 +280,61 @@
        "lines"
       ],
       "additionalProperties": false
+     },
+     "calibration": {
+      "description": "px plans drawn as one image per level: the scale and origin of THIS level's image (the origin pixel = the same building corner on every image); default: the plan calibration",
+      "type": "object",
+      "properties": {
+       "pxPerM": {
+        "type": "number",
+        "exclusiveMinimum": 0,
+        "description": "pixels per metre of the source image"
+       },
+       "originPx": {
+        "type": "array",
+        "prefixItems": [
+         {
+          "type": "number"
+         },
+         {
+          "type": "number"
+         }
+        ],
+        "items": false,
+        "minItems": 2,
+        "maxItems": 2,
+        "description": "pixel that becomes the project origin (x = 0, y = 0)"
+       },
+       "methods": {
+        "description": "independent scale estimates (scale bar, printed area, door width…) — the build reports their agreement",
+        "type": "array",
+        "items": {
+         "type": "object",
+         "properties": {
+          "method": {
+           "type": "string"
+          },
+          "pxPerM": {
+           "type": "number",
+           "exclusiveMinimum": 0
+          },
+          "note": {
+           "type": "string"
+          }
+         },
+         "required": [
+          "method",
+          "pxPerM"
+         ],
+         "additionalProperties": false
+        }
+       }
+      },
+      "required": [
+       "pxPerM",
+       "originPx"
+      ],
+      "additionalProperties": false
      }
     },
     "required": [
@@ -453,7 +508,7 @@
       ]
      },
      "swingInto": {
-      "description": "hinged: the room the leaf opens into (default: the second room, or the room for an exterior door)",
+      "description": "hinged: the room the leaf opens into, or \"exterior\" for an outward-opening outside door (default: the second room, or the room for an exterior door)",
       "type": "string",
       "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
      },
@@ -691,7 +746,27 @@
       "items": false,
       "minItems": 4,
       "maxItems": 4,
-      "description": "[x0, y0, x1, y1] — walls at x0 and y0; the lower flight starts at y1 on the x > split side"
+      "description": "[x0, y0, x1, y1] — outline of the whole stair (both flights and the landing)"
+     },
+     "up": {
+      "default": "S",
+      "description": "direction one walks up the lower flight (N = +y, plan up); the landing is at that end of the box",
+      "type": "string",
+      "enum": [
+       "N",
+       "S",
+       "E",
+       "W"
+      ]
+     },
+     "turn": {
+      "default": "right",
+      "description": "which way one turns on the landing going up (towards the upper flight)",
+      "type": "string",
+      "enum": [
+       "left",
+       "right"
+      ]
      },
      "risers": {
       "type": "integer",
@@ -906,7 +981,7 @@
        "E",
        "W"
       ],
-      "description": "wall of the room: N = max y, S = min y, E = max x, W = min x (plan up = N)"
+      "description": "wall of the room facing that side (N = +y, S = −y, E = +x, W = −x; plan up = N); in an L or U room the one that holds \"along\", else the longest"
      },
      "along": {
       "type": "number"

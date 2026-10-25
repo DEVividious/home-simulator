@@ -6,11 +6,13 @@ Estimates are appended to a JSON file (default projects/<id>/source/calibration.
                                                                                    a printed dimension line)
   calibrate.py --file F area    --rect X0,Y0,X1,Y1 --m2 AREA [--wall inner|axis]   a room with a printed area; the rectangle is the
                                                                                    room's inner faces in pixels
-  calibrate.py --file F symbol  --kind door|bathtub|bed|bed-single|wc|single-door --a X,Y --b X,Y   size priors of drawn symbols
+  calibrate.py --file F symbol  --kind door|entrance-door|bathtub|bed|wc --a X,Y --b X,Y           size priors of drawn symbols
   calibrate.py --file F total   --rects "X0,Y0,X1,Y1;…" --m2 TOTAL                   several rooms against a total area
   calibrate.py --file F summary --origin X,Y                                         agreement + the plan.json calibration block
 
 Rule (ADR 0016): at least two independent methods within 5 % of each other; otherwise ask the user for one real dimension.
+A plan with no printed dimension or area can only use symbol priors: then at least three estimates from at least two symbol
+kinds must agree, and the result is only "probable" (exit 0, but say so in the README and ask the user for one dimension).
 """
 from __future__ import annotations
 
@@ -26,13 +28,17 @@ from hstools import parse_box, parse_pt, write_json  # noqa: E402
 
 # typical real sizes [m] of plan symbols: (nominal, low, high) — the length between the two picked points
 PRIORS = {
-    'door': (0.90, 0.80, 1.00),          # swing radius = leaf width of an interior door
-    'single-door': (0.80, 0.70, 0.90),
+    'door': (0.80, 0.70, 0.90),          # swing radius = leaf width of an interior door
+    'single-door': (0.80, 0.70, 0.90),   # same as door (older name)
+    'entrance-door': (0.90, 0.85, 1.00), # leaf of an entrance door
     'bathtub': (1.70, 1.50, 1.80),       # long side
     'bed': (2.00, 1.95, 2.10),           # bed length
-    'bed-single': (2.00, 1.95, 2.10),
+    'bed-single': (2.00, 1.95, 2.10),    # same as bed (older name)
     'wc': (0.65, 0.55, 0.70),            # depth of a toilet from the wall
 }
+
+# symbols of the same thing are one kind when counting independent symbol estimates
+SYMBOL_KIND = {'single-door': 'door', 'entrance-door': 'door', 'bed-single': 'bed'}
 
 
 def load(path: Path) -> dict:
@@ -92,14 +98,18 @@ def main(argv=None):
             mark = '' if e in est else '  (not used)'
             print(f"  [{i}] {e['method']:<16} {e['pxPerM']:9.3f} px/m  {100 * (e['pxPerM'] / value - 1):+6.1f} %{mark}")
         spread = (max(e['pxPerM'] for e in base) - min(e['pxPerM'] for e in base)) / value
-        methods = {e['method'].split(':')[0] for e in base}
-        ok = len(base) >= 2 and len(methods) >= 1 and spread <= 0.05
-        verdict = 'OK — independent estimates agree within 5 %' if ok else (
-            'NOT ENOUGH — need at least two independent estimates (symbol priors count only when nothing else exists); ask the user for one real dimension'
-            if len(base) < 2 else f'DISAGREE — estimates differ by {100 * spread:.1f} % (> 5 %); re-check the picked points or ask for one real dimension')
+        # symbol-only: at least three estimates from two different symbol kinds (door / bed / bathtub …)
+        kinds = {SYMBOL_KIND.get(k, k) for k in (e['method'].split(':')[-1] for e in base)}
+        enough = len(base) >= 2 if strong else len(base) >= 3 and len(kinds) >= 2
+        ok = enough and spread <= 0.05
+        verdict = ('OK — independent estimates agree within 5 %' if strong else
+                   'PROBABLE — symbol priors agree within 5 %, but no printed dimension or area was used; record it in the README and ask the user for one real dimension') if ok else (
+            ('NOT ENOUGH — need at least two measured estimates (a dimension, a scale bar, a printed area)' if strong else
+             'NOT ENOUGH — symbol priors alone need at least three estimates from two different symbol kinds') + '; ask the user for one real dimension'
+            if not enough else f'DISAGREE — estimates differ by {100 * spread:.1f} % (> 5 %); re-check the picked points, drop a bad one with --use, or ask for one real dimension')
         print(f'\npxPerM = {value:.3f} (median of {len(base)} {"measured" if strong else "symbol"} estimates) · {verdict}')
         block = dict(pxPerM=round(value, 4), originPx=list(parse_pt(a.origin)), methods=[dict(method=e['method'], pxPerM=round(e['pxPerM'], 4), **({'note': e['note']} if e.get('note') else {})) for e in est])
-        d['result'] = dict(block, agreement=round(spread, 4), ok=ok)
+        d['result'] = dict(block, agreement=round(spread, 4), ok=ok, confidence='measured' if strong else 'probable')
         write_json(path, d, quiet=True)
         print('\nplan.json → "calibration":')
         print(json.dumps(block, indent=1))

@@ -24,8 +24,9 @@ A door is stated once, as a fact about the plan (`src/authoring/plan.ts`):
 
 The compiler finds the wall shared by the two rooms (or the outer wall of the room for an exterior door) that holds the
 opening, cuts the door gap into **both** rooms, and derives the hinge point and direction vectors. The leaf width is the
-opening width − 0.10 m; the hinge sits 5 cm from the jamb, on the face of the room the door opens into. A door cannot open
-into the exterior — the build reports an error and asks to let it open into the room. A door without a stated direction is
+opening width − 0.10 m; the hinge sits 5 cm from the jamb, on the face of the room the door opens into. A door to the
+outside opens inwards unless `swingInto` is `"exterior"`; then the hinge sits on the outer face of the exterior wall and the
+leaf swings outwards. Two leaves that sweep the same floor are reported (`door.swingOverlap`). A door without a stated direction is
 not guessed by the engine: the authoring skill decides (from a swing arc on a drawing, or as an assumption with
 `confidence: "probable"`).
 

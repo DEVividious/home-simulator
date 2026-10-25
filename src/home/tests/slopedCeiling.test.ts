@@ -6,7 +6,7 @@ import { compilePlan, type CatalogItemInfo } from '../../authoring/compile';
 import { withProject } from '../../project/active';
 import { roomById } from '../model/rooms';
 import { shellBounds } from '../model/shell';
-import { ceilingGeometry, wallGeometry } from '../three/surfaces';
+import { ceilingGeometry, floorGeometry, wallGeometry } from '../three/surfaces';
 
 const catalog = (JSON.parse(fs.readFileSync(path.resolve(__dirname, '../../../data/furnitureCatalog.json'), 'utf8')) as { items: CatalogItemInfo[] }).items;
 const attic = (ridge: 'X' | 'Y') => {
@@ -44,4 +44,29 @@ describe('sloped ceilings from plan.json', () => {
       expect(shellBounds().max[2]).toBeGreaterThanOrEqual(2.5);
     }));
   }
+});
+
+describe('openings at the edge of a floor', () => {
+  // the stair box drawn a few centimetres into the walls of the upper room (a stairwell along the wall, read off a drawing)
+  const twoLevels = () => {
+    const r = compilePlan({
+      schema: 'home-simulator/plan', version: 1, units: 'm', source: 'test',
+      project: { id: 'stair-test', name: 'Stairs', buildingType: 'house' },
+      levels: [{ id: 'L0', name: 'Ground', floorZ: 0, ceiling: 2.6 }, { id: 'L1', name: 'Upper', floorZ: 2.85, ceiling: 2.5 }],
+      rooms: [{ id: 'G1', name: 'Hall', level: 'L0', kind: 'hall', rect: [0.3, 0.3, 4.3, 4.3] }, { id: 'U1', name: 'Landing', level: 'L1', kind: 'hall', rect: [0.3, 0.3, 4.3, 4.3] }],
+      stairs: [{ id: 'S1', from: 'L0', to: 'L1', box: [1.0, 1.0, 2.95, 4.35], risers: 9, tread: 0.27, flightWidth: 0.95, gap: 0.05 }],
+    }, { catalog });
+    expect(r.issues.filter((i) => i.level === 'error')).toEqual([]);
+    return r.project!;
+  };
+  const area = (g: { getAttribute: (n: string) => { count: number; getX: (i: number) => number; getZ: (i: number) => number } }) => {
+    const p = g.getAttribute('position');
+    let s = 0;
+    for (let i = 0; i < p.count; i += 3) s += Math.abs((p.getX(i + 1) - p.getX(i)) * (p.getZ(i + 2) - p.getZ(i)) - (p.getX(i + 2) - p.getX(i)) * (p.getZ(i + 1) - p.getZ(i))) / 2;
+    return s;
+  };
+  it('a stair opening reaching into the walls is still cut out of the upper floor', () => withProject(twoLevels(), () => {
+    const hole = 1.95 * 3.3, room = 16;   // the opening ends at the wall face (4.30)
+    expect(area(floorGeometry(roomById('U1')!))).toBeCloseTo(room - hole, 1);
+  }));
 });

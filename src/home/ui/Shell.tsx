@@ -38,7 +38,7 @@ export function TopBar() {
   const variant = useVariant();
   return (
     <header className="hm-top">
-      <div className="hm-brand"><Icon name="house" size={22} /><span><b>{t(`shell.brand.${project().manifest.buildingType}`)}</b><small title={t('shell.activeVariant')}>{variant.name}</small></span></div>
+      <div className="hm-brand"><Icon name="house" size={22} /><span><b title={t(`shell.brand.${project().manifest.buildingType}`)}>{project().manifest.name || t(`shell.brand.${project().manifest.buildingType}`)}</b><small title={t('shell.activeVariant')}>{variant.name}</small></span></div>
       <nav className="hm-nav" data-testid="nav">
         {sections().map((s) => (
           <button key={s.id} className={section === s.id ? 'on' : ''} onClick={() => goSection(s.id)} data-testid={`nav-${s.id}`}>

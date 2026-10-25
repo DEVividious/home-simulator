@@ -55,6 +55,7 @@ const StairSchema = z.looseObject({
   id, kind: z.literal('u-turn'), fromLevel: id, toLevel: id, bbox: z.tuple([num, num, num, num]),
   risers: z.number().int().positive(), riser: num, tread: num, flightWidth: num, gap: num, landingZ: num, topZ: num,
   split: num, run: num, landingEdge: num, confidence: z.string(), note: z.string().optional(),
+  orient: z.strictObject({ rotate: z.union([z.literal(0), z.literal(90), z.literal(180), z.literal(270)]), mirror: z.boolean() }).optional(),
 });
 
 const DimsSchema = z.looseObject({ w: num.optional(), d: num.optional(), h: num.optional() });

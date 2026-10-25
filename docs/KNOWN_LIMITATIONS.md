@@ -12,13 +12,14 @@ the behaviour is named in brackets. When a limit is lifted, remove it here in th
 - **The generated shell is a box.** It draws walls, a floor slab under every level and a flat slab over the top level, up to
   the highest ceiling of the level. Sloped attic ceilings (level `slope` in `plan.json`) are drawn inside as ceiling and gable
   finishes, but the outside shows no pitched roof. A sloped ceiling is one symmetric roof per level with its ridge along X or
-  Y; hips, dormers, valleys and different pitches on each side are not supported.
+  Y; hips, dormers, valleys and different pitches on each side are not supported. Roof windows are openings in the ceiling
+  finish (light comes through), without a frame or glass, and do not show outside.
 - **No roof without a model.** There is no pitched roof, gable or chimney in the generated shell. A building that needs them
   must bring a GLB model (`assets.model`).
 - **One stair type.** `StairDef` supports only `kind: "u-turn"`: two flights with the same number of risers, a landing and a
-  gap between the flights. Straight, L-shaped, winding and spiral stairs are not supported. The stair box is axis-aligned and
-  has one fixed orientation in plan: walls at the smaller X and Y, the lower flight starts at the larger Y on the side
-  `x > split`, the balustrade is on the larger-X side. There is no rotate or mirror field (`src/home/model/stairs.ts`).
+  gap between the flights. Straight, L-shaped, winding and spiral stairs are not supported. The stair box is axis-aligned; it
+  can face any of the four directions and turn either way (`up`, `turn` in `plan.json`), but not stand at another angle
+  (`src/home/model/stairs.ts`).
 - **Stair geometry is not editable in the app.** The user chooses only the finish (treads, risers, handrail, balustrade);
   step count and size are building data (`src/home/model/stairsConfig.ts`).
 - **Wall ids depend on the outline.** A wall id is `<room>-w<n>`, where `n` is the edge index of the room outline in
@@ -41,8 +42,9 @@ the behaviour is named in brackets. When a limit is lifted, remove it here in th
 - **Model files are not made by the tools.** `plan.json` can name a building, terrain or surroundings GLB (`assets`), camera
   views and catalog files; the compiler copies them into `project.json` as given. Producing the GLB is up to the author, and
   only `npm run project:validate` checks that the files exist.
-- **No double doors.** Doors are `hinged-single`, `sliding` or `pocket`. The package format reserves `hinged-double`, but the
-  engine draws and animates a single leaf only, and `plan.json` cannot express it.
+- **No double or folding doors.** Doors are `hinged-single`, `sliding` or `pocket`. The package format reserves
+  `hinged-double`, but the engine draws and animates a single leaf only, and `plan.json` cannot express it. A bifold door is
+  modelled as one hinged or sliding leaf.
 - **Raster calibration is a heuristic.** `tools/image/calibrate.py` estimates the scale from a scale bar, printed areas, the
   total area or typical symbol sizes. Two estimates within 5 % are required, but the result still needs a human check against
   one real dimension and the preview ([ADR 0016](adr/0016-raster-plan-import-is-vision-plus-calibration.md)). Typical accuracy:

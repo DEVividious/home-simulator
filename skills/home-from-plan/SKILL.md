@@ -1,7 +1,7 @@
 ---
 name: home-from-plan
 description: Build, import or update a 3D home / apartment project for Home Simulator from floor plans — CAD files (DWG, DXF), architectural PDF sheets, or plain 2D floor-plan images (PNG / JPG real-estate plans, scans, screenshots), or from a description. Use when the user says "build my home / flat from these files", "import this floor plan", "make a 3D model of my apartment", "add a room / door / window to my project", or drops a plan image. Produces projects/<id>/source/plan.json and the compiled projects/<id>/project.json, validated and previewed.
-allowed-tools: Bash(python3 tools/*) Bash(.venv/bin/python tools/*) Bash(npm run project:*) Bash(npm run -s project:*) Bash(pdftotext *) Bash(pdftocairo *) Bash(pdftoppm *) Read Write Edit Glob Grep
+allowed-tools: Bash(python3 tools/*) Bash(.venv/bin/python tools/*) Bash(npm run project:*) Bash(npm run -s project:*) Bash(pdftotext *) Bash(pdftocairo *) Bash(pdftoppm *) Bash(mkdir -p projects/*) Bash(cp *) Read Write Edit Glob Grep
 metadata:
   version: 1
   requires: node>=20; python3>=3.11 with tools/requirements.txt for CAD / PDF / raster tools; poppler-utils for PDF; ODA File Converter for DWG
@@ -40,7 +40,9 @@ Create `projects/<id>/source/` and copy the inputs to `projects/<id>/source/inpu
 ### A. Raster image (real-estate plan, scan, photo of a drawing, PDF page rendered with pdftoppm)
 
 1. `.venv/bin/python tools/image/prepare.py <image> --out projects/<id>/source/prep` → look at `grid.png` and the
-   `tile_*.png` zooms. Labels are SOURCE pixel coordinates (x right, y down).
+   `tile_*.png` zooms. Labels are SOURCE pixel coordinates (x right, y down). On a small image (intake warns below 1200 px; walls
+   are then 3–5 px thick) read wall faces and openings from close-ups: add `--zoom-box x0,y0,x1,y1` (repeatable, 4×, 10 px grid)
+   for every area you need.
 2. Write down, for every room: name (as printed), kind, the rectangle (or polygon) of its **inner wall faces** in pixels,
    printed area if any. For every door: the two rooms (or `exterior`), the pixel in the middle of the opening, the swing arc —
    which room it opens into and on which side the hinge is (the arc's centre). Windows: the room, a pixel on the wall in the
@@ -48,14 +50,26 @@ Create `projects/<id>/source/` and copy the inputs to `projects/<id>/source/inpu
 3. Scale — at least two independent estimates (ADR 0016):
    ```bash
    C=projects/<id>/source/calibration.json
-   .venv/bin/python tools/image/calibrate.py --file $C area --rect X0,Y0,X1,Y1 --m2 <printed area>
-   .venv/bin/python tools/image/calibrate.py --file $C points --a X,Y --b X,Y --length <metres>     # scale bar / dimension
-   .venv/bin/python tools/image/calibrate.py --file $C symbol --kind door --a X,Y --b X,Y           # weak prior
-   .venv/bin/python tools/image/calibrate.py --file $C summary --origin <pixel of the outer bottom-left corner>
+   .venv/bin/python tools/image/calibrate.py --file $C points --a X,Y --b X,Y --length <metres>     # dimension line / scale bar
+   .venv/bin/python tools/image/calibrate.py --file $C area --rect X0,Y0,X1,Y1 --m2 <printed area>  # a rectangular room
+   .venv/bin/python tools/image/calibrate.py --file $C total --rects "X0,Y0,X1,Y1;…" --m2 <sum>     # several rooms
+   .venv/bin/python tools/image/calibrate.py --file $C symbol --kind door --a X,Y --b X,Y           # weak prior: door,
+   #                                                    entrance-door, bathtub, bed, wc (references/symbol-legend.md)
+   .venv/bin/python tools/image/calibrate.py --file $C summary --origin <pixel of the outer bottom-left corner> [--use 0,2]
    ```
-   `summary` must say OK. If it says NOT ENOUGH or DISAGREE: re-check the picked pixels; if still not OK, ask the user for ONE
-   real dimension (a room width, the total area) — never guess the scale from one symbol alone.
-4. Write `plan.json` with `"units": "px"` and the `calibration` block from `summary`. Sizes (door / window widths, sills,
+   `summary` must say OK. If it says DISAGREE: re-check the picked pixels, drop a wrong estimate with `--use` (indexes it
+   lists); if still not OK, ask the user for ONE real dimension (a room width, the total area).
+   - **Dimensioned plan** (numbers along the walls, in cm on most European plans): the overall chains are the best evidence —
+     measure the longest ones with `points` (both directions). Printed room sizes (e.g. 458 × 341) are inner faces: use them
+     for the outlines, not only the pixels, and after the build check every room against them (the plan preview shows sizes on
+     the 1 m grid). Printed areas are often 2–5 % below length × width (plaster, rounding); prefer chains over areas for the
+     scale.
+   - **No dimension and no area printed**: only symbol priors are left. Use at least three symbols of two kinds (interior
+     doors, bed length, bathtub, WC) — `summary` then says PROBABLE. Set `defaults.confidence` to `"probable"`, say in the README
+     that the scale rests on symbols, and ask the user for one real dimension when you hand over.
+4. Several images (one per level): prepare and calibrate each one (its own `calibration.json`), pick the same building corner as
+   `--origin` on every image, and put each `summary` block into that level's `calibration` (references/plan-schema.md).
+5. Write `plan.json` with `"units": "px"` and the `calibration` block from `summary`. Sizes (door / window widths, sills,
    heights, furniture dims) are always metres. The compiler converts, snaps to 5 mm and regularises walls.
 
 ### B. Vector PDF sheet (architect's drawing)
@@ -101,10 +115,15 @@ acceptable. Common fixes: `skills/home-check/references/errors.md`.
 ## 4. Preview and compare — mandatory (ADR 0015)
 
 ```bash
-npm run -s project:preview -- projects/<id>     # projects/<id>/preview/plan-<level>.png, 3d.png
+npm run -s project:preview -- projects/<id>              # projects/<id>/preview/plan-<level>.png, 3d.png (outside)
+npm run -s project:preview -- projects/<id> --room R3    # room-R3.png: the room in 3D, cut away from above
+npm run -s project:preview -- projects/<id> --viewpoint vp-attic   # view-<id>.png: eye level from a plan.json viewpoint
 ```
-Open the plan preview next to the source drawing and compare room by room: shape and proportions, door positions and swing
-direction, windows on the right walls, stairs. Fix and rebuild. After three silent iterations, show both images to the user and
+Open the plan preview next to the source drawing and compare room by room: shape and proportions, sizes against printed
+dimensions, door positions and swing direction, windows on the right walls, stairs (direction of the arrow), attic height lines
+and roof windows. Look inside at least the largest room (`--room`); for every room with a sloped ceiling add a `viewpoints`
+entry in plan.json (also useful to the user) and check it with `--viewpoint` — the cut-away hides the slope. With several
+levels, check that outer walls and the stairs line up between the plan previews. Fix and rebuild. After three silent iterations, show both images to the user and
 ask about the specific doubt instead of iterating further.
 
 ## 5. Furnish
