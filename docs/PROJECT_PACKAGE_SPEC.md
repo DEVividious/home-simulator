@@ -8,7 +8,7 @@ Top level: `{ "schema": "home-simulator/project", "version": 1, manifest, buildi
 
 ## Coordinates
 Metres, right-handed, `+Z` up; `+X` right and `+Y` up on the plan; three.js `(x, y, z) → (x, z, −y)`. All heights share one
-reference (`Z = 0` = lowest finished floor, usually). Describe the origin in `manifest.coordinateSystem.description` (ADR 0008).
+reference (`Z = 0` = lowest finished floor, usually). Describe the origin in `manifest.coordinateSystem.description`.
 
 ## manifest
 | Field | Required | Meaning |
@@ -42,7 +42,7 @@ office, storage, room), `tags` (`kitchen`, `garage`).
 
 Walls (`<room>-w<n>`, n = edge index of the outline in counter-clockwise order), wall runs and mount surfaces are derived. Ids
 `EXT`, `exterior` (rooms) and `SITE` (levels) are reserved. Released packages must not change room ids, vertex counts or order
-(ADR 0009, `ids.lock.json`).
+(`ids.lock.json`).
 
 ## building.doors
 `{ id, level, rooms: [a, b | "exterior"], floorZ, opening: { along, from, to, faces, width, height }, leafWidth, height, type

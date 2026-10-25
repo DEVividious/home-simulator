@@ -2,7 +2,7 @@
 //   project()        — package of the active project,
 //   derived(build)   — a value computed from the package and cached PER PACKAGE (not per module): one process can serve
 //                      several projects (tests, the save server); in the browser one tab = one project.
-// The entry point (src/main.tsx → loadProject) activates the project before the UI mounts. docs/adr/0001.
+// The entry point (src/main.tsx → loadProject) activates the project before the UI mounts.
 import type { ProjectCapability, ProjectModule, ProjectPackage } from './types';
 
 let current: ProjectPackage | null = null;

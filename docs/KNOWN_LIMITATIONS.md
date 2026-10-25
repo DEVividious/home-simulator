@@ -26,10 +26,10 @@ the behaviour is named in brackets. When a limit is lifted, remove it here in th
   counter-clockwise order from the corner with the smallest y, then the smallest x. Adding a vertex or moving the first corner
   shifts the ids, and user data (finishes, wall-mounted objects, electrical points) refers to them. Mitigation: build with
   `--lock` once the project is in use; `ids.lock.json` then makes the compiler refuse such a change unless `--force-relock` is
-  given ([ADR 0009](adr/0009-rooms-are-inner-face-polygons.md)). Neither example project ships a lock file.
+  given. Neither example project ships a lock file.
 - **Project catalogs only extend.** Furniture and materials come from `data/furnitureCatalog.json` and
   `data/materialCatalog.json`; a package may add items in its own files (`catalog.furniture` / `catalog.materials`, ids
-  `<projectId>:…`, [ADR 0012](adr/0012-catalogs-are-engine-global.md)). It cannot change or hide an engine item, and a new
+  `<projectId>:…`). It cannot change or hide an engine item, and a new
   parametric item must use one of the engine's generators — anything else needs a GLB model. Names of project items are
   translated only through their own `names` field. Users can also import GLB furniture in the app (it lives in the user
   document).
@@ -47,10 +47,10 @@ the behaviour is named in brackets. When a limit is lifted, remove it here in th
   modelled as one hinged or sliding leaf.
 - **Raster calibration is a heuristic.** `tools/image/calibrate.py` estimates the scale from a scale bar, printed areas, the
   total area or typical symbol sizes. Two estimates within 5 % are required, but the result still needs a human check against
-  one real dimension and the preview ([ADR 0016](adr/0016-raster-plan-import-is-vision-plus-calibration.md)). Typical accuracy:
+  one real dimension and the preview. Typical accuracy:
   1 to 3 % on room sizes, about 5 cm on door and window positions ([IMPORT_RASTER.md](IMPORT_RASTER.md)).
 - **Reading the drawing is done by the agent**, not by computer vision. Room outlines, door swings and windows depend on the
-  agent's reading; the preview comparison is the safety net ([ADR 0015](adr/0015-ai-authored-packages-are-verified.md)).
+  agent's reading; the preview comparison is the safety net.
 - **DWG needs the external ODA File Converter** (`ODA_FILE_CONVERTER`, headless via `xvfb-run`). DXF files and the rest of the
   tools work without it ([IMPORT_CAD.md](IMPORT_CAD.md)).
 - **CAD layer mapping needs judgement.** `dxf_walls.py` proposes candidate rooms with orthogonal outlines only; layer choice
@@ -95,12 +95,12 @@ the behaviour is named in brackets. When a limit is lifted, remove it here in th
 - **Device data lives in the browser.** Clearing site data in the browser deletes the device copy and the backups. "Protect
   data" (Settings → App and data) asks for persistent storage, but the browser may refuse it.
 - **No migration from other applications.** The document format starts at `home-simulator/document` version 1
-  ([ADR 0002](adr/0002-user-document-belongs-to-a-project.md)).
+ .
 
 ## Phone and PWA
 
 - **Android with Chrome only.** The phone flow uses `adb` and opens Chrome (`com.android.chrome`). iOS is not covered
-  ([ADR 0018](adr/0018-phone-is-a-pwa-over-usb.md)).
+ .
 - **Port 4170 is fixed.** The phone treats `http://localhost:4170` as the app. Offline data belongs to that origin; another
   port is another app with separate, empty storage ([PHONE.md](PHONE.md)).
 - **Saves reach the PC only while the cable is connected and `serve` runs.** Otherwise they wait on the phone.
@@ -111,7 +111,7 @@ the behaviour is named in brackets. When a limit is lifted, remove it here in th
 ## Projects, tabs and language
 
 - **One tab = one project.** Engine models are derived for the active package; switching projects in place is not supported.
-  Switching saves the current project and reloads the page ([ADR 0001](adr/0001-active-project-and-lazily-derived-models.md)).
+  Switching saves the current project and reloads the page.
 - **An unknown `?project=` id is ignored silently**; the app opens the tab's, the last or the default project instead.
 - **Switching the language reloads the page.** Labels derived per package may be cached, so the change is applied on reload.
 
@@ -119,7 +119,7 @@ the behaviour is named in brackets. When a limit is lifted, remove it here in th
 
 - **Two languages: English and Polish.** The language list in `src/i18n/index.ts` is fixed; a new language needs its
   dictionaries and an entry there.
-- **No plural rules.** Counted phrases use neutral forms ("Rooms: 4") ([ADR 0019](adr/0019-english-first-i18n.md)).
+- **No plural rules.** Counted phrases use neutral forms ("Rooms: 4").
 - **Package texts are not translated.** Room names, level names, view labels and notes are shown as the package wrote them.
 - **Catalog names:** English names live in `data/*.json`; other languages translate them by key (`furniture.<id>`,
   `material.<id>`). A missing translation falls back to English.

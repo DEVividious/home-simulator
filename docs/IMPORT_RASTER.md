@@ -1,7 +1,7 @@
 # Importing a plan image
 
 For estate-agent plans, scans, screenshots, photos of drawings, or PDF pages without vector content
-(`pdftoppm -r 150 -png plan.pdf page` first). ADR 0016.
+(`pdftoppm -r 150 -png plan.pdf page` first).
 
 1. `tools/image/prepare.py PLAN --out DIR` — `grid.png` (labelled pixel grid; minor 50 px, labelled 100 px), four 2× tiles,
    `info.json`. `--crop`, `--rotate` for rotated or cluttered sheets (labels stay in the coordinates of the processed image).

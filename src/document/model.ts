@@ -1,8 +1,8 @@
 // PROJECT DOCUMENT (ConfiguratorDoc) — everything the user designed in one project: variants (furnishing, finishes,
 // stairs finishes, own electrical layout, view, sun), camera bookmarks, imported furniture models, the global electrical
 // plan. Pure TypeScript — no three.js, tested in vitest.
-// A document belongs to exactly one project (projectId — docs/adr/0002); a document of another project is rejected on
-// load and on save. Schema home-simulator/document, version 1 (ADR: the engine starts with a fresh document format).
+// A document belongs to exactly one project (projectId); a document of another project is rejected on
+// load and on save. Schema home-simulator/document, version 1 — the engine starts with a fresh document format.
 import { t } from '../i18n';
 import { planErrors } from '../home/model/electrical';
 import { bookmarksErrors, importedErrors, interiorsErrors } from '../home/model/interiors';

@@ -3,8 +3,8 @@
 How the engine places and moves everything that hangs on a wall: TV, mirror, shelf, wall lamp, wall cabinet, socket,
 switch, thermostat, panel, sensor. One model (`MountSurface`) and one drag engine serve wall-mounted furniture and electrical
 devices; nothing in it depends on a specific building. Decisions:
-[ADR 0003 — the mount record is the source of truth](adr/0003-mount-record-as-source-of-truth.md) and
-[ADR 0004 — wall lock and bounded gain](adr/0004-wall-lock-and-bounded-gain.md).
+ and
+.
 
 Files: `src/home/model/mount.ts` (surfaces, picking), `src/home/model/mountDrag.ts` (drag, snapping, placement check,
 record), `src/home/model/mountedFurniture.ts` (wall-mounted furniture), `src/home/scene/mountPointer.ts` (screen pointer →

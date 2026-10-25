@@ -1,7 +1,7 @@
 # Skills
 
 Skills are short procedures for AI coding agents in the open Agent Skills format: `skills/<name>/SKILL.md` (YAML front matter:
-`name`, `description`, `allowed-tools`, `metadata`) with `scripts/`, `references/` and `assets/` next to it (ADR 0013).
+`name`, `description`, `allowed-tools`, `metadata`) with `scripts/`, `references/` and `assets/` next to it.
 Claude Code finds them through `.claude/skills/` (links), Codex / Gemini CLI through `AGENTS.md`, Cursor through
 `.cursor/rules/home-simulator.mdc`.
 

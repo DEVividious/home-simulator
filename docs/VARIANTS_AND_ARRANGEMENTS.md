@@ -1,7 +1,7 @@
 # Variants and arrangements
 
 A **variant** is a complete version of the user's design of a project; an **arrangement** is one furnishing of one room
-inside a variant. Both live in the user document (`home-simulator/document` v1, `userdata/<id>/document.json`, ADR 0002) and
+inside a variant. Both live in the user document (`home-simulator/document` v1, `userdata/<id>/document.json`) and
 never change the project package: the building geometry, plot and surroundings are the same in every variant. Variants are a
 project capability (`variants`).
 
@@ -57,7 +57,7 @@ Variants → "Compare A / B": choose variants A and B, then "Compare (split scre
 - Comparison is for viewing: clicks in the scene (editing) are disabled.
 - Overlay: labels "A · name" and "B · name", divider line; **⇄ Swap**, **Screenshot**, **Exit** (or Esc).
 - On a phone the comparison shows **one side on the full frame** with an **A | B** switch — half the draw calls of a split
-  screen ([MOBILE_UX.md](MOBILE_UX.md)).
+  screen.
 
 **Room arrangement comparison** (e.g. "Office A vs Office B"): Interiors → room → Arrangement → choose A and B → "Compare
 arrangements A / B". Both sides are the same variant; only the active arrangement of that room differs. Works in 3D, top view

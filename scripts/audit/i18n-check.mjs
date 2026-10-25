@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// i18n gate (ADR 0019): every language has the same keys with the same {placeholders}; every literal t('key') / tOr('key', …)
+// i18n gate: every language has the same keys with the same {placeholders}; every literal t('key') / tOr('key', …)
 // used in src/ exists in the English dictionary; src/i18n/dictionaries.ts is up to date. Exit 1 on any problem.
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';

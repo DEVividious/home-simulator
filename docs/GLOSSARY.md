@@ -5,7 +5,7 @@ The shared language of code, documents and conversations. English names are the 
 ## Project
 - **Project** — one building with what belongs to it: levels, rooms, openings, optionally a plot and surroundings. Immutable id `projectId`. *Avoid*: "house" (one kind of project), "model".
 - **Project package** (`ProjectPackage`) — the facts of a project in the form the engine loads: `projects/<id>/project.json` plus optional model files. *Avoid*: "configuration", "house data".
-- **Plan** (`plan.json`) — the authoring source of a package, compiled by `npm run project:build` (ADR 0014).
+- **Plan** (`plan.json`) — the authoring source of a package, compiled by `npm run project:build`.
 - **Manifest** (`ProjectManifest`) — id, name, units, coordinate system, building type, levels, modules, capabilities, start view.
 - **Module** (`ProjectModule`) — an optional part of the engine a package enables with its data: `site`, `environment`, `sun`, `stairs`. *Avoid*: plugin.
 - **Capability** (`ProjectCapability`) — a core feature a package uses: `interiors`, `electrical`, `variants`, `walk`.
@@ -36,7 +36,7 @@ The shared language of code, documents and conversations. English names are the 
 - **Mount surface** — a wall run (or facade) where something can be mounted: `u` along it, `v` height above the finished floor.
 - **Mount space** — a room (or the building's exterior) seen as the set of its mount surfaces.
 - **Wall object** — anything whose position is stored relative to a mount surface: wall-hung furniture (`mount: 'wall'`) or an electrical device. *Avoid*: "furniture against a wall" (that stands on the floor).
-- **Mount record** (`WallMount`) — `{ wallId, u, height }`; the world position is derived from it (ADR 0003).
+- **Mount record** (`WallMount`) — `{ wallId, u, height }`; the world position is derived from it.
 - **Grab offset** — difference between the grabbed point and the object's reference point, constant during a drag.
 - **Transfer** — a deliberate change of mount surface during a drag (wall → corner → another wall → another room).
 

@@ -117,7 +117,7 @@ export interface ElPoint {
 }
 /**
  * Fields of a future Smart Home Planner: device links and membership. Placement does not depend on these fields — extending
- * them requires no changes to the placement engine or the position record (docs/SMART_HOME_PLANNER_ARCHITECTURE.md).
+ * them requires no changes to the placement engine or the position record.
  */
 export interface SmartLinks {
   /** ids of the points that control this device / that this device controls */

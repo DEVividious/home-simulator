@@ -2,7 +2,6 @@
 // Interiors, Materials, Furniture, Electrical, Variants), the section panel on the left, the context panel of the selection on
 // the right. Single sources of truth: PROJECT DATA (project package — rooms, doors, optional model files), USER DESIGN STATE
 // (ConfiguratorDoc, design store), RUNTIME SCENE (derived). Home mode by default; Expert mode — in the settings.
-// Architecture: docs/ARCHITECTURE.md
 import { t } from '../i18n';
 import { hasModule, project } from '../project/active';
 import { allLevels, allRooms } from './model/rooms';

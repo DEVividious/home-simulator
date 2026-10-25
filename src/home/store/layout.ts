@@ -1,4 +1,4 @@
-// UI layout: desktop or phone (the same code, a different panel arrangement). Rule (docs/MOBILE_UX.md):
+// UI layout: desktop or phone (the same code, a different panel arrangement). Rule:
 //  • mobile = window narrower than 760 px OR a touch-only pointer on a low screen (phone in landscape: height ≤ 540 px),
 //  • landscape = width > height (phone in landscape: navigation as a vertical rail, context panel on the right),
 //  • coarse = the primary pointer is a finger (larger touch targets, touch hints instead of mouse hints).

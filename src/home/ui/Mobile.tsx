@@ -1,4 +1,4 @@
-// Mobile layout of the configurator (same code as desktop; see docs/MOBILE_UX.md):
+// Mobile layout of the configurator (same code as desktop):
 //  • MobileNav — bottom section navigation (phone in landscape: vertical rail on the left),
 //  • MobileSheet — bottom sheet with the context panel (collapsed / medium / expanded; landscape: panel on the right),
 //  • FurnitureQuickBar — quick actions for the selected furniture item (rotate ±15° / ±90°, duplicate, delete),

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // npm run project:preview -- projects/<id> [--room <roomId>] [--viewpoint <id>] [--no-3d]
-// Preview images of a project package for checking it against its source drawing (ADR 0015):
+// Preview images of a project package for checking it against its source drawing:
 //   projects/<id>/preview/plan-<level>.png  top-down plan drawn from project.json: rooms (id, name, area), wall mass between
 //                                           rooms, door gaps with swing arcs, windows, stairs, furniture footprints, 1 m grid,
 //                                           attic height lines (140 / 220 cm) and roof windows

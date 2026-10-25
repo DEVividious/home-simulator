@@ -43,7 +43,7 @@ export interface RoomFinishes {
 /**
  * Mount record of a wall object (TV, mirror, shelf, wall lamp, wall cabinet): the room wall from the project data,
  * the distance of the object axis from the start of that wall and the bottom height above the finished floor. The source of truth
- * for a wall object's position — the world position (x, y, rot, elevation) is computed from it (docs/adr/0003).
+ * for a wall object's position — the world position (x, y, rot, elevation) is computed from it.
  */
 export interface WallMount { wallId: string; u: number; height: number }
 

@@ -1,4 +1,4 @@
-// System "back" on a phone: what to close first before the user leaves the app (docs/MOBILE_UX.md § Back). One call = one
+// System "back" on a phone: what to close first before the user leaves the app. One call = one
 // step; returns false when there is nothing left to close.
 // Order: dialog (settings, welcome, sun panel) → expanded sheet → selection (element card) → sheet → comparison → walk → room →
 // level section.

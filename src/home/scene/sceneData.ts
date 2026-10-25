@@ -1,5 +1,5 @@
 // Scene data of the configurator: building bounds in space (camera, light, shadows) and the URLs of the project's model files
-// (project assets, ADR 0010). A project without a building model file gets the bounds of the shell generated from its rooms.
+// (project assets). A project without a building model file gets the bounds of the shell generated from its rooms.
 import { project } from '../../project/active';
 import { assetUrl } from '../../project/registry';
 import { shellBounds } from '../model/shell';

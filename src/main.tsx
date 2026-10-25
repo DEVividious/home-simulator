@@ -7,7 +7,7 @@ import { loadProject } from './project/registry';
 import { initPwa } from './pwa/register';
 
 // Project boundary: the project package (?project=<id> or the default of projects/index.json) is loaded, validated and
-// activated BEFORE the app is imported — engine modules read building data only through project() (docs/adr/0001).
+// activated BEFORE the app is imported — engine modules read building data only through project().
 const App = lazy(async () => {
   const pkg = await loadProject();
   initLang(pkg.manifest.language);

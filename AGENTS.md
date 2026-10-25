@@ -9,8 +9,8 @@ and follow it:
 - install or update the app on an Android phone → `skills/home-to-phone/SKILL.md`
 
 Rules:
-- Never put facts of a particular building into `src/` — they belong in `projects/<id>/` (docs/adr/0005, 0007).
+- Never put facts of a particular building into `src/` — they belong in `projects/<id>/`.
 - Write `projects/<id>/source/plan.json`, then `npm run project:build`; never hand-edit a compiled `project.json`.
-- Every authored package is validated and previewed before you call it done (docs/adr/0015).
+- Every authored package is validated and previewed before you call it done.
 - English for code, comments and docs; UI strings through `t()` with keys in `src/i18n/en` and `src/i18n/pl`.
 - Checks before finishing a code change: `npm run typecheck && npm test && npm run audit:genericity && npm run audit:i18n`.

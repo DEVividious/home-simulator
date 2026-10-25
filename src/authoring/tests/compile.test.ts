@@ -1,4 +1,4 @@
-// plan.json → project.json compiler (src/authoring/compile.ts, ADR 0014).
+// plan.json → project.json compiler (src/authoring/compile.ts).
 import fs from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';

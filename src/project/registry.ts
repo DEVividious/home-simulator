@@ -1,5 +1,5 @@
 // PROJECT BOUNDARY — discovering and loading project packages. Packages are runtime-loaded JSON directories
-// (projects/<id>/project.json, ADR 0006) listed in projects/index.json, which the Vite projects plugin generates from the
+// (projects/<id>/project.json) listed in projects/index.json, which the Vite projects plugin generates from the
 // projects/ directory (dev, preview and build). The engine knows no project ids.
 import { activateProject, projectId } from './active';
 import { ProjectIndexSchema, ProjectSchema, schemaErrors } from './schema';
@@ -23,7 +23,7 @@ export const projectEntry = (id: string): ProjectIndexEntry | null => projectInd
 
 /**
  * Storage key owned by a project: every project gets keys suffixed with its id, so the state of one project never reaches
- * another (ADR 0002).
+ * another.
  */
 export const scopedKey = (base: string, id: string = projectId()): string => `${base}:${id}`;
 /** user document of a project on the save server (relative to the user data directory) */
@@ -49,7 +49,7 @@ export function resolveProjectId(search: string = typeof window !== 'undefined' 
 
 /**
  * Switch to another project: remember the choice on the device and reload with ?project=<id>. One tab = one project (engine
- * modules keep models derived for the active project) — switching in place is not supported (ADR 0001).
+ * modules keep models derived for the active project) — switching in place is not supported.
  */
 export function switchProject(id: string) {
   if (!projectEntry(id)) throw new Error(`Unknown project "${id}"`);
@@ -113,7 +113,7 @@ export async function loadProject(id?: string): Promise<ProjectPackage> {
   const entry = projectEntry(pid);
   if (!entry) throw new Error(`Unknown project "${pid}" (available: ${projectIds().join(', ')})`);
   const data = await fetchJson(`${BASE()}${entry.dir}project.json`);
-  // the package's own catalog files (ADR 0012) — needed before validation: default furniture may use their ids
+  // the package's own catalog files — needed before validation: default furniture may use their ids
   const files = (data as Partial<ProjectPackage> | null)?.catalog ?? {};
   const raw = {
     furniture: files.furniture ? await fetchJson(assetUrl(files.furniture, pid)) : undefined,

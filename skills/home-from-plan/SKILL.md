@@ -4,7 +4,7 @@ description: Build, import or update a 3D home / apartment project for Home Simu
 allowed-tools: Bash(python3 tools/*) Bash(.venv/bin/python tools/*) Bash(npm run project:*) Bash(npm run -s project:*) Bash(pdftotext *) Bash(pdftocairo *) Bash(pdftoppm *) Bash(mkdir -p projects/*) Bash(cp *) Read Write Edit Glob Grep
 metadata:
   version: 1
-  requires: node>=20; python3>=3.11 with tools/requirements.txt for CAD / PDF / raster tools; poppler-utils for PDF; ODA File Converter for DWG
+  requires: node>=22.12; python3>=3.11 with tools/requirements.txt for CAD / PDF / raster tools; poppler-utils for PDF; ODA File Converter for DWG
 ---
 
 # home-from-plan
@@ -48,7 +48,7 @@ Create `projects/<id>/source/` and copy the inputs to `projects/<id>/source/inpu
    small images, here and in `--origin` — and its printed area if any. For every door: the two rooms (or `exterior`), the pixel in the middle of the opening, the swing arc —
    which room it opens into and on which side the hinge is (the arc's centre). Windows: the room, a pixel on the wall in the
    middle of the window, its width. Fixtures (bathtub, WC, washbasin, kitchen run, bed, wardrobe, stairs).
-3. Scale — at least two independent estimates (ADR 0016):
+3. Scale — at least two independent estimates:
    ```bash
    C=projects/<id>/source/calibration.json
    .venv/bin/python tools/image/calibrate.py --file $C points --a X,Y --b X,Y --length <metres>     # dimension line / scale bar
@@ -113,7 +113,7 @@ npm run -s project:validate -- projects/<id>
 Fix every error in `plan.json` (never in `project.json`). Read every warning and either fix it or write in the README why it is
 acceptable. Common fixes: `skills/home-check/references/errors.md`.
 
-## 4. Preview and compare — mandatory (ADR 0015)
+## 4. Preview and compare — mandatory
 
 ```bash
 npm run -s project:preview -- projects/<id>              # projects/<id>/preview/plan-<level>.png, 3d.png (outside)

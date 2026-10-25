@@ -14,7 +14,7 @@ export function readProjectJson(dir: string): unknown {
   return JSON.parse(fs.readFileSync(path.join(dir, 'project.json'), 'utf8'));
 }
 
-/** catalog extension files of a package (ADR 0012), parsed and checked; `data` — its project.json */
+/** catalog extension files of a package, parsed and checked; `data` — its project.json */
 export function readProjectCatalogs(dir: string, data: unknown): { catalogs: ProjectCatalogs; errors: string[] } {
   const files = (data as Partial<ProjectPackage> | null)?.catalog ?? {}, errors: string[] = [];
   const read = (key: 'furniture' | 'materials'): unknown => {

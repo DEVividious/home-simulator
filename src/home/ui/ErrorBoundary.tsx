@@ -21,7 +21,7 @@ export class ErrorBoundary extends Component<Props, { error: Error | null }> {
     const { error } = this.state;
     if (!error) return this.props.children;
     // class "hm": the app's colour variables and typeface (hm-btn buttons use them) — the message replaces the app root
-    // class "app-error" (styles.css): message layout where the Home stylesheet is not loaded (tool pages, start-up)
+    // class "app-error" (styles.css): message layout where the Home stylesheet is not loaded (start-up)
     return (
       <div className="hm hm-status app-error" role="alert" data-testid="app-error" style={{ color: 'var(--hm-ink)', padding: '0 24px', textAlign: 'center' }}>
         <b>{t('errorUi.title')}</b>

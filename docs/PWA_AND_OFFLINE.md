@@ -3,7 +3,7 @@
 The web app is also an installable Progressive Web App — no separate native UI. After the first online start it works without a
 connection: building, interiors, furniture, materials, doors, electrical planner (with PDF export), variants. The phone gets the
 app from this computer over USB; installing and updating it on a phone is described in [PHONE.md](PHONE.md)
-([ADR 0018](adr/0018-phone-is-a-pwa-over-usb.md)).
+.
 
 ## 1. Parts
 
@@ -94,7 +94,7 @@ Backups: Settings → App and data → "Restore" (an ordinary change — Undo re
 Files added offline (an imported model and its thumbnail) are stored on the device as pending and uploaded to the computer
 (`syncAssets`) when the connection returns, before the document changes.
 
-A document belongs to one project (ADR 0002): a document of another project is rejected on load and on save.
+A document belongs to one project: a document of another project is rejected on load and on save.
 
 ## 5. Versions and updates
 

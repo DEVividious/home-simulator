@@ -1,4 +1,4 @@
-// PROJECT CATALOG EXTENSIONS (ADR 0012): a package may bring its own furniture and materials in the files named by
+// PROJECT CATALOG EXTENSIONS: a package may bring its own furniture and materials in the files named by
 // `catalog.furniture` / `catalog.materials` (paths relative to the project directory). The files have the shape of the engine
 // catalogs (data/furnitureCatalog.json, data/materialCatalog.json); every id is prefixed "<projectId>:" so a project never
 // overrides an engine item. Model and texture URLs inside are relative to the project directory. Optional `names`

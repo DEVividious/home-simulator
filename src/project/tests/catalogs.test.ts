@@ -1,4 +1,4 @@
-// Project catalog extensions (ADR 0012): a package brings its own furniture / materials with ids "<projectId>:…"; they are
+// Project catalog extensions: a package brings its own furniture / materials with ids "<projectId>:…"; they are
 // checked against the engine catalogs, extend what a package may place and appear in the engine catalogs of that project.
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { fixtureDir } from '../../test/setup';

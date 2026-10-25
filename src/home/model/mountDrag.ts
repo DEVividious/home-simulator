@@ -1,5 +1,5 @@
 // WALL OBJECT DRAGGING — one engine for everything that hangs on a wall: wall-mounted furniture and devices.
-// Rules (docs/WALL_MOUNTED_OBJECT_PLACEMENT.md, docs/adr/0004):
+// Rules (docs/WALL_MOUNTED_OBJECT_PLACEMENT.md):
 //   1. WALL LOCK — during normal movement the object moves on the plane of ITS mounting surface; the pointer is
 //      projected onto that plane, not onto "whatever happens to be under the pointer".
 //   2. GRAB — the offset between the grab point and the object's reference point is constant: the object does not jump under the pointer.

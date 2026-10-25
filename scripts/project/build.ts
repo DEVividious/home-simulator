@@ -20,7 +20,7 @@ const force = args.includes('--force-relock');
 const lock = fs.existsSync(lockFile) && !force ? JSON.parse(fs.readFileSync(lockFile, 'utf8')) : null;
 let plan: unknown;
 try { plan = JSON.parse(fs.readFileSync(planFile, 'utf8')); } catch (e) { console.error(`${planFile}: ${(e as Error).message}`); process.exit(2); }
-// the project's own catalog files (plan.catalog, ADR 0012): their items can be placed like engine items
+// the project's own catalog files (plan.catalog): their items can be placed like engine items
 const ext = readProjectCatalogs(dir, { catalog: (plan as { catalog?: unknown } | null)?.catalog });
 for (const e of ext.errors) console.log(`  ERROR    ${e}`);
 if (ext.errors.length) { console.error(`\n${dir}: catalog extension has ${ext.errors.length} error(s) — project.json not written`); process.exit(2); }

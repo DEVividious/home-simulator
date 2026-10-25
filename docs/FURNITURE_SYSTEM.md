@@ -1,6 +1,6 @@
 # Furniture system
 
-Furniture items are 1:1 objects in metres, in the project coordinate system (LCS, ADR 0008: X and Y in plan, Z up). A
+Furniture items are 1:1 objects in metres, in the project coordinate system (LCS: X and Y in plan, Z up). A
 placement in an arrangement is a `FurniturePlacement` (`src/home/model/types.ts`):
 
 ```ts
@@ -17,7 +17,7 @@ placement in an arrangement is a `FurniturePlacement` (`src/home/model/types.ts`
 
 ## Catalog — `data/furnitureCatalog.json`
 
-The catalog is engine-global (ADR 0012): `{ schema: "home-simulator/furniture-catalog", version: 1, units: "m",
+The catalog is engine-global: `{ schema: "home-simulator/furniture-catalog", version: 1, units: "m",
 categories[], items[] }`. Built-in names are English; the UI name comes from the dictionaries (`furniture.<id>`,
 `furniture.<id>.variant.<variantId>`, `furnitureCategory.<id>`, `catalog.slot.<slot>`) with the catalog name as fallback.
 A package refers to catalog ids; unknown ids are build and load errors.

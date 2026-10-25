@@ -10,7 +10,7 @@ Estimates are appended to a JSON file (default projects/<id>/source/calibration.
   calibrate.py --file F total   --rects "X0,Y0,X1,Y1;…" --m2 TOTAL                   several rooms against a total area
   calibrate.py --file F summary --origin X,Y                                         agreement + the plan.json calibration block
 
-Rule (ADR 0016): at least two independent methods within 5 % of each other; otherwise ask the user for one real dimension.
+Rule: at least two independent methods within 5 % of each other; otherwise ask the user for one real dimension.
 A plan with no printed dimension or area can only use symbol priors: then at least three estimates from at least two symbol
 kinds must agree, and the result is only "probable" (exit 0, but say so in the README and ask the user for one dimension).
 """

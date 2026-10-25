@@ -1,4 +1,4 @@
-// AUTHORING FORMAT — plan.json: the compact description of a building that people and AI agents write (ADR 0014). The
+// AUTHORING FORMAT — plan.json: the compact description of a building that people and AI agents write. The
 // compiler (./compile.ts, npm run project:build) turns it into the project package projects/<id>/project.json, which is the
 // only thing the engine reads. plan.json states facts once ("a 0.9 m door between Hall and Bathroom at this point, hinge on
 // the left, opens into the bathroom"); everything derived — door gaps in BOTH rooms, wall faces, hinge vectors, polygon order,

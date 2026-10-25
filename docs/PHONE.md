@@ -1,7 +1,7 @@
 # The app on an Android phone
 
 The phone runs the same web app installed as a PWA from Chrome. This computer serves it over USB; no app store, no APK, no
-certificates (ADR 0018). Agents: the `home-to-phone` skill.
+certificates. Agents: the `home-to-phone` skill.
 
 ```bash
 node scripts/phone/phone.mjs doctor       # adb, phone, authorisation, Chrome, port, build

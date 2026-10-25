@@ -11,7 +11,7 @@ A door is stated once, as a fact about the plan (`src/authoring/plan.ts`):
 
 | Field | Meaning |
 |---|---|
-| `id` | door id (stable, ADR 0009) |
+| `id` | door id (stable) |
 | `between` | the two rooms on either side; `"exterior"` for an outside door |
 | `at` | any point in the middle of the opening (on or inside the wall between the rooms) |
 | `width` | clear opening in the masonry [m] |
@@ -20,7 +20,7 @@ A door is stated once, as a fact about the plan (`src/authoring/plan.ts`):
 | `hinge` | hinged: `left` / `right`, as seen from the room the door opens into, looking at the wall |
 | `slideTo` | sliding / pocket: the leaf moves towards the `start` (smaller coordinate) or `end` of the opening |
 | `height`, `leafHeight` | opening and leaf height (defaults from `defaults.doorHeight` = 2.05 m, `defaults.leafHeight` = 2.00 m) |
-| `confidence`, `source` | provenance (ADR 0021) |
+| `confidence`, `source` | provenance |
 
 The compiler finds the wall shared by the two rooms (or the outer wall of the room for an exterior door) that holds the
 opening, cuts the door gap into **both** rooms, and derives the hinge point and direction vectors. The leaf width is the

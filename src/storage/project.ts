@@ -7,7 +7,7 @@
 //   pending  — the working copy on the device differs from that version (changes are waiting to be saved to the file);
 //   owed     — saving this exact content was requested but has not reached the file (see LocalProject.owed).
 // The load decision is made by decideLoad (pure function — tests).
-// Every project has its own record, its own fallback keys and its own backups (scopedKey, docs/adr/0002).
+// Every project has its own record, its own fallback keys and its own backups (scopedKey).
 import { projectId } from '../project/active';
 import { scopedKey } from '../project/registry';
 import { idbAll, idbDelete, idbGet, idbPut, STORE } from './db';

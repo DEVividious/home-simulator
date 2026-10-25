@@ -1,4 +1,4 @@
-// i18n — English first (ADR 0019). UI strings live in flat dictionaries split by area: src/i18n/<lang>/<area>.json, keys
+// i18n — English first. UI strings live in flat dictionaries split by area: src/i18n/<lang>/<area>.json, keys
 // "<area>.<name>"; all parts of a language are merged here. t(key, params) interpolates {name} placeholders and falls back
 // to English, then to the key itself (a missing key is visible, never an empty string).
 // Language: ?lang= → localStorage → project manifest language → browser language → English. Changing the language reloads

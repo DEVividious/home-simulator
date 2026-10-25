@@ -64,7 +64,7 @@ function localized<T extends { name: string }>(o: T, key: string): T {
 }
 
 const C = catalog as unknown as { categories: MaterialCategory[]; materials: MaterialDef[] };
-/** project material / category (ADR 0012): the name in the UI language from its own `names`, the English name otherwise */
+/** project material / category: the name in the UI language from its own `names`, the English name otherwise */
 function projectNamed<T extends { name: string; names?: Record<string, string> }>(o: T): T {
   const en = o.name, names = o.names;
   return Object.defineProperty(o, 'name', { get: () => names?.[lang()] ?? en, enumerable: true, configurable: true });

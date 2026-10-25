@@ -4,7 +4,7 @@ description: Install, update or troubleshoot the Home Simulator app on an Androi
 allowed-tools: Bash(node scripts/phone/*) Bash(npm run phone*) Bash(npm run build) Read
 metadata:
   version: 1
-  requires: node>=20; an Android phone with Chrome and USB debugging; adb (downloaded by the script if missing)
+  requires: node>=22.12; an Android phone with Chrome and USB debugging; adb (downloaded by the script if missing)
 ---
 
 # home-to-phone
@@ -12,7 +12,7 @@ metadata:
 The phone runs the same web app, installed from Chrome as a PWA. This computer serves it on **port 4170** over the USB cable
 (`adb reverse`); `localhost` is a secure context, so no certificates are needed. The installed app keeps working without the
 cable; while the cable is connected and `serve` runs, saves also go to `userdata/<id>/document.json` here. Never change the
-port — the app's address is its identity on the phone, and its offline data belongs to it (ADR 0018).
+port — the app's address is its identity on the phone, and its offline data belongs to it.
 
 ## 1. Check
 

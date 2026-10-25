@@ -29,7 +29,7 @@ the two walks light the scene differently, and switching back at every pass of t
 | click furniture | select; dragging the SELECTED item moves it (on its wall or on the floor), a drag beside it looks around |
 | Esc | deselect; with nothing selected — end the walk |
 | "‹ Building view" | end the walk; a walk started in a room returns to that room's 3D view |
-| phone | joystick bottom-left (116 px, 104 px in landscape, 12% dead zone) + look around with another finger ([MOBILE_UX.md](MOBILE_UX.md)) |
+| phone | joystick bottom-left (116 px, 104 px in landscape, 12% dead zone) + look around with another finger |
 
 - **Field of view** 70° (`WALK_FOV`, or the FOV of the viewpoint / bookmark), set on every start and resume of a walk.
 - **Eye height** 1.68 m above the floor or ground, adjustable in the settings (the same value for both walks). The eyes follow

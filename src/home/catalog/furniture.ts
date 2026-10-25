@@ -2,7 +2,7 @@
 // Dimensions in metres: w — width, d — depth (back → front), h — height. Outline centre at (0, 0), bottom on the floor.
 // Catalog names are English; names in the UI language come from the dictionaries (keys furniture.<id>,
 // furniture.<id>.variant.<variantId>, furnitureCategory.<id>, catalog.slot.<slot>) with the English name as fallback.
-// The active project's own items and categories (projects/<id>/…, ids "<projectId>:…", ADR 0012) follow the engine ones; their
+// The active project's own items and categories (projects/<id>/…, ids "<projectId>:…") follow the engine ones; their
 // translations come with them (`names`).
 import { lang, tOr } from '../../i18n';
 import { projectCatalogs } from '../../project/catalogs';

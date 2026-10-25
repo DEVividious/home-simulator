@@ -1,7 +1,7 @@
 // Exterior building views (camera presets) — from the project package (project().views): names and directions are facts
 // of the building ("from the street", "garden side"). The engine frames the view from the direction and the building
 // outline; a view that a direction cannot describe (e.g. eye level in front of the entrance) carries an explicit camera
-// pose instead (ADR 0007 — no project code in the engine). A project without views gets the default set. The level
+// pose instead. A project without views gets the default set. The level
 // section ("Interior") always exists — computed from the room outlines.
 import { t } from '../../i18n';
 import { project } from '../../project/active';

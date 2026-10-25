@@ -1,4 +1,4 @@
-// Vite plugin: project packages are runtime data (ADR 0006). Dev / preview: /projects/index.json is generated on every
+// Vite plugin: project packages are runtime data. Dev / preview: /projects/index.json is generated on every
 // request from the projects/ directory and /projects/<id>/<file> is served from the repository (edit a project.json, reload
 // the page). Build: every file under projects/ and the generated index.json are emitted into the bundle (generateBundle —
 // before the PWA plugin computes the offline file list in closeBundle).

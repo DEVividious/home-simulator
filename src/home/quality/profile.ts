@@ -1,4 +1,4 @@
-// Graphics quality profiles (docs/PERFORMANCE_BUDGETS.md, docs/PLATFORM_PERFORMANCE_AUDIT.md §D).
+// Graphics quality profiles.
 // A single source of rendering settings: scene components and texture generators read profile fields — no "if (mobile)"
 // conditions scattered across the app. The profile is a device setting (UI state in localStorage), NOT part of the project / variant.
 // Choice: platform (desktop / mobile, detected automatically, can be overridden) × tier (High / Balanced / Low).

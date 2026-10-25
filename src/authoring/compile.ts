@@ -1,4 +1,4 @@
-// plan.json → project.json (ADR 0014). Deterministic: the same plan always yields the same package. Everything a person or an
+// plan.json → project.json. Deterministic: the same plan always yields the same package. Everything a person or an
 // agent tends to get wrong by hand is derived here: units and the y flip of image coordinates, polygon order (counter-
 // clockwise from the lowest-left corner — wall ids <room>-w<n> follow it), areas and bounding boxes, the door gap in BOTH
 // rooms with the wall faces it crosses, hinge position and directions from "hinge side + room it opens into", window wall

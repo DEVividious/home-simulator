@@ -1,6 +1,6 @@
 // PROJECT BOUNDARY — the project package contract: the facts of one building in the shape the engine loads.
 // The engine (src/home, src/document, …) never imports building data files; it receives them only through this contract
-// (project() from ./active). Packages are runtime-loaded JSON directories (projects/<id>/project.json, ADR 0006); their
+// (project() from ./active). Packages are runtime-loaded JSON directories (projects/<id>/project.json); their
 // structure is validated by the zod schema in ./schema and their semantics by ./validate. Field reference:
 // docs/PROJECT_PACKAGE_SPEC.md.
 import type { ArchitectItem } from '../home/model/defaults';
@@ -108,7 +108,7 @@ export interface DoorFacts {
 /**
  * PROJECT ASSETS — the only place the engine learns about the project's files. Paths are relative to the project
  * directory (projects/<id>/). A project without `model` has no file-based building model: the engine generates the shell
- * from the room outlines (ADR 0010).
+ * from the room outlines.
  */
 export interface ProjectAssets {
   /** building model (GLB) */

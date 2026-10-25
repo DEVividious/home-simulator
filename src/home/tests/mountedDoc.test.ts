@@ -1,4 +1,4 @@
-// The mount record as the source of truth after loading a document (docs/adr/0003): the world position of a wall object is
+// The mount record as the source of truth after loading a document: the world position of a wall object is
 // recomputed from { wallId, u, height }; stale x / y in the file do not move the object relative to the wall.
 // Data: demo apartment — the TV of the project layout hangs on the living-room north wall R1-w3 (y = 3.90, run from the corner
 // x = 8.70 towards x = 2.52, length 6.18 m, ceiling 2.60 m; door D3 at u 4.60…5.50). Knee walls and a partition end shorter than a

@@ -1,15 +1,15 @@
 # Authoring conventions (enforced by the compiler where possible)
 
-These rules make a package correct for the engine and stable for the user's saved work. ADR numbers in brackets.
+These rules make a package correct for the engine and stable for the user's saved work.
 
-## Coordinates and units [0008]
+## Coordinates and units
 - Metres; `+X` right on the plan, `+Y` up on the plan, `+Z` up. Images have y DOWN — use `"units": "px"` and let the compiler flip.
 - Origin: the **outer** corner of the building at the bottom-left of the plan, so exterior wall faces lie on `x = 0` / `y = 0` and
   every coordinate is positive. Describe it in `project.origin`.
 - `Z = 0` is the finished floor of the lowest level; every height (`floorZ`, sills, heads, stairs) uses the same reference.
 - Plans need not face north: north is `sun.northAzimuthX` (azimuth of +X, clockwise from north; 90 = +X points east).
 
-## Rooms [0009]
+## Rooms
 - Outline = **inner faces** of the walls (the clear floor area), axis-aligned edges only (the generated shell needs orthogonal
   plans). Use `rect` for rectangles, `polygon` for L / U shapes. No holes.
 - Neighbouring rooms are separated by the wall thickness: interior 0.12 m, exterior 0.30 m (`defaults` if the building differs —
@@ -61,7 +61,7 @@ These rules make a package correct for the engine and stable for the user's save
   keep the room's area close (cut the corner at its middle) and move a door in such a wall onto the nearest orthogonal wall.
   List every such change in the README.
 
-## Provenance [0021]
+## Provenance
 - `source` (plan-level default) says where the facts come from; per item `source` when it differs.
 - `defaults.confidence`: `confirmed` (CAD / dimensioned drawing), `probable` (calibrated image), `unknown` (interview / guess).
 - Furniture `basis`: `dimensioned`, `drawn` (outline on the plan), `approximate` (default layout).

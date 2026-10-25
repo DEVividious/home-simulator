@@ -6,7 +6,7 @@ changes.
 
 ## 1. Input data
 
-Sun data is an optional module of the project package (`sun`, ADR 0007, ADR 0011). In `plan.json`:
+Sun data is an optional module of the project package (`sun`). In `plan.json`:
 
 ```json
 "sun": { "lat": 50.0, "lon": 8.0, "timeZone": "Europe/Berlin", "northAzimuthX": 90,
@@ -64,7 +64,7 @@ Two elements in the top-right corner of the scene (projects with the `sun` modul
 | **Morning / Noon / Afternoon / Sunset** | the presets of section 2 |
 
 The panel also shows the sun azimuth and elevation, sunrise, solar noon and sunset with the zone offset, and the place name.
-On a phone the panel is a low strip with a 0–24 h day bar instead of the dial ([MOBILE_UX.md](MOBILE_UX.md)).
+On a phone the panel is a low strip with a 0–24 h day bar instead of the dial.
 
 **2. North arrow.** It rotates with the camera and points to north on screen. When the orientation is not confirmed
 (`confidence ≠ confirmed`) it carries an **"Approximate north"** badge with the confidence and the uncertainty (±°).
@@ -100,7 +100,7 @@ has settled** (220 ms), not on every slider move; intensity scaled by the amount
 **Shadows:**
 
 - one shadow map: **2048 px** (PCF soft) / **1024 px** (PCF) / none — per quality profile
-  ([PERFORMANCE_BUDGETS.md](PERFORMANCE_BUDGETS.md));
+ 
 - **no cascades** and no shadows from point lights;
 - shadow camera fitted to the mode:
 

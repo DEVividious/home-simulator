@@ -111,7 +111,7 @@ export function presetGoal(id: string, bounds: SceneBounds, aspect: number, leve
     return dirGoal([-0.62, -0.78, 1.45], 0.92, cc, rr);
   }
   const view = viewById(id) ?? viewById(homeViewId()) ?? exteriorViews()[0];
-  // a view without a direction carries an explicit camera pose (project data — ADR 0007)
+  // a view without a direction carries an explicit camera pose (project data)
   if (!view.dir && view.pose) return { cam: 'persp', pos: L(view.pose.position), target: L(view.pose.target), fov: view.pose.fov };
   return dirGoal(view.dir ?? DEFAULT_VIEW_DIR, view.fit);
 }
@@ -281,7 +281,7 @@ export function CameraController({ data, mode }: { data: SceneData; mode: SceneM
 
   // The near plane grows with camera distance (2% of the distance to the target, from the mode's base value up to 4 m). With a
   // fixed 0.1 m a 24-bit depth buffer resolves only 2–5 mm at 60–90 m, while floor and wall finishes lie 3 mm in front of the
-  // slab / wall (SURFACE_OFFSET) — zoomed out they "flickered" with white patches on every camera move (measured on a phone: docs/MOBILE_UX.md §16).
+  // slab / wall (SURFACE_OFFSET) — zoomed out they "flickered" with white patches on every camera move (measured on a phone).
   useFrame(() => {
     if (!controls || free || controls.object !== persp) return;
     const near = cameraNear(persp.position.distanceTo(controls.target), mode.kind === 'room' ? 0.05 : 0.1);

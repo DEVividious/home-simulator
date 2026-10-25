@@ -1,7 +1,7 @@
 // Vite server endpoint (dev and preview) of the project document: GET / PUT /__api/document?project=<id>.
 // Every project has ITS OWN document file (userdata/<id>/document.json) — atomic write (temporary file + rename) after a full
 // validation of the document ON THE DATA OF THAT PROJECT. A document carrying another project id than the one in the URL is
-// rejected: the state of one project never reaches another (ADR 0002).
+// rejected: the state of one project never reaches another.
 import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import type { IncomingMessage, ServerResponse } from 'node:http';
