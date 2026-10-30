@@ -1,8 +1,10 @@
 // E2E — the generated shell from the core's manifold solids against the grid shell it replaces (ADR 0024, 0026), on BOTH example
 // projects: the same views (start, from above, the level section of every level, a room) render alike (≤ 1 % of the canvas
-// pixels differ), the core shell adds at most 2 draw calls per level, and its budget holds — the WASM file ≤ 1 MB, served as
-// application/wasm and fetched only for packages without a model file, ≤ 60k triangles, a rebuild leaves no main-thread task
-// over 50 ms, the geometries take < 50 ms on the main thread. A kernel failure falls back to the grid shell.
+// pixels differ), the core shell adds at most 2 draw calls per level (and 4 per roof), and its budget holds — the WASM file ≤ 1 MB,
+// served as application/wasm and fetched only for packages without a model file, ≤ 60k triangles, a rebuild leaves no main-thread
+// task over 50 ms, the geometries take < 50 ms on the main thread. A kernel failure falls back to the grid shell. A package with a
+// roof (ADR 0027; the grid shell has none): the views from outside show the roof (they differ from the grid shell by intent), the
+// sections and the room are compared as above — the roof is hidden there.
 // Usage: node scripts/verify/verify_shell.mjs [--no-build] [--only demo-apartment,sample-house]
 //        HOME_SIM_BROWSER=auto|gpu|swiftshader. Output: reports/e2e/shell/ (screenshots of both shells and their difference, shell.json).
 import { execSync } from 'node:child_process';
@@ -64,9 +66,11 @@ const click = async (testid) => { const el = await page.$(`[data-testid="${testi
 async function capture(file) {
   await page.evaluate(() => window.__home3d.invalidate()); await frames(4); await sleep(250);
   const calls = await page.evaluate(() => window.__home3d.renderInfo().frame.calls);
+  // a roof solid shown in this view (visible with its parents)
+  const roof = await page.evaluate(() => { let on = false; window.__homeScene.traverse((o) => { if (/^ROOF_SOLID_/.test(o.name)) { let v = true; for (let q = o; q; q = q.parent) v = v && q.visible; on ||= v; } }); return on; });
   const box = await page.evaluate(() => { const r = document.querySelector('canvas').getBoundingClientRect(); return { x: r.left, y: r.top, width: r.width, height: r.height }; });
   const png = await page.screenshot({ path: resolve(OUT, file), clip: box });
-  return { png, calls };
+  return { png, calls, roof };
 }
 
 /** the same views in one shell: start, from above, the section of every level, the largest room of the start level */
@@ -131,12 +135,14 @@ try {
       wasm.map((x) => `${x.url} ${x.status} ${x.type ?? ''} ${(x.bytes / 1024).toFixed(0)} kB`).join(' · '));
     check(`[${tag}] budget: ≤ 60k triangles in the level solids, < 50 ms on the main thread for the geometries`, core.state.triangles > 0 && core.state.triangles <= 60000 && core.state.mainMs < 50,
       `${core.state.triangles} triangles; worker ${core.state.ms} ms (kernel load ${core.state.loadMs} ms); main thread ${core.state.mainMs} ms`);
-    const extra = Object.keys(core.views).map((k) => core.views[k].calls - grid.views[k].calls);
-    check(`[${tag}] draw calls: the core shell adds at most 2 per level (${F.levels.length} level(s)) in every view`, extra.every((d) => d <= 2 * F.levels.length),
+    const roofs = core.state.roofs ?? 0, outside = (k) => k === 'start' || k === 'top';
+    const extra = Object.keys(core.views).map((k) => core.views[k].calls - grid.views[k].calls - (outside(k) ? 4 * roofs : 0));
+    check(`[${tag}] draw calls: the core shell adds at most 2 per level (${F.levels.length} level(s)) and 4 per roof (${roofs}) in every view`, extra.every((d) => d <= 2 * F.levels.length),
       Object.keys(core.views).map((k) => `${k}: ${grid.views[k].calls} → ${core.views[k].calls}`).join(' · '));
     for (const k of Object.keys(core.views)) {
       const d = await diff(grid.views[k].png, core.views[k].png, `${tag}_${k}_diff.png`);
-      check(`[${tag}] view "${k}": the core shell renders like the grid shell (≤ ${MAX_DIFF * 100} % of the pixels differ)`, d.share <= MAX_DIFF, `${(d.share * 100).toFixed(3)} % differ${d.size ? ` (${d.size})` : ''}`);
+      if (roofs && outside(k)) check(`[${tag}] view "${k}": the roof is drawn (the picture differs from the flat-topped grid shell)`, d.share > 0.02 && core.views[k].roof, `${(d.share * 100).toFixed(3)} % differ; roof visible ${core.views[k].roof}`);
+      else check(`[${tag}] view "${k}": the core shell renders like the grid shell (≤ ${MAX_DIFF * 100} % of the pixels differ)${roofs ? ' — the roof hidden' : ''}`, d.share <= MAX_DIFF && !core.views[k].roof, `${(d.share * 100).toFixed(3)} % differ${d.size ? ` (${d.size})` : ''}; roof visible ${core.views[k].roof}`);
     }
     // a rebuild after the app is idle: the whole path (worker, transfer, geometries, first frame) without a long main-thread task
     const before = await page.evaluate(() => { const n = window.__longTasks.length; window.__home3d.shell(true); return n; });

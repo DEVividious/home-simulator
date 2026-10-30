@@ -1,12 +1,13 @@
 // Room surface finishes (Room Mode, materials): thin 3 mm layers in front of wall faces / above the floor / below the ceiling
 // of the building model — the building geometry is not changed. UV in metres: wall (t along the wall, z up), floor and ceiling (X, Y).
-// Wall: vertical strips between break points (opening edges, glazing outline vertices, breaks of a sloped ceiling profile)
-// → in each strip, trapezoids of solid wall between the openings. Sloped ceiling: height z(Y) = min(flat, slope).
+// Wall: vertical strips between break points (opening edges, glazing outline vertices, the points where the ceiling bends or
+// steps) → in each strip, trapezoids of solid wall between the openings. A ceiling under the roof: its planar pieces from the
+// core (the same planes the roof is built from, roof windows cut out).
 import { shellSpec } from '../model/shell';
 import { stairArrivesAt } from '../model/stairs';
 import * as THREE from 'three';
-import { heightBreaks } from '@home-sim/core/model/ceiling';
 import { area as polyArea } from '@home-sim/core/model/geom2d';
+import { planeZ } from '@home-sim/core/model/roof';
 import type { HomeRoom, RoomWall, WallHole } from '../model/rooms';
 import type { Vec2 } from '../model/types';
 
@@ -47,8 +48,7 @@ function solidAt(top: number, holes: WallHole[], t: number): [number, number][] 
 export function wallGeometry(room: HomeRoom, w: RoomWall, offset = SURFACE_OFFSET): THREE.BufferGeometry {
   const ts = new Set<number>([0, w.length]);
   for (const h of w.holes) { ts.add(Math.max(0, h.t0)); ts.add(Math.min(w.length, h.t1)); h.polygon?.forEach((p) => ts.add(Math.min(w.length, Math.max(0, p[0])))); }
-  const br = heightBreaks(room);
-  if (Math.abs(w.dir[br.axis]) > 0.5) for (const v of br.at) { const t = (v - w.a[br.axis]) / w.dir[br.axis]; if (t > 0 && t < w.length) ts.add(t); }
+  for (const t of room.ceiling.breaksAlong(w.a, w.b)) ts.add(t);
   const T = [...ts].sort((a, b) => a - b).filter((t, i, arr) => i === 0 || t - arr[i - 1] > 1e-4);
   const pos: number[] = [], uv: number[] = [];
   const P = (t: number, z: number) => {
@@ -59,7 +59,8 @@ export function wallGeometry(room: HomeRoom, w: RoomWall, offset = SURFACE_OFFSE
     const ta = T[i], tb = T[i + 1], tm = (ta + tb) / 2;
     // openings covering the strip (by the strip centre) — both edges have the same topology
     const holes = w.holes.filter((h) => holeAt(h, tm));
-    const A = solidAt(topAt(room, w, ta), holes, ta + 1e-6), B = solidAt(topAt(room, w, tb), holes, tb - 1e-6);
+    // the ceiling height just inside the strip (it may step at a strip edge — a dormer)
+    const A = solidAt(topAt(room, w, ta + 1e-6), holes, ta + 1e-6), B = solidAt(topAt(room, w, tb - 1e-6), holes, tb - 1e-6);
     const n = Math.min(A.length, B.length);
     for (let k = 0; k < n; k++) {
       const q = [P(ta, A[k][0]), P(tb, B[k][0]), P(tb, B[k][1]), P(ta, A[k][1])];
@@ -188,24 +189,20 @@ export function floorGeometry(room: HomeRoom, offset = SURFACE_OFFSET): THREE.Bu
   return toGeometry([flatGeometry(room.polygon, holes, () => room.floorZ + offset, false)]);
 }
 
-/** ceiling: flat — with the stair opening; sloped — strips by profile breaks, with roof window openings */
+/** ceiling: flat — with the stair opening; under the roof — its planar pieces (convex, roof windows cut out), facing down */
 export function ceilingGeometry(room: HomeRoom, offset = SURFACE_OFFSET): THREE.BufferGeometry {
   const zOf = (x: number, y: number) => room.floorZ + room.ceiling.heightAt(x, y) - offset;
   if (room.ceiling.kind === 'flat') {
     const holes = room.stairOpening ? [rectPoly(room.stairOpening)] : [];
     return toGeometry([flatGeometry(room.polygon, holes, zOf, true)]);
   }
-  const br = heightBreaks(room), vs = [-Infinity, ...br.at, Infinity], ax = br.axis;
-  const parts = [];
-  for (let i = 0; i < vs.length - 1; i++) {
-    let piece = room.polygon;
-    if (Number.isFinite(vs[i])) piece = clipAxis(piece, ax, vs[i], 1);
-    if (Number.isFinite(vs[i + 1])) piece = clipAxis(piece, ax, vs[i + 1], -1);
-    if (piece.length < 3) continue;
-    const holes = room.roofWindows.map((w) => w.rect).filter((r) => r[ax] >= vs[i] - 1e-6 && r[ax + 2] <= vs[i + 1] + 1e-6).map(rectPoly);
-    parts.push(flatGeometry(piece, holes, zOf, true));
+  const pos: number[] = [], uv: number[] = [];
+  for (const f of room.ceiling.facets()) {
+    const p = f.polygon, at = (q: Vec2) => lcs(q[0], q[1], planeZ(f.plane, q[0], q[1]) - offset);
+    // counter-clockwise from above: the fan is reversed to face down
+    for (let i = 1; i + 1 < p.length; i++) for (const q of [p[0], p[i + 1], p[i]]) { pos.push(...at(q)); uv.push(q[0], q[1]); }
   }
-  return toGeometry(parts);
+  return toGeometry([{ pos, uv }]);
 }
 
 /** wall finish area (check: length × height − openings) */

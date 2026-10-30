@@ -23,11 +23,13 @@ const WindowSchema = z.looseObject({
   sill_z: num.optional(), head_z: num.optional(), polygon_YZ: z.array(z.array(num)).optional(),
 });
 
-/** flat: absolute height z; attic (sloped): flat top flat_z, ridge along X at y = ridge_y or along Y at x = ridge_x, height
- *  z_at_ridge on the ridge line, fall `slope` [m per m] away from it */
+/** flat: absolute height z; roof: under the roof of the room's level, capped by the flat top flat_z; attic (sloped, written before
+ *  the roof): flat top flat_z, ridge along X at y = ridge_y or along Y at x = ridge_x, height z_at_ridge on the ridge line, fall
+ *  `slope` [m per m] away from it */
 const CeilingSchema = z.looseObject({
-  kind: z.enum(['flat', 'attic']), z: num.optional(), flat_z: num.optional(), ridge_y: num.optional(), ridge_x: num.optional(), z_at_ridge: num.optional(), slope: num.optional(),
+  kind: z.enum(['flat', 'attic', 'roof']), z: num.optional(), flat_z: num.optional(), ridge_y: num.optional(), ridge_x: num.optional(), z_at_ridge: num.optional(), slope: num.optional(),
 }).refine((c) => c.kind !== 'flat' || c.z !== undefined, 'a flat ceiling needs "z"')
+  .refine((c) => c.kind !== 'roof' || c.flat_z !== undefined, 'a ceiling under the roof needs "flat_z"')
   .refine((c) => c.kind !== 'attic' || (c.flat_z !== undefined && c.z_at_ridge !== undefined && (c.slope ?? 0) > 0 && (c.ridge_x === undefined) !== (c.ridge_y === undefined)),
     'a sloped ceiling needs flat_z, z_at_ridge, slope > 0 and exactly one of ridge_x / ridge_y');
 
@@ -57,6 +59,23 @@ const StairSchema = z.looseObject({
   split: num, run: num, landingEdge: num, confidence: z.string(), note: z.string().optional(),
   orient: z.strictObject({ rotate: z.union([z.literal(0), z.literal(90), z.literal(180), z.literal(270)]), mirror: z.boolean() }).optional(),
 });
+
+const rect = z.tuple([num, num, num, num]);
+const PlaneSchema = z.strictObject({ n: vec3, d: num }).refine((p) => p.n[2] > 1e-6, 'a roof plane must face up (n[2] > 0)');
+const RoofSchema = z.strictObject({
+  covering: num.min(0), buildup: num.positive(),
+  parts: z.array(z.strictObject({
+    id, level: id, type: z.enum(['gable', 'hip', 'shed', 'flat']), rect: rect.optional(), polygon: z.array(vec2).min(3).optional(),
+    extent: z.array(rect), extentPolygon: z.array(vec2).min(3).optional(), planes: z.array(PlaneSchema).min(1), parapet: num.positive().optional(),
+    ridge: z.enum(['X', 'Y']).optional(), pitch: num.optional(),
+  }).refine((p) => p.extent.length > 0 || !!p.extentPolygon, 'a roof part needs an extent')).min(1),
+  dormers: z.array(z.strictObject({
+    id, part: id, type: z.enum(['gable', 'shed']), front: z.enum(['N', 'S', 'E', 'W']), rect, inner: rect, extent: rect, planes: z.array(PlaneSchema).min(1),
+    window: z.strictObject({ id, roomId: id, width: num.positive(), sill_z: num, head_z: num }).optional(),
+  })).optional(),
+  chimneys: z.array(z.strictObject({ id, rect, bottom: num, top: num })).optional(),
+  source: z.string().optional(), confidence: confidence.optional(),
+}).describe('the roof: parts (wings) with their underside planes, dormers, chimneys — metres, absolute z');
 
 const DimsSchema = z.looseObject({ w: num.optional(), d: num.optional(), h: num.optional() });
 
@@ -114,6 +133,7 @@ export const ProjectSchema = z.strictObject({
     doorFacts: z.strictObject({ overrides: z.record(z.string(), z.looseObject({ flush: z.boolean().optional(), source: z.string() })).optional(), passableOpenings: z.array(z.string()).optional() }).optional(),
     stairs: z.array(StairSchema).optional(),
     shell: z.strictObject({ exteriorWall: num.positive().optional(), slab: num.positive().optional() }).optional(),
+    roof: RoofSchema.optional(),
   }),
   interiors: z.strictObject({
     items: z.array(ArchitectItemSchema),

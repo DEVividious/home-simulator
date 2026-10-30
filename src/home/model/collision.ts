@@ -62,7 +62,7 @@ export function furnitureWarnings(room: HomeRoom, item: CatalogItem, p: Furnitur
       const [x0, y0, x1, y1] = room.stairOpening;
       if (convexOverlap(corners, [[x0, y0], [x1, y0], [x1, y1], [x0, y1]], 0.01)) out.push({ kind: 'stairs', level: 'warn', text: stairArrivesAt(room.level) ? t('collision.stairOpening') : t('collision.stairFlight') });
     }
-    if (room.ceiling.kind === 'attic') {
+    if (room.ceiling.kind !== 'flat') {
       const avail = Math.min(...[...corners, o.c].map((q) => room.ceiling.heightAt(q[0], q[1])));
       if (top > avail + 0.005) out.push({ kind: 'slope', level: 'warn', text: t('collision.slope', { height: cm(top), available: cm(Math.max(0, avail)) }) });
     }

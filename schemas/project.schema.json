@@ -291,7 +291,8 @@
             "type": "string",
             "enum": [
              "flat",
-             "attic"
+             "attic",
+             "roof"
             ]
            },
            "z": {
@@ -974,6 +975,411 @@
       }
      },
      "additionalProperties": false
+    },
+    "roof": {
+     "type": "object",
+     "properties": {
+      "covering": {
+       "type": "number",
+       "minimum": 0
+      },
+      "buildup": {
+       "type": "number",
+       "exclusiveMinimum": 0
+      },
+      "parts": {
+       "minItems": 1,
+       "type": "array",
+       "items": {
+        "type": "object",
+        "properties": {
+         "id": {
+          "type": "string",
+          "minLength": 1
+         },
+         "level": {
+          "type": "string",
+          "minLength": 1
+         },
+         "type": {
+          "type": "string",
+          "enum": [
+           "gable",
+           "hip",
+           "shed",
+           "flat"
+          ]
+         },
+         "rect": {
+          "type": "array",
+          "prefixItems": [
+           {
+            "type": "number"
+           },
+           {
+            "type": "number"
+           },
+           {
+            "type": "number"
+           },
+           {
+            "type": "number"
+           }
+          ],
+          "items": false,
+          "minItems": 4,
+          "maxItems": 4
+         },
+         "polygon": {
+          "minItems": 3,
+          "type": "array",
+          "items": {
+           "type": "array",
+           "prefixItems": [
+            {
+             "type": "number"
+            },
+            {
+             "type": "number"
+            }
+           ],
+           "items": false,
+           "minItems": 2,
+           "maxItems": 2
+          }
+         },
+         "extent": {
+          "type": "array",
+          "items": {
+           "type": "array",
+           "prefixItems": [
+            {
+             "type": "number"
+            },
+            {
+             "type": "number"
+            },
+            {
+             "type": "number"
+            },
+            {
+             "type": "number"
+            }
+           ],
+           "items": false,
+           "minItems": 4,
+           "maxItems": 4
+          }
+         },
+         "extentPolygon": {
+          "minItems": 3,
+          "type": "array",
+          "items": {
+           "type": "array",
+           "prefixItems": [
+            {
+             "type": "number"
+            },
+            {
+             "type": "number"
+            }
+           ],
+           "items": false,
+           "minItems": 2,
+           "maxItems": 2
+          }
+         },
+         "planes": {
+          "minItems": 1,
+          "type": "array",
+          "items": {
+           "type": "object",
+           "properties": {
+            "n": {
+             "type": "array",
+             "prefixItems": [
+              {
+               "type": "number"
+              },
+              {
+               "type": "number"
+              },
+              {
+               "type": "number"
+              }
+             ],
+             "items": false,
+             "minItems": 3,
+             "maxItems": 3
+            },
+            "d": {
+             "type": "number"
+            }
+           },
+           "required": [
+            "n",
+            "d"
+           ],
+           "additionalProperties": false
+          }
+         },
+         "parapet": {
+          "type": "number",
+          "exclusiveMinimum": 0
+         },
+         "ridge": {
+          "type": "string",
+          "enum": [
+           "X",
+           "Y"
+          ]
+         },
+         "pitch": {
+          "type": "number"
+         }
+        },
+        "required": [
+         "id",
+         "level",
+         "type",
+         "extent",
+         "planes"
+        ],
+        "additionalProperties": false
+       }
+      },
+      "dormers": {
+       "type": "array",
+       "items": {
+        "type": "object",
+        "properties": {
+         "id": {
+          "type": "string",
+          "minLength": 1
+         },
+         "part": {
+          "type": "string",
+          "minLength": 1
+         },
+         "type": {
+          "type": "string",
+          "enum": [
+           "gable",
+           "shed"
+          ]
+         },
+         "front": {
+          "type": "string",
+          "enum": [
+           "N",
+           "S",
+           "E",
+           "W"
+          ]
+         },
+         "rect": {
+          "type": "array",
+          "prefixItems": [
+           {
+            "type": "number"
+           },
+           {
+            "type": "number"
+           },
+           {
+            "type": "number"
+           },
+           {
+            "type": "number"
+           }
+          ],
+          "items": false,
+          "minItems": 4,
+          "maxItems": 4
+         },
+         "inner": {
+          "type": "array",
+          "prefixItems": [
+           {
+            "type": "number"
+           },
+           {
+            "type": "number"
+           },
+           {
+            "type": "number"
+           },
+           {
+            "type": "number"
+           }
+          ],
+          "items": false,
+          "minItems": 4,
+          "maxItems": 4
+         },
+         "extent": {
+          "type": "array",
+          "prefixItems": [
+           {
+            "type": "number"
+           },
+           {
+            "type": "number"
+           },
+           {
+            "type": "number"
+           },
+           {
+            "type": "number"
+           }
+          ],
+          "items": false,
+          "minItems": 4,
+          "maxItems": 4
+         },
+         "planes": {
+          "minItems": 1,
+          "type": "array",
+          "items": {
+           "type": "object",
+           "properties": {
+            "n": {
+             "type": "array",
+             "prefixItems": [
+              {
+               "type": "number"
+              },
+              {
+               "type": "number"
+              },
+              {
+               "type": "number"
+              }
+             ],
+             "items": false,
+             "minItems": 3,
+             "maxItems": 3
+            },
+            "d": {
+             "type": "number"
+            }
+           },
+           "required": [
+            "n",
+            "d"
+           ],
+           "additionalProperties": false
+          }
+         },
+         "window": {
+          "type": "object",
+          "properties": {
+           "id": {
+            "type": "string",
+            "minLength": 1
+           },
+           "roomId": {
+            "type": "string",
+            "minLength": 1
+           },
+           "width": {
+            "type": "number",
+            "exclusiveMinimum": 0
+           },
+           "sill_z": {
+            "type": "number"
+           },
+           "head_z": {
+            "type": "number"
+           }
+          },
+          "required": [
+           "id",
+           "roomId",
+           "width",
+           "sill_z",
+           "head_z"
+          ],
+          "additionalProperties": false
+         }
+        },
+        "required": [
+         "id",
+         "part",
+         "type",
+         "front",
+         "rect",
+         "inner",
+         "extent",
+         "planes"
+        ],
+        "additionalProperties": false
+       }
+      },
+      "chimneys": {
+       "type": "array",
+       "items": {
+        "type": "object",
+        "properties": {
+         "id": {
+          "type": "string",
+          "minLength": 1
+         },
+         "rect": {
+          "type": "array",
+          "prefixItems": [
+           {
+            "type": "number"
+           },
+           {
+            "type": "number"
+           },
+           {
+            "type": "number"
+           },
+           {
+            "type": "number"
+           }
+          ],
+          "items": false,
+          "minItems": 4,
+          "maxItems": 4
+         },
+         "bottom": {
+          "type": "number"
+         },
+         "top": {
+          "type": "number"
+         }
+        },
+        "required": [
+         "id",
+         "rect",
+         "bottom",
+         "top"
+        ],
+        "additionalProperties": false
+       }
+      },
+      "source": {
+       "type": "string"
+      },
+      "confidence": {
+       "type": "string",
+       "enum": [
+        "confirmed",
+        "probable",
+        "unknown"
+       ]
+      }
+     },
+     "required": [
+      "covering",
+      "buildup",
+      "parts"
+     ],
+     "additionalProperties": false,
+     "description": "the roof: parts (wings) with their underside planes, dormers, chimneys — metres, absolute z"
     }
    },
    "required": [

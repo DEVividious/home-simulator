@@ -43,15 +43,64 @@ const DoorSchema = z.strictObject({
   confidence: z.enum(['confirmed', 'probable', 'unknown']).optional(), source: z.string().optional(),
 });
 
+const LineSchema = z.strictObject({ at: num.describe('coordinate across the ridge (point units)'), height: num.positive().describe('ceiling height on this line [m]') });
+
 /** sloped ceiling of a level (attic under a pitched roof): the ridge, and how the ceiling falls away from it */
 export const SlopeSchema = z.strictObject({
   ridge: z.enum(['X', 'Y']).describe('the ridge line runs along this plan axis (X: left–right on the plan, Y: up–down)'),
   ridgeAt: num.optional().describe('coordinate of the ridge line on the other axis (a point coordinate: px in a px plan); default: middle of the level'),
-  lines: z.array(z.strictObject({ at: num.describe('coordinate across the ridge (point units)'), height: num.positive().describe('ceiling height on this line [m]') })).min(1).max(2)
+  lines: z.array(LineSchema).min(1).max(2)
     .describe('height lines drawn on the plan (e.g. knee wall 1.40 and 2.20); two lines on one side of the ridge give the slope'),
   pitch: num.positive().lt(80).optional().describe('roof pitch [°] — needed when only one line is given'),
   flat: num.positive().optional().describe('height of the flat ceiling top (collar beams) [m]; default: the level ceiling'),
 }).refine((s) => s.lines.length === 2 || s.pitch !== undefined, 'give two height lines, or one line and the pitch');
+
+const rect4 = z.tuple([num, num, num, num]);
+
+/** a roof part ("wing"): the roof over a rectangle of a level's walls */
+export const RoofPartSchema = z.strictObject({
+  id, level: id.describe('the level the part covers: its rooms get their ceilings from it'),
+  type: z.enum(['gable', 'hip', 'shed', 'flat']),
+  rect: rect4.optional().describe('[x0, y0, x1, y1] — OUTER faces of the walls under the part (points); or "rooms"; default: the level outline (it must be a rectangle unless flat)'),
+  rooms: z.array(id).min(1).optional().describe('the part covers these rooms (their outline grown by the exterior wall)'),
+  polygon: z.array(pt).min(4).optional().describe('flat part only: outer faces of the walls under it, axis-aligned edges'),
+  ridge: z.enum(['X', 'Y']).optional().describe('gable / hip: the ridge runs along this plan axis (default: along the longer side)'),
+  ridgeAt: num.optional().describe('coordinate of the ridge line on the other axis (a point coordinate); default: the middle'),
+  down: z.enum(['N', 'S', 'E', 'W']).optional().describe('shed (and a flat roof with a pitch): the side the roof falls towards'),
+  pitch: num.min(0).lt(80).optional().describe('roof pitch [°] (gable / hip / shed: 5–75; flat: 0–5)'),
+  pitchEnds: num.positive().lt(80).optional().describe('hip: pitch of the two end planes [°] (default: pitch)'),
+  knee: num.optional().describe('height above the level floor where the underside of the roof structure meets the OUTER face of the eaves walls [m] (knee wall); default: the level ceiling + slab (a roof on top of the ceiling), for flat: the level ceiling'),
+  lines: z.array(LineSchema).min(1).max(2).optional().describe('instead of knee: ceiling height lines from the plan (1.40 / 2.20); two lines on one side of the ridge give the pitch'),
+  eaves: num.min(0).optional().describe('overhang at the eaves [m] (default: roof.eaves; flat: 0)'),
+  verge: num.min(0).optional().describe('overhang at a gable end [m] (default: roof.verge)'),
+  parapet: num.positive().optional().describe('flat: parapet height above the covering [m]'),
+  source: z.string().optional(),
+}).refine((p) => [p.rect, p.rooms, p.polygon].filter(Boolean).length <= 1, 'give at most one of rect / rooms / polygon')
+  .refine((p) => !p.polygon || p.type === 'flat', 'a polygon outline is for flat parts only (pitched parts: rectangles)')
+  .refine((p) => !(p.knee !== undefined && p.lines), 'give knee or lines, not both');
+
+const DormerSchema = z.strictObject({
+  id, part: id.describe('the roof part it stands on'), type: z.enum(['gable', 'shed']),
+  rect: rect4.describe('[x0, y0, x1, y1] — outer faces of its walls in plan (points); the back may stop where it meets the roof — it is carried on to the ridge'),
+  front: num.positive().describe('height above the level floor of the underside of the dormer roof at its eaves (gable: at the cheeks; shed: at the front) [m]'),
+  pitch: num.positive().lt(80).describe('pitch of the dormer roof [°]'),
+  window: z.strictObject({ id, room: id, width: num.positive(), sill: num.min(0).optional(), head: num.positive().optional() }).optional()
+    .describe('the window in its front: centred, sill / head above the room floor'),
+  source: z.string().optional(),
+});
+
+/** the roof of the building: parts (wings) over the levels, dormers, chimneys */
+export const RoofSchema = z.strictObject({
+  covering: num.min(0).default(0.05).describe('covering thickness (tiles, sheet) across the planes [m]'),
+  buildup: num.positive().default(0.25).describe('thickness of the structure under it (rafters, insulation, lining) [m]'),
+  eaves: num.min(0).default(0.5).describe('default overhang at the eaves [m]'),
+  verge: num.min(0).default(0.3).describe('default overhang at a gable end [m]'),
+  ridgeHeight: num.positive().optional().describe('height of the highest ridge (top of the covering) above z = 0 from the drawings [m] — checked (±10 cm)'),
+  parts: z.array(RoofPartSchema).min(1),
+  dormers: z.array(DormerSchema).default([]),
+  chimneys: z.array(z.strictObject({ id, rect: rect4.describe('[x0, y0, x1, y1] (points)'), top: num.describe('height of its top above z = 0 [m]') })).default([]),
+  confidence: z.enum(['confirmed', 'probable', 'unknown']).optional(), source: z.string().optional(),
+});
 
 const PassageSchema = z.strictObject({ between: z.tuple([id, id]), at: pt, width: num.positive(), height: num.positive().optional() });
 
@@ -107,12 +156,13 @@ export const PlanSchema = z.strictObject({
     doorHeight: num.positive().default(2.05), leafHeight: num.positive().default(2.0), sill: num.min(0).default(0.85), head: num.positive().default(2.35),
     confidence: z.enum(['confirmed', 'probable', 'unknown']).default('probable'), basis: z.enum(['dimensioned', 'drawn', 'approximate']).default('approximate'),
   }).prefault({}),
-  levels: z.array(z.strictObject({ id, name: z.string(), floorZ: num, ceiling: num.positive().describe('ceiling height above the floor [m]'), cutHeight: num.positive().optional().describe('section height above the floor [m]; default: 10 cm above the highest window head, at least 2.30, below the ceiling'), slope: SlopeSchema.optional().describe('sloped ceilings of every room on this level (attic); a room with its own `ceiling` stays flat'), calibration: CalibrationSchema.optional().describe('px plans drawn as one image per level: the scale and origin of THIS level\'s image (the origin pixel = the same building corner on every image); default: the plan calibration') })).min(1),
+  levels: z.array(z.strictObject({ id, name: z.string(), floorZ: num, ceiling: num.positive().describe('ceiling height above the floor [m]'), cutHeight: num.positive().optional().describe('section height above the floor [m]; default: 10 cm above the highest window head, at least 2.30, below the ceiling'), slope: SlopeSchema.optional().describe('sloped ceilings of every room on this level (attic): without a roof block it becomes a gable roof part over the level; with one, a cross-check. A room\'s own `ceiling` is its flat top'), calibration: CalibrationSchema.optional().describe('px plans drawn as one image per level: the scale and origin of THIS level\'s image (the origin pixel = the same building corner on every image); default: the plan calibration') })).min(1),
   rooms: z.array(RoomSchema).min(1),
   doors: z.array(DoorSchema).default([]),
   passages: z.array(PassageSchema).default([]),
   windows: z.array(WindowSchema).default([]),
   roofWindows: z.array(z.strictObject({ id, room: id, rect: z.tuple([num, num, num, num]).describe('[x0, y0, x1, y1] of the window in the sloped ceiling, seen from above') })).default([]),
+  roof: RoofSchema.optional().describe('the roof: parts over the levels (gable, hip, shed, flat), dormers, chimneys; without it a level slope builds a gable part'),
   stairs: z.array(StairSchema).default([]),
   furniture: z.array(FurnitureSchema).default([]),
   notIncluded: z.array(z.strictObject({ room: id, what: z.string(), why: z.string() })).default([]),

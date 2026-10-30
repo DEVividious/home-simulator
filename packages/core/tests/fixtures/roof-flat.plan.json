@@ -1,0 +1,92 @@
+{
+ "schema": "home-simulator/plan",
+ "version": 1,
+ "project": {
+  "id": "roof-flat",
+  "name": "Flat roof with a parapet",
+  "buildingType": "house"
+ },
+ "units": "m",
+ "source": "synthetic test fixture: an L-shaped storey under a flat roof with a parapet",
+ "levels": [
+  {
+   "id": "G",
+   "name": "Ground",
+   "floorZ": 0,
+   "ceiling": 2.8
+  }
+ ],
+ "rooms": [
+  {
+   "id": "F1",
+   "name": "F1",
+   "level": "G",
+   "kind": "living",
+   "rect": [
+    0.3,
+    0.3,
+    8.0,
+    6.0
+   ]
+  },
+  {
+   "id": "F2",
+   "name": "F2",
+   "level": "G",
+   "kind": "bed",
+   "rect": [
+    0.3,
+    6.12,
+    4.0,
+    10.0
+   ]
+  }
+ ],
+ "doors": [
+  {
+   "id": "D0",
+   "between": [
+    "F1",
+    "exterior"
+   ],
+   "at": [
+    0.15,
+    3.0
+   ],
+   "width": 1.0
+  },
+  {
+   "id": "D1",
+   "between": [
+    "F1",
+    "F2"
+   ],
+   "at": [
+    2.0,
+    6.06
+   ],
+   "width": 0.9
+  }
+ ],
+ "windows": [
+  {
+   "id": "W1",
+   "room": "F1",
+   "at": [
+    4.0,
+    0.3
+   ],
+   "width": 2.0
+  }
+ ],
+ "roof": {
+  "parts": [
+   {
+    "id": "flat",
+    "level": "G",
+    "type": "flat",
+    "parapet": 0.6
+   }
+  ]
+ }
+}

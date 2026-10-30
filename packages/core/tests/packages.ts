@@ -13,10 +13,16 @@ const compiled = (p: string): BuildingData => {
   return r.project.building;
 };
 
+/** plan fixtures with roofs: gable along X and along Y (an attic with dormers, roof windows, a chimney), hip, shed, flat with a
+ *  parapet, L-shaped gable, T-shaped hip */
+export const ROOF_FIXTURES = ['roof-gable-x', 'roof-gable-y', 'roof-hip', 'roof-shed', 'roof-flat', 'roof-l-gable', 'roof-t-hip'];
+export const planOf = (id: string) => read(`packages/core/tests/fixtures/${id}.plan.json`);
+
 /** a fresh copy of the building block on every call (the derived building is cached by its identity) */
 export const PACKAGES: Record<string, () => BuildingData> = {
   'demo-apartment': () => (read('projects/demo-apartment/project.json') as ProjectPackage).building,
   'sample-house': () => (read('projects/sample-house/project.json') as ProjectPackage).building,
   ...Object.fromEntries(['sloped-ceiling', 'placement-lab', 'mount-lab', 'catalog-ext'].map((id) => [id, () => (read(`src/test/fixtures/${id}/project.json`) as ProjectPackage).building])),
   'two-storey-l': () => compiled('packages/core/tests/fixtures/two-storey-l.plan.json'),
+  ...Object.fromEntries(ROOF_FIXTURES.map((id) => [id, () => compiled(`packages/core/tests/fixtures/${id}.plan.json`)])),
 };

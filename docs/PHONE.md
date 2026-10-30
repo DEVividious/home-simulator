@@ -19,4 +19,6 @@ First install: in Chrome on the phone wait for "Offline mode: ready" (Settings �
   `userdata/<id>/document.json` on the computer. Edits made in both places → the app shows a conflict and asks which to keep.
 - **Phone setup**: Settings → About phone → tap Build number 7× → Developer options → USB debugging; data cable; accept the RSA
   prompt.
+- **Update the app before opening a newer project.** An app installed before generated roofs does not know ceilings under the
+  roof (`kind: "roof"` in `project.json`): such a package fails to load until `update` has brought the new build.
 - iOS is not covered (no adb).

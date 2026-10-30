@@ -1,0 +1,120 @@
+{
+ "schema": "home-simulator/plan",
+ "version": 1,
+ "project": {
+  "id": "roof-l-gable",
+  "name": "L-shaped gable roof",
+  "buildingType": "house"
+ },
+ "units": "m",
+ "source": "synthetic test fixture: an L-shaped storey under two gable wings meeting in valleys",
+ "levels": [
+  {
+   "id": "G",
+   "name": "Ground",
+   "floorZ": 0,
+   "ceiling": 2.6
+  }
+ ],
+ "rooms": [
+  {
+   "id": "M1",
+   "name": "M1",
+   "level": "G",
+   "kind": "living",
+   "rect": [
+    0.3,
+    0.3,
+    11.7,
+    7.7
+   ]
+  },
+  {
+   "id": "S1",
+   "name": "S1",
+   "level": "G",
+   "kind": "bed",
+   "rect": [
+    0.3,
+    7.82,
+    5.7,
+    13.7
+   ]
+  }
+ ],
+ "doors": [
+  {
+   "id": "D0",
+   "between": [
+    "M1",
+    "exterior"
+   ],
+   "at": [
+    0.15,
+    4.0
+   ],
+   "width": 1.0
+  },
+  {
+   "id": "D1",
+   "between": [
+    "M1",
+    "S1"
+   ],
+   "at": [
+    3.0,
+    7.76
+   ],
+   "width": 0.9
+  }
+ ],
+ "windows": [
+  {
+   "id": "W1",
+   "room": "M1",
+   "at": [
+    6.0,
+    0.3
+   ],
+   "width": 2.0
+  },
+  {
+   "id": "W2",
+   "room": "S1",
+   "at": [
+    3.0,
+    13.7
+   ],
+   "width": 1.2
+  }
+ ],
+ "roof": {
+  "parts": [
+   {
+    "id": "main",
+    "level": "G",
+    "type": "gable",
+    "rect": [
+     0,
+     0,
+     12,
+     8
+    ],
+    "pitch": 40
+   },
+   {
+    "id": "wing",
+    "level": "G",
+    "type": "gable",
+    "rect": [
+     0,
+     8,
+     6,
+     14
+    ],
+    "pitch": 40,
+    "ridge": "Y"
+   }
+  ]
+ }
+}

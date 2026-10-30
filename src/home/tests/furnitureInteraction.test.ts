@@ -240,6 +240,16 @@ describe('top view: furniture above the plan section can be picked', () => {
     setSection(L0.floorZ + PLAN_CUT_HEIGHT);
     expect(fromAbove(wall)).toBe(0);                                           // the wall top (2.70 m) is above the section
   }));
+  it('a hidden part of the architecture (a roof in the section of the level it covers) catches no click', inHouse(() => {
+    const { L0 } = levels();
+    const group = new THREE.Group(), roof = new THREE.Mesh(new THREE.BoxGeometry(4, 0.3, 4));
+    roof.position.set(0, L0.floorZ + 1.0, 0); group.add(roof); group.updateMatrixWorld(true);
+    patchRaycast(roof);
+    setSection(null);
+    expect(fromAbove(group)).toBeGreaterThan(0);
+    group.visible = false;
+    expect(fromAbove(group)).toBe(0);
+  }));
 });
 
 // ------------------------------------------------------------------ wall-object steps in the direction visible on screen

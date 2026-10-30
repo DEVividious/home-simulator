@@ -42,8 +42,10 @@ export interface FurniturePlacement {
 // ------------------------------------------------------------------ rooms
 export interface DoorJson { along: 'X' | 'Y'; from_: number; to: number; across: number[]; width: number; door_id: string | null; leaf: number | null; height: number | null }
 export interface OpeningJson { id: string; kind: string; plane_axis: 'X' | 'Y'; inner: number; from_: number; to: number; sill_z?: number; head_z?: number; polygon_YZ?: number[][] }
-/** attic: the ridge runs along X at y = ridge_y, or along Y at x = ridge_x; the ceiling falls by `slope` per metre away from it */
-export interface CeilingJson { kind: 'flat' | 'attic'; z?: number; flat_z?: number; ridge_y?: number; ridge_x?: number; z_at_ridge?: number; slope?: number }
+/** flat: at height z. roof: under the roof of the room's level (building.roof) — the underside of the roof structure, capped by
+ *  the flat top flat_z (collar ties). attic (written before the roof existed): the ridge runs along X at y = ridge_y, or along Y at
+ *  x = ridge_x; the ceiling falls by `slope` per metre away from it, capped by flat_z — a gable roof is derived from it at load */
+export interface CeilingJson { kind: 'flat' | 'attic' | 'roof'; z?: number; flat_z?: number; ridge_y?: number; ridge_x?: number; z_at_ridge?: number; slope?: number }
 /** room kind: default finishes, icons, plan colours — from the project data (field `kind`), never from the name */
 export type RoomKind = 'bath' | 'kitchen' | 'garage' | 'tech' | 'hall' | 'bed' | 'living' | 'office' | 'storage' | 'room';
 /** room record in the package data */
@@ -128,6 +130,68 @@ export interface ShellSpec {
   exteriorWall: number;
   /** floor and roof slab thickness */
   slab: number;
+}
+
+// ------------------------------------------------------------------ roof
+/** a roof plane: the points p with n·p = d (n a unit vector pointing up, n[2] > 0); "below the plane" is n·p ≤ d */
+export interface RoofPlaneJson { n: Vec3; d: number }
+export type RoofPartType = 'gable' | 'hip' | 'shed' | 'flat';
+export type Rect = [number, number, number, number];
+
+/** a roof part ("wing"): the roof over a rectangle of a level's walls (a flat part may cover a polygon) */
+export interface RoofPartJson {
+  id: string;
+  /** the level the part covers — the ceilings of its rooms come from the part's planes */
+  level: LevelId;
+  type: RoofPartType;
+  /** the outer faces of the walls under the part [x0, y0, x1, y1] — or, for a flat part, a polygon */
+  rect?: Rect;
+  polygon?: Vec2[];
+  /** plan extent of the roof: the outline grown by the eaves and verges, plus the strips that run into the wing this one joins */
+  extent: Rect[];
+  /** flat part over a polygon: its extent as a polygon (instead of `extent`) */
+  extentPolygon?: Vec2[];
+  /** underside of the roof structure (the ceiling of the rooms below): the roof lies above every plane of the part */
+  planes: RoofPlaneJson[];
+  /** parapet height above the top of the covering (flat part) [m] */
+  parapet?: number;
+  /** authoring facts kept for reference: ridge axis, pitch [°] */
+  ridge?: 'X' | 'Y';
+  pitch?: number;
+}
+
+/** a dormer: a small wing on a roof plane — walls (cheeks, front) standing on the roof, its own gable or shed roof */
+export interface DormerJson {
+  id: string;
+  /** the roof part it stands on */
+  part: string;
+  type: 'gable' | 'shed';
+  /** the side its front faces (downhill on the part's plane) */
+  front: 'N' | 'S' | 'E' | 'W';
+  /** outer faces of its walls [x0, y0, x1, y1]; the back runs into the roof */
+  rect: Rect;
+  /** the room space it adds (inside its walls) */
+  inner: Rect;
+  /** plan extent of its roof (the rect grown by the verge at the cheeks and the front) */
+  extent: Rect;
+  /** underside of its roof */
+  planes: RoofPlaneJson[];
+  /** the window of a front set back from the wall (a front in the plane of a wall holds an ordinary room window instead) */
+  window?: { id: string; roomId: string; width: number; sill_z: number; head_z: number };
+}
+
+/** a chimney: a box from `bottom` (the slab underside of the lowest level it stands in) to `top` (absolute) */
+export interface ChimneyJson { id: string; rect: Rect; bottom: number; top: number }
+
+export interface RoofJson {
+  /** thickness of the covering (tiles, sheet) and of the structure under it (rafters, insulation, lining), across the planes [m] */
+  covering: number;
+  buildup: number;
+  parts: RoofPartJson[];
+  dormers?: DormerJson[];
+  chimneys?: ChimneyJson[];
+  source?: string;
+  confidence?: 'confirmed' | 'probable' | 'unknown';
 }
 
 // ------------------------------------------------------------------ interiors, sun, views
@@ -321,6 +385,8 @@ export interface ProjectPackage {
     stairs?: StairDef[];
     /** parameters of the shell generated from room outlines (project without assets.model) */
     shell?: Partial<ShellSpec>;
+    /** the roof: parts over the levels, dormers, chimneys (absent — derived from attic ceilings, or a flat top) */
+    roof?: RoofJson;
   };
   interiors: InteriorDefaults;
   electrical: ElectricalDefaults;

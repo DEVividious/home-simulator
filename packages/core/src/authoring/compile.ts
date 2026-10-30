@@ -4,9 +4,12 @@
 // rooms with the wall faces it crosses, hinge position and directions from "hinge side + room it opens into", window wall
 // axis and face, stairs from risers and level heights, furniture against a wall, provenance on every fact.
 // Problems are returned as issues (error / warning); the CLI refuses to write a package with errors.
+import { flatCeiling, roofCeiling, type CeilingProfile } from '../model/ceiling.ts';
 import { outerOutline } from '../model/outline.ts';
-import type { ArchitectItem, DoorDef, ElectricalDefaults, ProjectModule, ProjectPackage, RoomJson, StairDef, Vec2, Viewpoint } from '../package/types.ts';
+import { areaBelow, atticPlanes, surfaceFacets, type RoofPiece } from '../model/roof.ts';
+import type { ArchitectItem, DoorDef, ElectricalDefaults, ProjectModule, ProjectPackage, Rect, RoomJson, StairDef, Vec2, Viewpoint } from '../package/types.ts';
 import { PlanSchema, type Plan, type PlanInput } from './plan.ts';
+import { compileRoof } from './roof.ts';
 
 export interface Issue { level: 'error' | 'warning'; code: string; message: string }
 export interface CatalogItemInfo { id: string; dimensions: { w: number; d: number; h: number }; variants?: { id: string; dimensions?: Partial<{ w: number; d: number; h: number }> }[]; mount?: string }
@@ -141,6 +144,10 @@ export function compilePlan(input: PlanInput | unknown, opts: CompileOptions): C
     if (overlapArea(polys.get(a.id)!, polys.get(b.id)!) > 0.02 * 0.02) err('room.overlap', `rooms "${a.id}" and "${b.id}" overlap`);
   }
 
+  // ---- the roof (plan roof block, or a gable from every level slope)
+  const along = (axis: 0 | 1, c: number, level: string) => (axis === 0 ? P([c, 0], level)[0] : P([0, c], level)[1]);
+  const roof = compileRoof({ plan, P, along, polys, err, warn });
+
   // ---- walls between rooms: thickness lint
   for (const a of plan.rooms) for (const b of plan.rooms) {
     if (a.id >= b.id || a.level !== b.level) continue;
@@ -251,18 +258,17 @@ export function compilePlan(input: PlanInput | unknown, opts: CompileOptions): C
     addGap(a, gap); if (b !== 'exterior') addGap(b, { ...gap });
   }
 
-  // ---- windows
+  // ---- windows (and the windows of dormer fronts that stand in a wall)
   const windows = new Map<string, RoomJson['openings']>();
-  for (const w of plan.windows) {
+  const addWindow = (w: { id: string; room: string; width: number; sill?: number; head?: number; passable?: boolean }, p: Vec2) => {
     const es = edges.get(w.room);
-    if (!es) { err('ref', `window "${w.id}": unknown room "${w.room}"`); continue; }
-    const p = P(w.at, w.room);
+    if (!es) { err('ref', `window "${w.id}": unknown room "${w.room}"`); return; }
     let best: Edge | null = null, bd = Infinity;
     for (const e of es) {
       const t = alongOf(e, p), dd = Math.abs(acrossOf(e, p) - e.c) + (t < e.lo ? e.lo - t : t > e.hi ? t - e.hi : 0);
       if (dd < bd) { bd = dd; best = e; }
     }
-    if (!best || bd > 0.6) { err('window.wall', `window "${w.id}": "at" is not on a wall of "${w.room}"`); continue; }
+    if (!best || bd > 0.6) { err('window.wall', `window "${w.id}": "at" is not on a wall of "${w.room}"`); return; }
     const t = alongOf(best, p), from = r3(t - w.width / 2), to = r3(t + w.width / 2);
     if (from < best.lo - 0.005 || to > best.hi + 0.005) err('window.span', `window "${w.id}": ${w.width} m does not fit the wall (${r3(best.lo)}…${r3(best.hi)})`);
     const interior = plan.rooms.some((r) => r.id !== w.room && r.level === levelOfRoom(w.room) && edges.get(r.id)!.some((e) => e.axis === best!.axis && e.out !== best!.out && (e.c - best!.c) * best!.out > 0 && (e.c - best!.c) * best!.out < 0.6 && Math.min(e.hi, to) - Math.max(e.lo, from) > 0));
@@ -273,7 +279,9 @@ export function compilePlan(input: PlanInput | unknown, opts: CompileOptions): C
     const fz = levels.get(levelOfRoom(w.room)!)?.floorZ ?? 0;
     list.push({ id: w.id, kind: sill < 0.05 ? 'window (floor-to-lintel)' : 'window', plane_axis: best.axis === 'X' ? 'Y' : 'X', inner: best.c, from_: from, to, sill_z: r3(fz + sill), head_z: r3(fz + head) });
     windows.set(w.room, list);
-  }
+  };
+  for (const w of plan.windows) { if (!edges.has(w.room)) { err('ref', `window "${w.id}": unknown room "${w.room}"`); continue; } addWindow(w, P(w.at, w.room)); }
+  for (const w of roof.windows) addWindow(w, w.at);
 
   // section height of a level (when the plan gives none): above the highest lintel of the level, below its ceiling
   const defaultCut = (l: { id: string; ceiling: number }) => {
@@ -309,47 +317,76 @@ export function compilePlan(input: PlanInput | unknown, opts: CompileOptions): C
     if (!lower) err('stairs.start', `stairs "${s.id}": no room of level "${s.from}" contains the stair box`);
   }
 
-  // ---- sloped ceilings (per level) and roof windows
-  const along = (axis: 0 | 1, c: number, level: string) => (axis === 0 ? P([c, 0], level)[0] : P([0, c], level)[1]);
-  const attics = new Map<string, RoomJson['ceiling']>();
-  for (const lv of plan.levels) {
-    if (!lv.slope) continue;
-    const s = lv.slope, ax: 0 | 1 = s.ridge === 'X' ? 1 : 0;          // ridge along X → heights vary with y
-    const outline = plan.rooms.filter((r) => r.level === lv.id).flatMap((r) => polys.get(r.id) ?? []);
-    if (!outline.length) continue;
-    const lo = Math.min(...outline.map((q) => q[ax])), hi = Math.max(...outline.map((q) => q[ax]));
-    const ridge = s.ridgeAt !== undefined ? along(ax, s.ridgeAt, lv.id) : (lo + hi) / 2;
-    const lines = s.lines.map((l) => ({ at: along(ax, l.at, lv.id), height: l.height }));
-    let k: number;
-    if (lines.length === 2) {
-      const [a, b] = lines;
-      if ((a.at - ridge) * (b.at - ridge) < 0) { err('level.slope', `level "${lv.id}": both slope lines must lie on one side of the ridge`); continue; }
-      k = Math.abs(b.height - a.height) / Math.max(1e-6, Math.abs(b.at - a.at));
-      if (Math.abs(b.at - ridge) < Math.abs(a.at - ridge) !== b.height > a.height) err('level.slope', `level "${lv.id}": the ceiling must rise towards the ridge`);
-    } else k = Math.tan((s.pitch! * Math.PI) / 180);
-    if (lines.length === 2 && s.pitch !== undefined && Math.abs(Math.atan(k) * 180 / Math.PI - s.pitch) > 5) warn('level.slope', `level "${lv.id}": the lines give a ${r2(Math.atan(k) * 180 / Math.PI)}° slope, the pitch says ${s.pitch}°`);
-    const fz = lv.floorZ, flat = s.flat ?? lv.ceiling, l0 = lines[0];
-    const zRidge = fz + l0.height + k * Math.abs(ridge - l0.at);
-    if (zRidge - fz < flat) warn('level.slope', `level "${lv.id}": the slope does not reach the flat ceiling at ${flat} m — check the lines or the pitch`);
-    const ceiling = { kind: 'attic' as const, flat_z: r3(fz + flat), ...(ax === 1 ? { ridge_y: r3(ridge) } : { ridge_x: r3(ridge) }), z_at_ridge: r3(zRidge), slope: r3(k) };
-    for (const r of plan.rooms) if (r.level === lv.id && r.ceiling === undefined) attics.set(r.id, ceiling as RoomJson['ceiling']);
-  }
+  // ---- roof windows and the room ceilings: flat, or under the roof of the level (its planes, capped by the flat top)
   const roofWindows = new Map<string, RoomJson['roof_windows']>();
   for (const w of plan.roofWindows) {
     if (!polys.has(w.room)) { err('ref', `roof window "${w.id}": unknown room "${w.room}"`); continue; }
-    if (!attics.has(w.room)) warn('roofWindow.flat', `roof window "${w.id}": room "${w.room}" has no sloped ceiling`);
     const a = P([w.rect[0], w.rect[1]], w.room), b = P([w.rect[2], w.rect[3]], w.room);
     roofWindows.set(w.room, [...(roofWindows.get(w.room) ?? []), { id: w.id, plan_rect: [Math.min(a[0], b[0]), Math.min(a[1], b[1]), Math.max(a[0], b[0]), Math.max(a[1], b[1])].map(r3) }]);
+  }
+  const ceilings = new Map<string, { json: RoomJson['ceiling']; profile: CeilingProfile }>();
+  for (const r of plan.rooms) {
+    const lv = levels.get(r.level), poly = polys.get(r.id)!, fz = lv?.floorZ ?? 0;
+    const flat = r3(fz + (r.ceiling ?? lv?.slope?.flat ?? lv?.ceiling ?? 2.6)), under = roof.model?.byLevel(r.level) ?? [];
+    const profile = under.length ? roofCeiling(under, flat, fz, poly, (roofWindows.get(r.id) ?? []).map((w) => w.plan_rect as Rect)) : flatCeiling(flat, fz, poly);
+    ceilings.set(r.id, { json: profile.kind === 'roof' ? { kind: 'roof', flat_z: flat } : { kind: 'flat', z: flat }, profile });
+  }
+  for (const w of plan.roofWindows) {
+    if (!polys.has(w.room)) continue;
+    const r = plan.rooms.find((x) => x.id === w.room)!, c = ceilings.get(w.room)!.profile, under = roof.model?.byLevel(r.level) ?? [];
+    if (c.kind !== 'roof') { warn('roofWindow.flat', `roof window "${w.id}": room "${w.room}" has no sloped ceiling`); continue; }
+    // in one sloped plane of the ceiling (not across a ridge, a hip, a valley or the flat top)
+    const [x0, y0, x1, y1] = roofWindows.get(w.room)!.find((q) => q.id === w.id)!.plan_rect;
+    const fs = surfaceFacets({ pieces: under, which: 'inner', cap: c.flatZ }, [[x0, y0], [x1, y0], [x1, y1], [x0, y1]]);
+    const planes = new Set(fs.map((f) => `${r3(f.plane.gx)},${r3(f.plane.gy)},${r3(f.plane.z0)}`));
+    if (planes.size !== 1 || (fs[0].plane.gx === 0 && fs[0].plane.gy === 0)) err('roofWindow.plane', `roof window "${w.id}": it must lie within one sloped plane of the ceiling of "${w.room}" (it crosses ${planes.size} planes or the flat top)`);
+  }
+  // a level slope given together with a roof block: the roof must give the same ceilings (within 5 cm)
+  if (plan.roof) for (const lv of plan.levels) {
+    if (!lv.slope) continue;
+    const s = lv.slope, ax: 0 | 1 = s.ridge === 'X' ? 1 : 0, pts = plan.rooms.filter((r) => r.level === lv.id && r.ceiling === undefined).flatMap((r) => polys.get(r.id)!);
+    if (!pts.length || s.lines.length < 1) continue;
+    const lo = Math.min(...pts.map((q) => q[ax])), hi = Math.max(...pts.map((q) => q[ax])), ridge = s.ridgeAt !== undefined ? along(ax, s.ridgeAt, lv.id) : (lo + hi) / 2;
+    const lines = s.lines.map((l) => ({ at: along(ax, l.at, lv.id), height: l.height }));
+    const k = lines.length === 2 ? Math.abs(lines[1].height - lines[0].height) / Math.max(1e-6, Math.abs(lines[1].at - lines[0].at)) : Math.tan((s.pitch! * Math.PI) / 180);
+    const own: RoofPiece = { id: 'slope', kind: 'part', level: lv.id, region: [-1e6, -1e6, 1e6, 1e6], inner: [-1e6, -1e6, 1e6, 1e6], cover: [-1e6, -1e6, 1e6, 1e6],
+      planes: atticPlanes({ kind: 'attic', ...(ax === 1 ? { ridge_y: ridge } : { ridge_x: ridge }), z_at_ridge: lv.floorZ + lines[0].height + k * Math.abs(ridge - lines[0].at), slope: k }) };
+    for (const r of plan.rooms.filter((x) => x.level === lv.id && x.ceiling === undefined)) {
+      const poly = polys.get(r.id)!, fromSlope = roofCeiling([own], r3(lv.floorZ + (s.flat ?? lv.ceiling)), lv.floorZ, poly, []), c = ceilings.get(r.id)!.profile;
+      const worst = Math.max(...[...poly, ...poly.map((q, i) => { const n = poly[(i + 1) % poly.length]; return [(q[0] + n[0]) / 2, (q[1] + n[1]) / 2] as Vec2; })].map((q) => Math.abs(fromSlope.heightAt(q[0], q[1]) - c.heightAt(q[0], q[1]))));
+      if (worst > 0.05) warn('roof.slope', `room "${r.id}": the roof gives a ceiling up to ${Math.round(worst * 100)} cm away from the level slope — check the knee height, the pitch and the ridge`);
+    }
+  }
+  // openings under the roof: a window head or a door above the ceiling at its wall
+  for (const r of plan.rooms) {
+    const c = ceilings.get(r.id)!.profile, fz = levels.get(r.level)?.floorZ ?? 0;
+    if (c.kind !== 'roof') continue;
+    const es = edges.get(r.id)!, inward = (e: Edge): Vec2 => (e.axis === 'X' ? [0, -e.out * 0.01] : [-e.out * 0.01, 0]);
+    const ceilingOver = (e: Edge, from: number, to: number) => Math.min(...[from + 0.01, (from + to) / 2, to - 0.01].map((t) => { const d = inward(e), p: Vec2 = e.axis === 'X' ? [t, e.c] : [e.c, t]; return c.heightAt(p[0] + d[0], p[1] + d[1]); }));
+    for (const o of windows.get(r.id) ?? []) {
+      const e = es.find((x) => x.axis === (o.plane_axis === 'Y' ? 'X' : 'Y') && Math.abs(x.c - o.inner) < 1e-6 && o.from_ >= x.lo - 0.01 && o.to <= x.hi + 0.01);
+      if (e && o.head_z! - fz > ceilingOver(e, o.from_, o.to) + 0.01) err('window.roof', `window "${o.id}": its head (${r3(o.head_z! - fz)} m) is above the roof plane at its wall (${r3(ceilingOver(e, o.from_, o.to))} m) — lower it, or put it in a dormer`);
+    }
+    for (const g of gaps.get(r.id) ?? []) {
+      const e = es.find((x) => x.axis === g.along && g.across.some((a) => Math.abs(a - x.c) < 1e-6) && g.from_ >= x.lo - 0.01 && g.to <= x.hi + 0.01), h = g.height ?? (g.door_id ? D.doorHeight : null);
+      if (e && h !== null && h > ceilingOver(e, g.from_, g.to) + 0.01) err('door.roof', `${g.door_id ? `door "${g.door_id}"` : 'passage'} in "${r.id}": ${h} m high, the roof plane at its wall is ${r3(ceilingOver(e, g.from_, g.to))} m`);
+    }
   }
 
   // ---- rooms
   const rooms: RoomJson[] = plan.rooms.map((r) => {
     const poly = polys.get(r.id)!, lv = levels.get(r.level), floorZ = lv?.floorZ ?? 0, area = r2(Math.abs(area2(poly)) / 2);
     const bb = bboxOf(poly);
-    if (r.areaPrinted && Math.abs(area - r.areaPrinted) / r.areaPrinted > 0.1) warn('room.area', `room "${r.id}": computed area ${area} m² differs from the printed ${r.areaPrinted} m² by more than 10 %`);
+    const ce = ceilings.get(r.id)!;
+    if (r.areaPrinted && Math.abs(area - r.areaPrinted) / r.areaPrinted > 0.1) {
+      // under a roof a plan prints the usable area (PN-ISO 9836: full above 2.20 m, half between 1.40 and 2.20, none below)
+      const fs = ce.profile.kind === 'roof' ? ce.profile.facets() : null, all = Math.abs(area2(poly)) / 2;
+      const usable = fs ? r2(all - areaBelow(fs, floorZ + 2.2) + (areaBelow(fs, floorZ + 2.2) - areaBelow(fs, floorZ + 1.4)) / 2) : null;
+      if (usable === null || Math.abs(usable - r.areaPrinted) / r.areaPrinted > 0.1) warn('room.area', `room "${r.id}": computed area ${area} m²${usable !== null ? ` (usable under the roof ${usable} m²)` : ''} differs from the printed ${r.areaPrinted} m² by more than 10 %`);
+    }
     return {
       id: r.id, name: r.name, ...(r.label ? { label: r.label } : {}), level: r.level, floor_z: floorZ, area, area_data: r.areaPrinted ?? area, id_source: r.source ?? source,
-      bbox: bb, polygon: poly, rectangular: poly.length === 4, ceiling: attics.get(r.id) ?? { kind: 'flat', z: r3(floorZ + (r.ceiling ?? lv?.ceiling ?? 2.6)) },
+      bbox: bb, polygon: poly, rectangular: poly.length === 4, ceiling: ce.json,
       stair_opening: stairOpenings.get(r.id) ?? null, doors: gaps.get(r.id) ?? [], openings: windows.get(r.id) ?? [], roof_windows: roofWindows.get(r.id) ?? [], kind: r.kind, tags: r.tags ?? [],
     } as RoomJson;
   });
@@ -388,12 +425,12 @@ export function compilePlan(input: PlanInput | unknown, opts: CompileOptions): C
     else { err('furniture.place', `furniture "${f.catalogId}" in "${f.room}": give "at" (+ rot) or "wall" (+ along)`); continue; }
     if (!inPolygon([x, y], poly)) warn('furniture.outside', `furniture "${f.catalogId}" in "${f.room}": centre [${r3(x)}, ${r3(y)}] is outside the room`);
     // under a sloped ceiling: the top of the item at each corner of its footprint against the ceiling there
-    const ce = attics.get(f.room) as { flat_z: number; ridge_x?: number; ridge_y?: number; z_at_ridge: number; slope: number } | undefined;
-    if (ce) {
-      const fz = levels.get(levelOfRoom(f.room)!)?.floorZ ?? 0, top = fz + (f.elevation ?? 0) + (dims.h ?? 0), a = (rot * Math.PI) / 180;
-      const ceilingAt = (u: number, v: number) => { const px = x + u * Math.cos(a) - v * Math.sin(a), py = y + u * Math.sin(a) + v * Math.cos(a); return Math.min(ce.flat_z, ce.z_at_ridge - ce.slope * Math.abs(ce.ridge_y !== undefined ? py - ce.ridge_y : px - ce.ridge_x!)); };
+    const ce = ceilings.get(f.room)?.profile;
+    if (ce?.kind === 'roof') {
+      const top = (f.elevation ?? 0) + (dims.h ?? 0), a = (rot * Math.PI) / 180;
+      const ceilingAt = (u: number, v: number) => ce.heightAt(x + u * Math.cos(a) - v * Math.sin(a), y + u * Math.sin(a) + v * Math.cos(a));
       const low = Math.min(...[[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([u, v]) => ceilingAt((u * dims.w) / 2, (v * dims.d) / 2)));
-      if (top > low + 0.02) warn('furniture.ceiling', `furniture "${f.catalogId}" in "${f.room}": ${r3(top - fz)} m high but the sloped ceiling is ${r3(low - fz)} m above part of it — move it towards the ridge, pick a lower variant or give lower "dims"`);
+      if (top > low + 0.02) warn('furniture.ceiling', `furniture "${f.catalogId}" in "${f.room}": ${r3(top)} m high but the sloped ceiling is ${r3(low)} m above part of it — move it towards the ridge, pick a lower variant or give lower "dims"`);
     }
     const base = `${f.room}-${f.catalogId}`, n = (keys.get(base) ?? 0) + 1;
     keys.set(base, n);
@@ -468,6 +505,7 @@ export function compilePlan(input: PlanInput | unknown, opts: CompileOptions): C
       ...(plan.windows.some((w) => w.passable) ? { doorFacts: { passableOpenings: plan.windows.filter((w) => w.passable).map((w) => w.id) } } : {}),
       ...(stairs.length ? { stairs } : {}),
       shell: { exteriorWall: D.exteriorWall, slab: D.slab },
+      ...(roof.json ? { roof: roof.json } : {}),
     },
     interiors: { items, notIncluded: plan.notIncluded, ...(plan.notes ? { notes: plan.notes } : {}) },
     electrical: { points },

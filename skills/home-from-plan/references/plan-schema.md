@@ -30,6 +30,8 @@ Worked examples: `projects/demo-apartment/source/plan.json` (flat, metres, expli
     { "id": "W2", "room": "R2", "at": [1860, 850], "width": 2.0, "sill": 0, "passable": true }
   ],
   "stairs": [ { "id": "S1", "from": "L0", "to": "L1", "box": [x0, y0, x1, y1], "up": "N", "turn": "left", "risers": 9, "tread": 0.27, "flightWidth": 0.95, "gap": 0.05 } ],
+  "roof": { "ridgeHeight": 8.45, "parts": [ { "id": "main", "level": "L1", "type": "gable", "ridge": "X", "pitch": 40, "knee": 1.0 } ],
+            "dormers": [], "chimneys": [] },                 // houses: references/roofs.md
   "furniture": [
     { "room": "R1", "catalogId": "bed", "variant": "160", "wall": "W", "along": 300, "basis": "drawn" },   // along: px in a px plan
     { "room": "R2", "catalogId": "sofa", "variant": "3", "at": [1630, 700], "rot": 180, "basis": "drawn" },
@@ -64,15 +66,18 @@ Field notes:
   shell, terrain, surroundings — the last one switches on the `environment` module), `views` (camera presets with `pose`),
   `catalog` (the project's own furniture / material files, ids `<project id>:…`, docs/PROJECT_PACKAGE_SPEC.md), `capabilities`
   (sections the app offers; default all four). Use them only when the user brings such files or asks for it.
-- Attic levels (sloped ceilings under a pitched roof): add `slope` to the level —
-  `{ "ridge": "X", "lines": [ { "at": 120, "height": 1.4 }, { "at": 210, "height": 2.2 } ], "flat": 2.5 }`. `ridge` is the plan
-  axis the ridge runs along; `lines` are the height lines drawn on attic plans (typically 1.40 and 2.20, often dashed, labelled
-  at the margin), `at` is their coordinate across the ridge (px in a px plan), both on the same side of the ridge; `ridgeAt`
-  defaults to the middle of the level. With only one line give `pitch` (degrees). Every room of the level gets the slope unless
-  it has its own `ceiling`. Printed attic areas are often *usable* areas (50 % under 1.40–2.20 m) — use the floor area (usually
-  in brackets) for `areaPrinted`.
+- Roof (houses): the `roof` block — parts (gable, hip, shed, flat) over rectangles of a level's walls, with the pitch and the
+  knee wall height or the 1.40 / 2.20 lines; dormers, chimneys; `references/roofs.md` explains where each fact is on the drawings.
+  The rooms under it get their sloped ceilings from it (a room's own `ceiling`, or the level's, is the flat top).
+- Attic levels without a roof block: `slope` on the level —
+  `{ "ridge": "X", "lines": [ { "at": 120, "height": 1.4 }, { "at": 210, "height": 2.2 } ], "flat": 2.5 }` becomes one gable over
+  the level. `ridge` is the plan axis the ridge runs along; `lines` are the height lines drawn on attic plans (typically 1.40 and
+  2.20, often dashed, labelled at the margin), `at` is their coordinate across the ridge (px in a px plan), both on the same side
+  of the ridge; `ridgeAt` defaults to the middle of the level. With only one line give `pitch` (degrees). With a roof block a
+  `slope` is a cross-check. Printed attic areas are often *usable* areas (50 % under 1.40–2.20 m, none below 1.40) — put the
+  printed number in `areaPrinted`: the build compares it with both the floor area and the usable area.
 - `roofWindows`: `[ { "id": "RW1", "room": "R5", "rect": [x0, y0, x1, y1] } ]` — windows in a sloped ceiling, seen from above
-  (on Polish plans a rectangle labelled like 78/140).
+  (on Polish plans a rectangle labelled like 78/140), each inside one sloped plane.
 - `notes` keys are room ids (a note about a door goes under the room it opens from); the app shows them to the user with the
   room's furnishings, so write them for the user, not as working notes.
 - Unknown fields are errors — check spelling against the schema.

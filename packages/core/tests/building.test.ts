@@ -3,7 +3,6 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { building, ceilingAt, levelAtZ, roomAt, stairArrivesAt, SHELL_DEFAULTS, type BuildingData } from '@home-sim/core/model/building';
-import { heightBreaks } from '@home-sim/core/model/ceiling';
 import { gridLevelShell, gridShellBounds, orthogonalPlan } from '@home-sim/core/model/gridShell';
 import { planMass } from '@home-sim/core/model/planMass';
 import type { ProjectPackage } from '@home-sim/core/package/types';
@@ -49,7 +48,8 @@ describe('building()', () => {
     expect(stairArrivesAt(b, l0.id)).toBe(false);
     const r = b.rooms[0], c = pkg('sample-house').building.rooms.rooms[0].ceiling;
     expect(ceilingAt(r, ...r.center)).toBeCloseTo(c.z!, 9);
-    expect(heightBreaks(r).at).toEqual([]);
+    expect(r.ceiling.kind).toBe('flat');
+    expect(r.ceiling.breaksAlong(r.walls[0].a, r.walls[0].b)).toEqual([]);
   });
 
   it('a sloped ceiling: height falls from the ridge, capped by the flat top, with breaks at the flat edges and the ridge', () => {
@@ -60,7 +60,12 @@ describe('building()', () => {
     const r = building(data).roomById.get(room.id)!;
     expect(ceilingAt(r, r.center[0], ry)).toBeCloseTo(room.floor_z + 2.5, 9);
     expect(ceilingAt(r, r.center[0], ry - 1)).toBeCloseTo(room.floor_z + 2, 9);
-    expect(heightBreaks(r)).toEqual({ axis: 1, at: [ry - 0.5, ry, ry + 0.5] });
+    expect(r.ceiling.kind).toBe('roof');
+    // a wall across the slope bends at the edges of the flat top and at the ridge
+    const across = r.walls.find((w) => Math.abs(w.dir[1]) > 0.5)!, y = (t: number) => across.a[1] + across.dir[1] * t;
+    expect(across.length).toBeGreaterThan(1);
+    expect(r.ceiling.breaksAlong(across.a, across.b).map(y).sort((p, q) => p - q).map((v) => +v.toFixed(9))).toEqual([ry - 0.5, ry, ry + 0.5].map((v) => +v.toFixed(9)));
+    expect(r.ceiling.range()[1]).toBeCloseTo(2.5, 9);
   });
 });
 

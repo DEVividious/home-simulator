@@ -118,5 +118,15 @@ class Dxf(unittest.TestCase):
             self.assertTrue(any('Bedroom' in r['texts'] for r in w['rooms']))
 
 
+class SheetRoofFacts(unittest.TestCase):
+    def test_pitch_and_ridge_from_words(self):
+        sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'pdf'))
+        from sheet_text import find_roof
+        words = [dict(x0=0, y0=0, x1=1, y1=1, t=t) for t in ['PRZEKRÓJ', 'A-A', 'kąt', 'nachylenia', 'dachu', '40°', 'wysokość', 'kalenicy', '+8,45', 'okno', '78/140', '∠', '35', '°']]  # i18n-ok: drawing words in Polish
+        found = find_roof(words, ['pitch', 'ridge'])
+        self.assertEqual(sorted({w['deg'] for w in found['pitch']}), [35.0, 40.0])
+        self.assertEqual([w['m'] for w in found['ridge']], [8.45])
+
+
 if __name__ == '__main__':
     unittest.main()

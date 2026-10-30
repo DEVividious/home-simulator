@@ -12,7 +12,7 @@ python3 -m venv .venv && .venv/bin/pip install -r tools/requirements.txt
 | `intake.py FILE…` | classifies files: dwg / dxf / vector or raster PDF / image, and names the import branch | pillow; poppler for PDFs |
 | `image/prepare.py PLAN.png --out DIR` | `grid.png` with a labelled pixel grid, zoomed `tile_*.png`, `info.json` | pillow |
 | `image/calibrate.py --file F points/area/symbol/total/summary` | pixels-per-metre estimates, their agreement, the `calibration` block for plan.json | — |
-| `pdf/sheet_text.py SHEET.pdf --out DIR` | words with positions, printed areas, numbers, drawing scale | poppler |
+| `pdf/sheet_text.py SHEET.pdf --out DIR [--find pitch,ridge]` | words with positions, printed areas, numbers, drawing scale; roof pitch and ridge height | poppler |
 | `pdf/sheet_svg.py SHEET.pdf --out DIR` | vector paths in points, a gridded preview of the sheet | poppler |
 | `pdf/door_arcs.py SHEET.pdf --scale 50 --out DIR` | door swing arcs: hinge, both leaf ends, leaf width | poppler |
 | `cad/dwg2dxf.py DRAWING.dwg` | ASCII DXF R2018 | ODA File Converter |

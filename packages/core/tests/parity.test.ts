@@ -1,6 +1,7 @@
 // Parity of the manifold shell with the grid shell it replaces (ADR 0024, 0026): per level the wall volume (±0.5 %), the section
-// area at the cut height, the bounds (±1 mm), the window ids and the reveal depths — on both examples and the fixtures. The one
-// intended difference: glazing with a polygonal outline is cut to its outline, where the grid cut its bounding rectangle.
+// area at the cut height, the bounds (±1 mm), the window ids and the reveal depths — on both examples and the fixtures, each
+// without its roof (the grid shell has none: its levels are boxes up to the highest ceiling; the roof is tested in roof.test.ts).
+// The one intended difference: glazing with a polygonal outline is cut to its outline, where the grid cut its bounding rectangle.
 import { beforeAll, describe, expect, it } from 'vitest';
 import { building, roomsOfLevel, type Building } from '@home-sim/core/model/building';
 import { gridLevelShell, gridShellBounds, type ShellQuad } from '@home-sim/core/model/gridShell';
@@ -23,6 +24,8 @@ const quadSection = (qs: ShellQuad[], z: number) => qs.reduce((s, q) => {
   return s + ((((a[0] + b[0]) / 2) * q.n[0] + ((a[1] + b[1]) / 2) * q.n[1]) * Math.hypot(b[0] - a[0], b[1] - a[1])) / 2;
 }, 0);
 
+/** the building without its roof (the ceilings stay as they are: the levels become boxes up to their highest ceiling) */
+const noRoof = (b: Building): Building => ({ ...b, roof: null });
 /** the building with polygonal openings cut as their bounding rectangles — what the grid shell does */
 function rectangular(b: Building): Building {
   const rooms = b.rooms.map((r) => ({ ...r, walls: r.walls.map((w) => ({ ...w, holes: w.holes.map((h) => ({ ...h, polygon: undefined })) })) }));
@@ -36,7 +39,7 @@ describe('manifold shell vs grid shell', () => {
   for (const [id, data] of Object.entries(PACKAGES)) {
     describe(id, () => {
       it('wall volume per level within 0.5 %, the same section area at the cut height', () => {
-        const b = building(data()), rect = rectangular(b);
+        const b = noRoof(building(data())), rect = rectangular(b);
         for (const l of b.levels) scoped((keep) => {
           const s = levelSolid(geo, keep, rect, l.id);
           if (!s) return;
@@ -52,7 +55,7 @@ describe('manifold shell vs grid shell', () => {
       });
 
       it('bounds within 1 mm; the pure bounds equal the solid bounds', () => {
-        const b = building(data()), g = gridShellBounds(b), c = shellBounds(b), m = shellMeshes(geo, b);
+        const b = noRoof(building(data())), g = gridShellBounds(b), c = shellBounds(b), m = shellMeshes(geo, b);
         for (let k = 0; k < 3; k++) {
           expect(Math.abs(c.min[k] - g.min[k])).toBeLessThan(1e-3);
           expect(Math.abs(c.max[k] - g.max[k])).toBeLessThan(1e-3);
@@ -62,7 +65,7 @@ describe('manifold shell vs grid shell', () => {
       });
 
       it('the same windows with the same reveal depths', () => {
-        const b = building(data()), m = shellMeshes(geo, b);
+        const b = noRoof(building(data())), m = shellMeshes(geo, b);
         for (const l of m.levels) {
           const grid = gridLevelShell(b, l.level).windows;
           expect(l.windows.map((w) => w.id)).toEqual(grid.map((w) => w.id));
@@ -77,7 +80,7 @@ describe('manifold shell vs grid shell', () => {
   }
 
   it('glazing with a polygonal outline is cut to the outline: the solid keeps the rest of its bounding rectangle', () => {
-    const b = building(PACKAGES['sloped-ceiling']());
+    const b = noRoof(building(PACKAGES['sloped-ceiling']()));
     for (const l of b.levels) scoped((keep) => {
       const exact = levelSolid(geo, keep, b, l.id)!, boxed = levelSolid(geo, keep, rectangular(b), l.id)!;
       const polys = exact.cuts.filter((c) => !c.box);

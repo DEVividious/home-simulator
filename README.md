@@ -91,7 +91,7 @@ Glossary: [docs/GLOSSARY.md](docs/GLOSSARY.md).
 
 ## Limits
 
-Generated walls need orthogonal plans; attic ceilings slope inside but there is no roof outside unless the project brings a GLB model; stairs are
+Generated walls need orthogonal plans; generated roofs are unions of rectangular wings (gable, hip, shed, flat, dormers); stairs are
 two-flight U-turn only; iOS is not covered by the phone flow. Full list: [docs/KNOWN_LIMITATIONS.md](docs/KNOWN_LIMITATIONS.md).
 
 ## Contributing

@@ -52,6 +52,12 @@
  "stairs": [
   { "id": "S1", "from": "L0", "to": "L1", "box": [0.3, 0.3, 2.25, 3.46], "risers": 9, "tread": 0.27, "flightWidth": 0.95, "gap": 0.05, "note": "railing 0.9 m on the landing" }
  ],
+ "roof": {
+  "ridgeHeight": 8.97,
+  "parts": [
+   { "id": "main", "level": "L1", "type": "gable", "ridge": "X", "pitch": 35 }
+  ]
+ },
  "furniture": [
   { "room": "LK", "catalogId": "kitchen-tall", "variant": "fridge", "wall": "N", "along": 3.72, "group": "kitchen" },
   { "room": "LK", "catalogId": "kitchen-tall", "variant": "oven", "wall": "N", "along": 4.32, "group": "kitchen" },

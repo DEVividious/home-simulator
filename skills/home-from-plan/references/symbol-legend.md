@@ -28,8 +28,15 @@
 | Arrow triangle at an entrance | entrance marker | the exterior door is there |
 | Dimension chain | numbers along a line with ticks, in cm on most European plans (e.g. "458", "1500") | the best scale evidence: `calibrate.py points` with `--length`; room sizes like "458 × 341" are inner faces |
 | Window label | circle / oval with "w/h" in cm, e.g. "180/150", "78/140" | opening width w and height h; the head is usually 2.20–2.35 m (lintel line), so sill = head − h; a floor-level door "180/230" → `sill: 0`; a label inside the roof area means a roof window |
-| Attic height lines | dashed or thin lines parallel to the eaves, labelled 140 / 220 (cm) at the margin, grey band between | level `slope.lines` (1.40 and 2.20 m above the floor); the ridge runs parallel to them |
+| Attic height lines | dashed or thin lines parallel to the eaves, labelled 140 / 220 (cm) at the margin, grey band between | roof part `lines` (or level `slope.lines`) — 1.40 and 2.20 m above the floor; the ridge runs parallel to them |
+| Knee wall | "ścianka kolankowa", "h = 100" next to the exterior wall of an attic, in the section a short wall under the slope | roof part `knee` (height above the floor at the outer face) | <!-- i18n-ok: drawing terms in Polish -->
 | Roof window | rectangle in the sloped zone with a "78/140"-style label | `roofWindows[]` |
+| Ridge (roof plan) | the top line of the roof, often with "kalenica" and a height "+8,45" | the part's `ridge` axis; the height → `roof.ridgeHeight` |
+| Hip / valley (roof plan) | diagonal lines from an outer corner (hip, narożnik) / from an inner corner (valley, kosz) up to a ridge | `type: "hip"`; valleys come from two wings (one part per wing) | <!-- i18n-ok: drawing terms in Polish -->
+| Eaves line (roof plan) | the outline of the roof outside the walls, dashed on floor plans | `roof.eaves` / `verge` = its distance from the outer wall face |
+| Pitch | "40°", "∠ 40°", "kąt nachylenia 40°" on a slope or in the section | the part's `pitch` | <!-- i18n-ok: drawing terms in Polish -->
+| Dormer (lukarna) | a bay in the roof outline with its own small roof and window; on the attic plan a recess in the knee wall | `roof.dormers[]` |
+| Chimney (komin) | small filled or hatched rectangle in a wall, above the roof on elevations | `roof.chimneys[]` |
 | Car outline, garden plants, terrace paving | context drawings | not furniture by default — garage `kind: "garage"`; terrace as a note; the catalog `car` only if the user wants cars |
 | Garage door | wide gap in the garage's exterior wall, label like "500/225" | `"type": "sliding"` door of that width and `height` (no sectional door type; note it) |
 | Watermark / logo | large diagonal text or a logo over the drawing | ignore |

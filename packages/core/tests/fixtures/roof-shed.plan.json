@@ -1,0 +1,69 @@
+{
+ "schema": "home-simulator/plan",
+ "version": 1,
+ "project": {
+  "id": "roof-shed",
+  "name": "Shed roof",
+  "buildingType": "house"
+ },
+ "units": "m",
+ "source": "synthetic test fixture: one storey under a shed roof falling to the south",
+ "levels": [
+  {
+   "id": "G",
+   "name": "Ground",
+   "floorZ": 0,
+   "ceiling": 2.6
+  }
+ ],
+ "rooms": [
+  {
+   "id": "S1",
+   "name": "S1",
+   "level": "G",
+   "kind": "living",
+   "rect": [
+    0.3,
+    0.3,
+    7.7,
+    5.7
+   ]
+  }
+ ],
+ "doors": [
+  {
+   "id": "D0",
+   "between": [
+    "S1",
+    "exterior"
+   ],
+   "at": [
+    0.15,
+    3.0
+   ],
+   "width": 1.0
+  }
+ ],
+ "windows": [
+  {
+   "id": "W1",
+   "room": "S1",
+   "at": [
+    4.0,
+    0.3
+   ],
+   "width": 2.0
+  }
+ ],
+ "roof": {
+  "parts": [
+   {
+    "id": "main",
+    "level": "G",
+    "type": "shed",
+    "down": "S",
+    "pitch": 12
+   }
+  ]
+ }
+}

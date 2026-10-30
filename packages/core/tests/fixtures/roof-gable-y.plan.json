@@ -1,0 +1,199 @@
+{
+ "schema": "home-simulator/plan",
+ "version": 1,
+ "project": {
+  "id": "roof-gable-y",
+  "name": "Gable along Y with an attic",
+  "buildingType": "house"
+ },
+ "units": "m",
+ "source": "synthetic test fixture: a ground floor and an attic under a gable along Y — knee wall, dormers in the wall and set back, roof windows, a chimney",
+ "levels": [
+  {
+   "id": "G",
+   "name": "Ground",
+   "floorZ": 0,
+   "ceiling": 2.6
+  },
+  {
+   "id": "A",
+   "name": "Attic",
+   "floorZ": 2.85,
+   "ceiling": 2.5
+  }
+ ],
+ "rooms": [
+  {
+   "id": "G1",
+   "name": "G1",
+   "level": "G",
+   "kind": "living",
+   "rect": [
+    0.3,
+    0.3,
+    7.7,
+    10.7
+   ]
+  },
+  {
+   "id": "A1",
+   "name": "A1",
+   "level": "A",
+   "kind": "bed",
+   "rect": [
+    0.3,
+    0.3,
+    7.7,
+    5.2
+   ]
+  },
+  {
+   "id": "A2",
+   "name": "A2",
+   "level": "A",
+   "kind": "office",
+   "rect": [
+    0.3,
+    5.32,
+    7.7,
+    10.7
+   ]
+  }
+ ],
+ "doors": [
+  {
+   "id": "D0",
+   "between": [
+    "G1",
+    "exterior"
+   ],
+   "at": [
+    4.0,
+    0.15
+   ],
+   "width": 1.0
+  },
+  {
+   "id": "D1",
+   "between": [
+    "A1",
+    "A2"
+   ],
+   "at": [
+    4.0,
+    5.26
+   ],
+   "width": 0.8
+  }
+ ],
+ "windows": [
+  {
+   "id": "W1",
+   "room": "G1",
+   "at": [
+    0.3,
+    5.0
+   ],
+   "width": 1.2
+  },
+  {
+   "id": "W2",
+   "room": "A1",
+   "at": [
+    4.0,
+    0.3
+   ],
+   "width": 1.0,
+   "sill": 0.9,
+   "head": 2.0
+  }
+ ],
+ "roofWindows": [
+  {
+   "id": "RW1",
+   "room": "A1",
+   "rect": [
+    6.4,
+    1.5,
+    7.4,
+    2.7
+   ]
+  },
+  {
+   "id": "RW2",
+   "room": "A2",
+   "rect": [
+    0.6,
+    7.5,
+    1.6,
+    8.7
+   ]
+  }
+ ],
+ "roof": {
+  "parts": [
+   {
+    "id": "main",
+    "level": "A",
+    "type": "gable",
+    "ridge": "Y",
+    "pitch": 40,
+    "knee": 1.0
+   }
+  ],
+  "dormers": [
+   {
+    "id": "DG",
+    "part": "main",
+    "type": "gable",
+    "rect": [
+     0,
+     1.5,
+     2.0,
+     3.5
+    ],
+    "front": 2.3,
+    "pitch": 40,
+    "window": {
+     "id": "W3",
+     "room": "A1",
+     "width": 1.0,
+     "sill": 0.9,
+     "head": 2.0
+    }
+   },
+   {
+    "id": "DS",
+    "part": "main",
+    "type": "shed",
+    "rect": [
+     5.5,
+     6.5,
+     7.3,
+     9.0
+    ],
+    "front": 2.75,
+    "pitch": 10,
+    "window": {
+     "id": "W4",
+     "room": "A2",
+     "width": 1.2,
+     "sill": 1.85,
+     "head": 2.6
+    }
+   }
+  ],
+  "chimneys": [
+   {
+    "id": "C1",
+    "rect": [
+     3.6,
+     8.0,
+     4.2,
+     8.6
+    ],
+    "top": 8.0
+   }
+  ]
+ }
+}

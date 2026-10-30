@@ -4,8 +4,13 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import { shellMeshes } from '@home-sim/core/solid/levels';
 import { ROLES } from '@home-sim/core/solid/tags';
 import { loadGeometry, type Geometry } from '@home-sim/core/solid/wasm';
+import path from 'node:path';
 import { building } from '../model/building';
 import { levelArrays, levelBuffers, MATERIAL_OF, meshGeometry } from '../three/coreMesh';
+import { roofShown } from '../scene/CoreShellLayer';
+import { sceneMode } from '../scene/sceneMode';
+import { withProject } from '../../project/active';
+import { readProjectDir } from '../../project/node';
 
 let geo: Geometry;
 beforeAll(async () => { geo = await loadGeometry(); });
@@ -46,5 +51,31 @@ describe('core shell arrays', () => {
     expect(new Set(bufs).size).toBe(bufs.length);
     expect(bufs).not.toContain(l.solid.positions.buffer);
     g.dispose();
+  });
+
+  it('a roof: its covering in a third group (the roof material); fascias, soffits and the ceiling under it with the slabs', () => {
+    withProject(readProjectDir(path.resolve(__dirname, '../../../projects/sample-house')), () => {
+      const m = shellMeshes(geo, building());
+      expect(m.roofs.map((r) => r.level)).toEqual(['L1']);
+      const a = levelArrays(m.roofs[0]);
+      expect(a.solid.groups.map((g) => g.materialIndex)).toEqual([1, 2]);
+      expect(MATERIAL_OF.roof).toBe(2);
+      expect([MATERIAL_OF.eaves, MATERIAL_OF['roof-underside'], MATERIAL_OF['roof-flat']]).toEqual([1, 1, 1]);
+      // the level solids keep their two groups (no roof covering in them)
+      for (const l of m.levels) expect(levelArrays(l).solid.groups.map((g) => g.materialIndex)).toEqual([0, 1]);
+    });
+  });
+
+  it('the roof is hidden in the section and the rooms of the level it covers and of the levels below it, shown outside and in the walk', () => {
+    withProject(readProjectDir(path.resolve(__dirname, '../../../projects/sample-house')), () => {
+      const mode = (s: Partial<Parameters<typeof sceneMode>[0]>) => sceneMode({ houseView: 'exterior', level: 'L0', roomId: null, roomView: '3d', environment: false, ...s });
+      expect(roofShown('L1', mode({}))).toBe(true);
+      expect(roofShown('L1', mode({ houseView: 'walk' }))).toBe(true);
+      expect(roofShown('L1', mode({ houseView: 'interior', level: 'L1' }))).toBe(false);
+      expect(roofShown('L1', mode({ houseView: 'interior', level: 'L0' }))).toBe(false);
+      expect(roofShown('L0', mode({ houseView: 'interior', level: 'L1' }))).toBe(true);   // a lower wing's roof seen in the upper section
+      expect(roofShown('L1', mode({ houseView: 'interior', roomId: 'BR1', level: 'L1' }))).toBe(false);
+      expect(roofShown('L1', mode({ houseView: 'interior', roomId: 'BR1', level: 'L1', roomView: 'walk' }))).toBe(true);
+    });
   });
 });

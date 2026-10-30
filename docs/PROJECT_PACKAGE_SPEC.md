@@ -32,8 +32,11 @@ section height above the floor (the compiler writes it 10 cm above the highest w
 below the ceiling, unless `plan.json` sets `cutHeight`); `plan_wall_offset` half the wall thickness drawn on plans.
 
 Room: `id`, `name`, `label?`, `level`, `floor_z`, `polygon` (inner wall faces), `bbox`, `rectangular`, `area`, `area_data`
-(printed area or `area`), `id_source`, `ceiling` (`{ kind: "flat", z }` absolute height, or `{ kind: "attic", flat_z, ridge_y | ridge_x,
-z_at_ridge, slope }` — ridge along X at `ridge_y` or along Y at `ridge_x`, absolute heights, `slope` in m per m), `doors[]` (gaps: `{ along: "X"|"Y", from_, to, across: [face, face], width, door_id | null, leaf, height }`
+(printed area or `area`), `id_source`, `ceiling` (`{ kind: "flat", z }` absolute height; `{ kind: "roof", flat_z }` under the roof
+of the room's level — the underside of `building.roof` there, capped by the flat top `flat_z`; or, in packages written before the
+roof, `{ kind: "attic", flat_z, ridge_y | ridge_x, z_at_ridge, slope }` — ridge along X at `ridge_y` or along Y at `ridge_x`,
+absolute heights, `slope` in m per m; a level whose rooms all share one attic ceiling gets a gable roof with those planes at
+load), `doors[]` (gaps: `{ along: "X"|"Y", from_, to, across: [face, face], width, door_id | null, leaf, height }`
 — the same gap appears in both rooms; `door_id: null` = passage), `openings[]` (windows: `{ id, kind, plane_axis, inner, from_, to,
 sill_z, head_z }` — `plane_axis` is the axis whose coordinate is constant on the wall, `inner` the room-side face; `sill_z`,
 `head_z` and `polygon_YZ` heights are absolute project Z like `ceiling.z`, while door gap `height` is above the room floor),
@@ -56,6 +59,24 @@ toLevel, bbox, risers, riser, tread, flightWidth, gap, landingZ, topZ, split, ru
 `split` and `landingEdge` in the canonical frame (lower flight rising towards −Y on the larger-X side); `orient: { rotate: 0 | 90
 | 180 | 270, mirror }` turns it counter-clockwise onto `bbox` after mirroring (docs/WALK_AND_STAIRS.md).
 `building.shell`: generated-shell parameters `{ exteriorWall = 0.30, slab = 0.25 }`.
+
+## building.roof
+Optional (ADR 0027–0029; the format version stays 1). Metres, absolute z. `{ covering, buildup, parts[], dormers?, chimneys?,
+source?, confidence? }` — `covering` and `buildup` are the thicknesses of the covering and of the structure under it, across the
+planes. A plane is `{ n: [nx, ny, nz], d }` (unit normal pointing up, `n·p = d`); a part lies **above** its planes, which are the
+underside of its structure — the ceiling of the rooms below.
+- Part: `{ id, level, type: gable | hip | shed | flat, rect? | polygon? (outer wall faces; a polygon only for flat), extent:
+  [x0, y0, x1, y1][] (the outline grown by the overhangs, plus the strips that carry a wing into the wing it joins, up to that
+  wing's ridge), extentPolygon? (flat part over a polygon), planes[], parapet?, ridge?, pitch? }`. The roof over a level is the
+  union of its parts: at each point the highest part, each part the lowest of its planes; the covering top is every plane raised
+  by `covering + buildup` across itself. The walls of the level rise to the underside; its rooms open into it up to their flat top.
+- Dormer: `{ id, part, type: gable | shed, front: N | S | E | W, rect (outer faces of its walls), inner (the room space it adds),
+  extent (its roof), planes[], window? }` — `window: { id, roomId, width, sill_z, head_z }` only for a front set back from the
+  wall (a front in a wall plane holds an ordinary room window).
+- Chimney: `{ id, rect, bottom, top }` — a box from `bottom` (the slab underside of the lowest level it stands in) to `top`.
+Room roof windows (`roof_windows[].plan_rect`) are cut through the roof perpendicular to the plane over their centre, with a
+frame in the slope. A phone with an app installed before roofs cannot open a package with `kind: "roof"` ceilings until the app
+is updated (docs/PHONE.md).
 
 ## interiors, electrical
 - `interiors.items[]`: `{ key, room, catalogId, variant, x, y, rot, dims?, elevation?, materialId?, group?, source, basis, note }`

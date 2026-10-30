@@ -3,7 +3,7 @@
 // three/coreShell.ts); here, synchronously, what does not need the kernel — the bounds (the same for both shells) and the grid
 // shell (packages/core/src/model/gridShell.ts), the fallback for one release that also gives the plan's wall mass.
 import { gridLevelShell, orthogonalPlan as coreOrthogonalPlan } from '@home-sim/core/model/gridShell';
-import { shellBounds as coreShellBounds } from '@home-sim/core/solid/levels';
+import { shellBounds as coreShellBounds, wallBounds as coreWallBounds } from '@home-sim/core/solid/levels';
 import { derived, project } from '../../project/active';
 import { building } from './building';
 import { allRooms, type HomeRoom } from './rooms';
@@ -23,8 +23,10 @@ export const orthogonalPlan = (rooms: HomeRoom[] = allRooms()): boolean => coreO
 /** grid shell of a level (once per project package and level) */
 export const levelShell = (level: LevelId) => gridLevelShell(building(), level);
 
-/** building bounds in space: from the generated shell (room plan + exterior walls, from the slab underside to the top of the roof slab) */
+/** building bounds in space: from the generated shell (room plan + exterior walls, from the slab underside to the top of the
+ *  roof; the eaves included) */
 export const shellBounds = derived((): { min: Vec3; max: Vec3 } => coreShellBounds(building()));
 
-/** building outline in plan (bounding rectangle) — obstacle for walking on the site when the project does not supply its own */
-export const shellFootprint = derived((): Vec2[] => { const b = shellBounds(); return [[b.min[0], b.min[1]], [b.max[0], b.min[1]], [b.max[0], b.max[1]], [b.min[0], b.max[1]]]; });
+/** building outline in plan (bounding rectangle of the walls, not the eaves) — obstacle for walking on the site when the project
+ *  does not supply its own */
+export const shellFootprint = derived((): Vec2[] => { const b = coreWallBounds(building()); return [[b.min[0], b.min[1]], [b.max[0], b.min[1]], [b.max[0], b.max[1]], [b.min[0], b.max[1]]]; });

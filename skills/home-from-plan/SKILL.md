@@ -14,6 +14,7 @@ Turn whatever the user has into a **project package** the engine loads: `project
 
 Read first, every time: `references/authoring-conventions.md` (the rules) and `references/plan-schema.md` (the format, with the
 demo apartment as a worked example). Furniture ids: `references/catalog-ids.md`. Symbols on plans: `references/symbol-legend.md`.
+Houses: the roof — `references/roofs.md` (where pitch, knee wall, ridge, hips, valleys and dormers are on the drawings).
 
 ## 0. Set up (once)
 
@@ -76,7 +77,7 @@ Create `projects/<id>/source/` and copy the inputs to `projects/<id>/source/inpu
 ### B. Vector PDF sheet (architect's drawing)
 
 ```bash
-.venv/bin/python tools/pdf/sheet_text.py <sheet.pdf> --out projects/<id>/source/pdf     # words, printed areas, scale
+.venv/bin/python tools/pdf/sheet_text.py <sheet.pdf> --out projects/<id>/source/pdf --find pitch,ridge   # words, printed areas, scale, roof facts
 .venv/bin/python tools/pdf/sheet_svg.py  <sheet.pdf> --out projects/<id>/source/pdf     # sheet_grid.png, paths in pt
 .venv/bin/python tools/pdf/door_arcs.py  <sheet.pdf> --out projects/<id>/source/pdf --scale <N>   # hinges, leaves
 ```
@@ -116,13 +117,13 @@ acceptable. Common fixes: `skills/home-check/references/errors.md`.
 ## 4. Preview and compare — mandatory
 
 ```bash
-npm run -s project:preview -- projects/<id>              # projects/<id>/preview/plan-<level>.png, 3d.png (outside)
+npm run -s project:preview -- projects/<id>              # projects/<id>/preview/plan-<level>.png, roof.png, 3d.png (outside)
 npm run -s project:preview -- projects/<id> --room R3    # room-R3.png: the room in 3D, cut away from above
 npm run -s project:preview -- projects/<id> --viewpoint vp-attic   # view-<id>.png: eye level from a plan.json viewpoint
 ```
 Open the plan preview next to the source drawing and compare room by room: shape and proportions, sizes against printed
 dimensions, door positions and swing direction, windows on the right walls, stairs (direction of the arrow), attic height lines
-and roof windows. Look inside at least the largest room (`--room`); for every room with a sloped ceiling add a `viewpoints`
+and roof windows; the roof plan (`roof.png`) against the roof plan or the elevations of the drawings. Look inside at least the largest room (`--room`); for every room with a sloped ceiling add a `viewpoints`
 entry in plan.json (also useful to the user) and check it with `--viewpoint` — the cut-away hides the slope. With several
 levels, check that outer walls and the stairs line up between the plan previews. Fix and rebuild. After three silent iterations, show both images to the user and
 ask about the specific doubt instead of iterating further.

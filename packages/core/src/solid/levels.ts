@@ -1,18 +1,22 @@
-// The generated shell as manifold solids: one closed solid per level — mass minus voids (ADR 0024).
-//   mass   = the footprint (room outlines grown by the exterior wall, merged) extruded as the floor slab (slab underside → floor),
-//            the walls (floor → underside of the next slab, or the wall top on the last level) and, over the last level, the
-//            roof slab (wall top → wall top + slab);
-//   voids  = the rooms (floor → wall top, through the top on lower levels), the opening cutters and the stair shaft,
-//            unioned in one batch and subtracted once.
+// The generated shell as manifold solids: one closed solid per level — mass minus voids (ADR 0024) — and one roof solid per level
+// with roof parts (roofSolid.ts, ADR 0027).
+//   mass   = the footprint (room outlines grown by the exterior wall, merged) extruded as the floor slab (slab underside → floor)
+//            and the walls; the walls end at the underside of the next slab, rise to the roof's underside where the level's roof
+//            parts cover them, and on a last level without a roof end at the wall top under a flat roof slab;
+//   voids  = the rooms (through the top below another level; up to the flat top or into the roof under a roof), the opening
+//            cutters and the stair shaft, unioned in one batch and subtracted once; chimneys are added afterwards.
 // Inputs are snapped to 0.1 mm, every prism gets exact top and bottom heights, and cutters stand 5 mm proud of the faces they
-// cut, so no near-coplanar faces reach the boolean. Rooms stay open up to the wall top as in the grid shell (sloped ceilings
-// are interior finishes until the roof takes them over, ADR 0027); the roof itself comes later. Pure helpers (frames, bounds)
-// need no kernel; the solids take the loaded kernel as an argument.
-import { roomsOfLevel, stairArrivesAt, type Building, type Room } from '../model/building.ts';
+// cut, so no near-coplanar faces reach the boolean. Pure helpers (frames, bounds) need no kernel; the solids take the loaded
+// kernel as an argument.
+import { roomsOfLevel, stairArrivesAt, type Building, type Level, type Room } from '../model/building.ts';
+import { offsetPolygon } from '../model/geom2d.ts';
+import { inRegion, surfaceRange } from '../model/roof.ts';
 import type { LevelId, Vec2, Vec3 } from '../package/types.ts';
 import { windowMeshes, type PlainMesh } from './frames.ts';
 import { solidMesh, type SolidMesh } from './mesh.ts';
 import { levelOpenings, PROUD, snap, type OpeningCut, type PlanMass, type ShellWindow } from './openings.ts';
+import { prism, rectSection, roofSpace } from './prism.ts';
+import { roofBounds, roofPieces, roofSolid, type RoofWindow } from './roofSolid.ts';
 import { scoped, type Keep } from './scope.ts';
 import { TagTable } from './tags.ts';
 import type { CrossSection, Geometry, Manifold } from './wasm.ts';
@@ -23,37 +27,47 @@ export interface LevelFrame {
   /** underside of the floor slab */
   bottom: number;
   floor: number;
-  /** top of the walls: the highest ceiling of the level's rooms (at most the solid top) */
+  /** top of the walls: the highest ceiling of the level's rooms; under a roof the highest point of its underside over the walls */
   wallTop: number;
-  /** top of the solid: the underside of the next level's slab, or the top of the roof slab over the last level */
+  /** top of the solid: the underside of the next level's slab, the top of the flat roof slab over a last level, or under a
+   *  roof the highest point of the walls */
   top: number;
   last: boolean;
+  /** the level's walls rise to roof parts */
+  roofed: boolean;
 }
 
-/** wall height of a level: the highest ceiling of its rooms (a sloped ceiling is highest where the room comes closest to the ridge) */
+/** wall height of a level: the highest ceiling of its rooms */
 export function wallTop(rooms: Room[], floorZ: number): number {
   let top = 0;
-  for (const r of rooms) {
-    for (const q of r.polygon) top = Math.max(top, r.floorZ + r.ceiling.heightAt(q[0], q[1]));
-    const c = r.ceiling, [x0, y0, x1, y1] = r.bbox;
-    if (c.kind === 'attic') top = Math.max(top, r.floorZ + c.heightAt(Math.min(x1, Math.max(x0, c.ridgeX ?? x0)), Math.min(y1, Math.max(y0, c.ridgeY ?? y0))));
-  }
+  for (const r of rooms) top = Math.max(top, r.floorZ + r.ceiling.range()[1]);
   return top > floorZ ? top : floorZ + 2.6;
-}
-
-export function levelFrame(b: Building, level: LevelId): LevelFrame {
-  const i = b.levels.findIndex((l) => l.id === level), floor = b.levels[i]?.floorZ ?? 0, next = b.levels[i + 1], slab = b.shell.slab;
-  const walls = wallTop(roomsOfLevel(b, level), floor);
-  if (!next) return { level, bottom: snap(floor - slab), floor, wallTop: snap(walls), top: snap(walls + slab), last: true };
-  const top = snap(Math.max(floor + 0.01, next.floorZ - slab));
-  return { level, bottom: snap(floor - slab), floor, wallTop: snap(Math.min(walls, top)), top, last: false };
 }
 
 /** levels that have rooms (the others have no solid) */
 const builtLevels = (b: Building) => b.levels.filter((l) => roomsOfLevel(b, l.id).length);
+const nextBuilt = (b: Building, level: LevelId): Level | null => { const L = builtLevels(b), i = L.findIndex((l) => l.id === level); return L[i + 1] ?? null; };
+/** the walls of a level in plan: every room grown by the exterior wall */
+const grownRooms = (b: Building, level: LevelId) => roomsOfLevel(b, level).map((r) => offsetPolygon(r.polygon, b.shell.exteriorWall));
 
-/** bounds of the generated shell: the room outlines grown by the exterior wall, from the lowest slab underside to the highest solid top */
-export function shellBounds(b: Building): { min: Vec3; max: Vec3 } {
+export function levelFrame(b: Building, level: LevelId): LevelFrame {
+  const i = b.levels.findIndex((l) => l.id === level), floor = b.levels[i]?.floorZ ?? 0, next = b.levels[i + 1], slab = b.shell.slab;
+  const pieces = roofPieces(b, level);
+  if (pieces.length) {
+    // walls under the roof rise to its underside (the dormers' included); under the next level to its slab
+    let under = -Infinity;
+    for (const p of grownRooms(b, level)) { const r = surfaceRange({ pieces, which: 'region' }, p); if (r) under = Math.max(under, r[1]); }
+    const up = nextBuilt(b, level), top = snap(Math.max(under, up ? up.floorZ - slab : -Infinity, floor + 0.01));
+    return { level, bottom: snap(floor - slab), floor, wallTop: top, top, last: !up, roofed: true };
+  }
+  const walls = wallTop(roomsOfLevel(b, level), floor);
+  if (!next) return { level, bottom: snap(floor - slab), floor, wallTop: snap(walls), top: snap(walls + slab), last: true, roofed: false };
+  const top = snap(Math.max(floor + 0.01, next.floorZ - slab));
+  return { level, bottom: snap(floor - slab), floor, wallTop: snap(Math.min(walls, top)), top, last: false, roofed: false };
+}
+
+/** bounds of the walls: the room outlines grown by the exterior wall, from the lowest slab underside to the highest wall solid top */
+export function wallBounds(b: Building): { min: Vec3; max: Vec3 } {
   const levels = builtLevels(b), t = b.shell.exteriorWall;
   if (!levels.length) return { min: [0, 0, 0], max: [1, 1, 1] };
   const pts = levels.flatMap((l) => roomsOfLevel(b, l.id).flatMap((r) => r.polygon)), frames = levels.map((l) => levelFrame(b, l.id));
@@ -63,18 +77,46 @@ export function shellBounds(b: Building): { min: Vec3; max: Vec3 } {
   };
 }
 
+/** bounds of the generated shell: the walls and the roof (eaves, ridges, chimneys) */
+export function shellBounds(b: Building): { min: Vec3; max: Vec3 } {
+  const w = wallBounds(b), r = roofBounds(b);
+  if (!r) return w;
+  return { min: [0, 1, 2].map((k) => snap(Math.min(w.min[k], r.min[k]))) as Vec3, max: [0, 1, 2].map((k) => snap(Math.max(w.max[k], r.max[k]))) as Vec3 };
+}
+
 const snap2 = (p: Vec2): Vec2 => [snap(p[0]), snap(p[1])];
-/** prism of a cross-section between two heights — the heights are set exactly, not by adding a translation */
-const prism = (keep: Keep, cs: CrossSection, z0: number, z1: number): Manifold => keep(keep(cs.extrude(1)).warp((v) => { v[2] = v[2] > 0.5 ? z1 : z0; }));
-const rect = (geo: Geometry, keep: Keep, [x0, y0, x1, y1]: readonly number[]) => keep(new geo.CrossSection([[[x0, y0], [x1, y0], [x1, y1], [x0, y1]]]));
 
 /** an opening cutter: a plan rectangle extruded like a room, or the outline in the wall plane pushed through the wall */
 function cutterSolid(geo: Geometry, keep: Keep, c: OpeningCut): Manifold {
-  if (c.box) return prism(keep, rect(geo, keep, c.box), c.z0, c.z1);
+  if (c.box) return prism(keep, rectSection(geo, keep, c.box), c.z0, c.z1);
   const cs = keep(new geo.CrossSection([c.outline]));
   const local = keep(cs.extrude(c.depth + 2 * PROUD));
   // local (t, z, d) → plan a + dir·t + out·(d − PROUD), height z
   return keep(local.transform([c.dir[0], c.dir[1], 0, 0, 0, 0, 1, 0, c.out[0], c.out[1], 0, 0, c.a[0] - c.out[0] * PROUD, c.a[1] - c.out[1] * PROUD, 0, 1]));
+}
+
+/** windows in the fronts of dormers set back from the walls: cutters through the front and frames (a front in a wall plane
+ *  holds an ordinary room window instead) */
+function dormerOpenings(b: Building, rooms: Room[]): { cuts: OpeningCut[]; windows: ShellWindow[] } {
+  const cuts: OpeningCut[] = [], windows: ShellWindow[] = [];
+  for (const d of b.roof?.json.dormers ?? []) {
+    const w = d.window, room = w && rooms.find((r) => r.id === w.roomId);
+    if (!w || !room) continue;
+    const [x0, y0, x1, y1] = d.rect, [i0, i1, i2, i3] = d.inner, alongX = d.front === 'N' || d.front === 'S';
+    const mid = alongX ? (i0 + i2) / 2 : (i1 + i3) / 2, half = w.width / 2;
+    // the inner face of the front, the direction along it (counter-clockwise seen from outside: from the room's left) and out
+    const out: Vec2 = d.front === 'N' ? [0, 1] : d.front === 'S' ? [0, -1] : d.front === 'E' ? [1, 0] : [-1, 0];
+    const face = d.front === 'N' ? i3 : d.front === 'S' ? i1 : d.front === 'E' ? i2 : i0, outer = d.front === 'N' ? y1 : d.front === 'S' ? y0 : d.front === 'E' ? x1 : x0;
+    const dir: Vec2 = [-out[1] || 0, out[0] || 0], depth = snap(Math.abs(outer - face)), t0 = mid - half;
+    const a: Vec2 = alongX ? [dir[0] > 0 ? t0 : t0 + w.width, face] : [face, dir[1] > 0 ? t0 : t0 + w.width];
+    const box: [number, number, number, number] = alongX
+      ? [snap(t0), snap(Math.min(face, outer) - PROUD), snap(t0 + w.width), snap(Math.max(face, outer) + PROUD)]
+      : [snap(Math.min(face, outer) - PROUD), snap(t0), snap(Math.max(face, outer) + PROUD), snap(t0 + w.width)];
+    const z0 = snap(w.sill_z), z1 = snap(w.head_z);
+    cuts.push({ id: w.id, roomId: room.id, wallId: `${d.id}-front`, kind: 'window', a: snap2(a), dir, out, outline: [[0, z0], [w.width, z0], [w.width, z1], [0, z1]], depth, box, z0, z1 });
+    windows.push({ id: w.id, roomId: room.id, wallId: `${d.id}-front`, kind: 'window', a, dir, out, width: w.width, z0, z1, depth });
+  }
+  return { cuts, windows };
 }
 
 export interface LevelSolid {
@@ -88,6 +130,12 @@ export interface LevelSolid {
   windows: ShellWindow[];
 }
 
+/** the heights every solid of a building lies between (prisms that are trimmed by roof planes start and end here) */
+function span(b: Building): [number, number] {
+  const s = shellBounds(b);
+  return [snap(s.min[2] - 1), snap(s.max[2] + 1)];
+}
+
 /** the solid of one level, built in the caller's scope; null for a level without rooms */
 export function levelSolid(geo: Geometry, keep: Keep, b: Building, level: LevelId): LevelSolid | null {
   const rooms = roomsOfLevel(b, level);
@@ -97,24 +145,52 @@ export function levelSolid(geo: Geometry, keep: Keep, b: Building, level: LevelI
   // footprint: every room grown by the wall thickness (square corners — the grid shell's "within t of a room"), merged
   const footprint = keep(keep(new CrossSection(outlines)).offset(t, 'Miter', 2));
   const plan: PlanMass = { footprint: footprint.toPolygons().map((p) => p.map((q) => [q[0], q[1]] as Vec2)), rooms: outlines };
-  const mass: Manifold[] = [
-    keep(tags.original(prism(keep, footprint, frame.bottom, frame.floor), { kind: 'slab', level })),
-    keep(tags.original(prism(keep, footprint, frame.floor, frame.last ? frame.wallTop : frame.top), { kind: 'mass', level })),
-  ];
-  if (frame.last) mass.push(keep(tags.original(prism(keep, footprint, frame.wallTop, frame.top), { kind: 'slab', level })));
-  // voids: rooms (through the top below another level), openings, stair shaft
-  const roomTop = frame.last ? frame.wallTop : frame.top + PROUD;
-  const voids: Manifold[] = rooms.map((r, i) => keep(tags.original(prism(keep, keep(new CrossSection([outlines[i]])), snap(r.floorZ), roomTop), { kind: 'room', level, roomId: r.id })));
-  const { cuts, windows } = levelOpenings(rooms, plan, frame.wallTop);
+  const roomSection = (i: number) => keep(new CrossSection([outlines[i]]));
+  const mass: Manifold[] = [keep(tags.original(prism(keep, footprint, frame.bottom, frame.floor), { kind: 'slab', level }))];
+  const voids: Manifold[] = [];
+  /** where the walls of the level rise (null: everywhere up to the frame's top) */
+  let cap: Manifold | null = null;
+  if (frame.roofed) {
+    const pieces = roofPieces(b, level), [lo, hi] = span(b), up = nextBuilt(b, level), slab = b.shell.slab;
+    // walls: up to the roof's underside, and under the next level up to its slab; rooms: up to their flat top under the roof
+    // (into the roof where it is lower — 5 mm above the walls, so no face is shared), through the top under the next level
+    const space = roofSpace(geo, keep, pieces, 'region', 0, lo, hi), spaceUp = roofSpace(geo, keep, pieces, 'inner', PROUD, lo, hi);
+    const nextFp = up ? keep(keep(new CrossSection(roomsOfLevel(b, up.id).map((r) => r.polygon.map(snap2)))).offset(t, 'Miter', 2)) : null;
+    const nextTop = up ? snap(up.floorZ - slab) : 0;
+    cap = nextFp ? keep(Manifold.union(space, prism(keep, nextFp, lo, nextTop))) : space;
+    mass.push(keep(tags.original(keep(prism(keep, footprint, frame.floor, hi).intersect(cap)), { kind: 'mass', level })));
+    rooms.forEach((r, i) => {
+      const parts = [keep(prism(keep, roomSection(i), snap(r.floorZ), snap(r.ceiling.flatZ)).intersect(spaceUp))];
+      if (nextFp) parts.push(prism(keep, keep(roomSection(i).intersect(nextFp)), snap(r.floorZ), snap(nextTop + PROUD)));
+      voids.push(keep(tags.original(keep(Manifold.union(parts)), { kind: 'room', level, roomId: r.id })));
+    });
+  } else {
+    mass.push(keep(tags.original(prism(keep, footprint, frame.floor, frame.last ? frame.wallTop : frame.top), { kind: 'mass', level })));
+    if (frame.last) mass.push(keep(tags.original(prism(keep, footprint, frame.wallTop, frame.top), { kind: 'slab', level })));
+    // rooms through the top below another level
+    const roomTop = frame.last ? frame.wallTop : frame.top + PROUD;
+    rooms.forEach((r, i) => voids.push(keep(tags.original(prism(keep, roomSection(i), snap(r.floorZ), roomTop), { kind: 'room', level, roomId: r.id }))));
+  }
+  const openings = levelOpenings(rooms, plan, frame.wallTop), dormers = dormerOpenings(b, rooms);
+  const cuts = [...openings.cuts, ...dormers.cuts], windows = [...openings.windows, ...dormers.windows];
   for (const c of cuts) voids.push(keep(tags.original(cutterSolid(geo, keep, c), { kind: 'opening', level, roomId: c.roomId, holeId: c.id, wallId: c.wallId })));
   if (stairArrivesAt(b, level)) {
     const stairId = b.stairs.find((s) => s.toLevel === level)?.id;
     for (const r of rooms) if (r.stairOpening) {
-      const box = rect(geo, keep, r.stairOpening.map(snap));
+      const box = rectSection(geo, keep, r.stairOpening.map(snap));
       voids.push(keep(tags.original(prism(keep, box, snap(frame.bottom - PROUD), snap(frame.floor + PROUD)), { kind: 'shaft', level, roomId: r.id, stairId })));
     }
   }
-  const solid = keep(keep(Manifold.union(mass)).subtract(keep(Manifold.union(voids))));
+  let solid = keep(keep(Manifold.union(mass)).subtract(keep(Manifold.union(voids))));
+  // chimneys stand in the level (also inside a room) from its slab to its top, under the roof up to the roof's underside
+  const grown = grownRooms(b, level), chimneys: Manifold[] = [];
+  for (const c of b.roof?.json.chimneys ?? []) {
+    const x = (c.rect[0] + c.rect[2]) / 2, y = (c.rect[1] + c.rect[3]) / 2;
+    if (c.bottom > frame.top - 0.01 || !grown.some((p) => inRegion(p, x, y))) continue;
+    const box = prism(keep, rectSection(geo, keep, c.rect.map(snap)), snap(Math.max(c.bottom, frame.bottom)), cap ? span(b)[1] : frame.top);
+    chimneys.push(keep(tags.original(cap ? keep(box.intersect(cap)) : box, { kind: 'chimney', level, chimneyId: c.id })));
+  }
+  if (chimneys.length) solid = keep(Manifold.union([solid, ...chimneys]));
   const status = solid.status();
   if (status !== 'NoError') throw new Error(`solid of level ${level}: ${status}`);
   return { frame, solid, tags, plan, cuts, windows };
@@ -130,7 +206,16 @@ export interface LevelMeshes {
   bounds: { min: Vec3; max: Vec3 };
   volume: number;
 }
-export interface ShellMeshes { levels: LevelMeshes[]; triangles: number; ms: number }
+export interface RoofMeshes {
+  level: LevelId;
+  solid: SolidMesh;
+  frames: PlainMesh;
+  glass: PlainMesh;
+  windows: RoofWindow[];
+  bounds: { min: Vec3; max: Vec3 };
+  volume: number;
+}
+export interface ShellMeshes { levels: LevelMeshes[]; roofs: RoofMeshes[]; triangles: number; ms: number }
 
 const meshes = new WeakMap<Building, ShellMeshes>();
 /** the generated shell of a building as plain meshes (once per building); every WASM object is freed before returning */
@@ -138,11 +223,24 @@ export function shellMeshes(geo: Geometry, b: Building): ShellMeshes {
   const hit = meshes.get(b);
   if (hit) return hit;
   const t0 = Date.now();
-  const levels = scoped((keep) => builtLevels(b).map((l) => {
-    const s = levelSolid(geo, keep, b, l.id)!, box = s.solid.boundingBox(), w = windowMeshes(s.windows);
-    return { level: l.id, frame: s.frame, solid: solidMesh(s.solid, s.tags), frames: w.frames, glass: w.glass, windows: s.windows, bounds: { min: [...box.min] as Vec3, max: [...box.max] as Vec3 }, volume: s.solid.volume() };
-  }));
-  const out: ShellMeshes = { levels, triangles: levels.reduce((n, l) => n + l.solid.index.length / 3, 0), ms: Date.now() - t0 };
-  meshes.set(b, out);
-  return out;
+  const out = scoped((keep) => {
+    const levels = builtLevels(b).map((l): LevelMeshes => {
+      const s = levelSolid(geo, keep, b, l.id)!, box = s.solid.boundingBox(), w = windowMeshes(s.windows);
+      return { level: l.id, frame: s.frame, solid: solidMesh(s.solid, s.tags), frames: w.frames, glass: w.glass, windows: s.windows, bounds: { min: [...box.min] as Vec3, max: [...box.max] as Vec3 }, volume: s.solid.volume() };
+    });
+    const [lo, hi] = span(b);
+    const roofs = (b.roof?.levels ?? []).flatMap((level): RoofMeshes[] => {
+      const r = roofSolid(geo, keep, b, level, lo, hi);
+      if (!r) return [];
+      const box = r.solid.boundingBox(), w = windowMeshes(r.windows.map((x) => x.frame));
+      return [{ level, solid: solidMesh(r.solid, r.tags), frames: w.frames, glass: w.glass, windows: r.windows, bounds: { min: [...box.min] as Vec3, max: [...box.max] as Vec3 }, volume: r.solid.volume() }];
+    });
+    return { levels, roofs };
+  });
+  const triangles = [...out.levels, ...out.roofs].reduce((n, l) => n + l.solid.index.length / 3, 0);
+  const res: ShellMeshes = { ...out, triangles, ms: Date.now() - t0 };
+  meshes.set(b, res);
+  return res;
 }
+
+export type { CrossSection };

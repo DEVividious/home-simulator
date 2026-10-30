@@ -109,6 +109,19 @@ describe('package validation', () => {
     expect(validateProject(p)).toContain('manifest.levels: level "L2" has a different floor (2.85) than the room data (3)');
   });
 
+  it('roof: parts on known levels, dormers on known parts, a ceiling under the roof only on a level with a part', () => {
+    const p = clone(house), roof = p.building.roof!;
+    expect(validateProject(p)).toEqual([]);
+    roof.parts.push({ ...roof.parts[0], id: 'wing', level: 'L9' }, { ...roof.parts[0], id: 'wing2', rect: undefined, type: 'hip' });
+    roof.dormers = [{ id: 'DD', part: 'nope', type: 'gable', front: 'S', rect: [1, 0, 3, 2], inner: [1.2, 0.3, 2.8, 2], extent: [0.8, -0.2, 3.2, 2], planes: roof.parts[0].planes, window: { id: 'W99', roomId: 'X1', width: 1, sill_z: 4, head_z: 5 } }];
+    p.building.rooms.rooms[0].ceiling = { kind: 'roof', flat_z: 2.7 };
+    expect(validateProject(p)).toEqual([
+      'roof part "wing": unknown level "L9"', 'roof part "wing2": a hip part needs a rect (a polygon is for flat parts only)',
+      'dormer "DD": unknown roof part "nope"', 'dormer "DD": window in unknown room "X1"',
+      `room "${p.building.rooms.rooms[0].id}": its ceiling is under the roof but level "L0" has no roof part`,
+    ]);
+  });
+
   it('module enabled in the manifest without its data — error naming the missing data', () => {
     const p = clone(demo);
     p.manifest.modules = ['site', 'environment', 'sun', 'stairs'];

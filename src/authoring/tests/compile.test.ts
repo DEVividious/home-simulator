@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { compilePlan, normalizePolygon, type CatalogItemInfo } from '@home-sim/core/authoring/compile';
+import { building } from '@home-sim/core/model/building';
 import { outerOutline } from '@home-sim/core/model/outline';
 import { packageErrors } from '../../project/registry';
 
@@ -224,17 +225,27 @@ describe('sloped ceilings (attic levels)', () => {
     expect(codes(0.7)).toContain('furniture.ceiling');       // against the knee wall
     expect(codes(4.3)).not.toContain('furniture.ceiling');   // under the ridge
   });
-  it('two height lines give the slope; the ridge defaults to the middle of the level', () => {
+  /** the old single-ridge formula (the test oracle, ADR 0027): min(flat, z_at_ridge − slope·|d − ridge|) above the floor */
+  const oracle = (r: ReturnType<typeof compile>, axis: 0 | 1, ridge: number, zr: number, k: number, flat: number) => {
+    const room = building(r.project!.building).roomById.get('A1')!, [x0, y0, x1, y1] = room.bbox;
+    for (let i = 0; i <= 12; i++) for (let j = 0; j <= 12; j++) {
+      const x = x0 + ((x1 - x0) * i) / 12, y = y0 + ((y1 - y0) * j) / 12, want = Math.min(flat, zr - k * Math.abs((axis === 0 ? x : y) - ridge)) - 3;
+      expect(Math.abs(room.ceiling.heightAt(x, y) - want)).toBeLessThan(1e-3);
+    }
+  };
+  it('two height lines give the slope; the ridge defaults to the middle of the level — a gable part with the same ceilings', () => {
     const r = compile(attic({ ridge: 'X', lines: [{ at: 0.3, height: 1.4 }, { at: 1.3, height: 2.2 }] }));
     expect(errors(r)).toEqual([]);
-    expect(ceilingOf(r)).toEqual({ kind: 'attic', flat_z: 5.5, ridge_y: 4.3, z_at_ridge: r3(3 + 1.4 + 0.8 * 4), slope: 0.8 });
+    expect(ceilingOf(r)).toEqual({ kind: 'roof', flat_z: 5.5 });
+    expect(r.project!.building.roof!.parts).toMatchObject([{ id: 'slope-L1', level: 'L1', type: 'gable', ridge: 'X', rect: [0, 0, 6.6, 8.6] }]);
+    oracle(r, 1, 4.3, 3 + 1.4 + 0.8 * 4, 0.8, 5.5);
     expect(packageErrors(r.project, 'test-flat', new Set(catalog.map((c) => c.id)))).toEqual([]);
   });
   it('a ridge along Y uses x; one line and the pitch work too', () => {
     const r = compile(attic({ ridge: 'Y', ridgeAt: 3.3, lines: [{ at: 0.3, height: 1.2 }], pitch: 45 }));
     expect(errors(r)).toEqual([]);
-    expect(ceilingOf(r)).toMatchObject({ kind: 'attic', ridge_x: 3.3, z_at_ridge: 7.2, slope: 1 });
-    expect(ceilingOf(r)).not.toHaveProperty('ridge_y');
+    expect(r.project!.building.roof!.parts[0]).toMatchObject({ ridge: 'Y', pitch: 45 });
+    oracle(r, 0, 3.3, 7.2, 1, 5.5);
   });
   it('lines on both sides of the ridge, or one line without the pitch, are errors', () => {
     expect(errors(compile(attic({ ridge: 'X', lines: [{ at: 0.3, height: 1.4 }, { at: 8.3, height: 1.4 }] })))).toContain('level.slope');
@@ -246,13 +257,17 @@ describe('sloped ceilings (attic levels)', () => {
         { id: 'A1', name: 'Attic room', level: 'L1', kind: 'bed', rect: [0.3, 0.3, 4.3, 8.3] },
         { id: 'A2', name: 'Store', level: 'L1', kind: 'storage', rect: [4.42, 0.3, 6.3, 8.3], ceiling: 2.2 },
       ],
-      roofWindows: [{ id: 'RW1', room: 'A1', rect: [1.5, 1.0, 2.28, 2.4] }],
+      roofWindows: [{ id: 'RW1', room: 'A1', rect: [1.5, 0.5, 2.28, 1.6] }],
     }));
     expect(errors(r)).toEqual([]);
     const [a1, a2] = r.project!.building.rooms.rooms;
-    expect(a1.ceiling.kind).toBe('attic');
-    expect(a2.ceiling).toEqual({ kind: 'flat', z: 5.2 });
-    expect(a1.roof_windows).toEqual([{ id: 'RW1', plan_rect: [1.5, 1, 2.28, 2.4] }]);
+    expect(a1.ceiling.kind).toBe('roof');
+    // under the same roof: the store keeps its own flat ceiling where the roof is higher and follows the slope near the eaves
+    expect(a2.ceiling).toEqual({ kind: 'roof', flat_z: 5.2 });
+    const store = building(r.project!.building).roomById.get('A2')!;
+    expect(store.ceiling.heightAt(5.3, 4.3)).toBeCloseTo(2.2, 6);
+    expect(store.ceiling.heightAt(5.3, 0.3)).toBeCloseTo(1.4, 4);   // planes are stored to 1e-6
+    expect(a1.roof_windows).toEqual([{ id: 'RW1', plan_rect: [1.5, 0.5, 2.28, 1.6] }]);
   });
 });
 

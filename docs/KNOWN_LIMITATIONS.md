@@ -9,19 +9,31 @@ the behaviour is named in brackets. When a limit is lifted, remove it here in th
   outlines. Every room edge must run along X or Y: doors and windows are placed on walls along the plan axes, the compiler
   rejects a slanted edge (`room.orthogonal`), and validation rejects a package without `assets.model` whose outlines are not
   axis-aligned (`packages/core/src/model/building.ts`, `packages/core/src/authoring/compile.ts`, `src/project/validate.ts`).
-- **The generated shell is a box.** Every level is one closed solid: the room outlines grown by the exterior wall, minus the
-  rooms, the door and window openings and the stair shaft — a floor slab under every level and a flat slab over the top
-  level, up to the highest ceiling of the level (`packages/core/src/solid/levels.ts`). Sloped attic ceilings (level `slope`
-  in `plan.json`) are drawn inside as ceiling and gable finishes, but the outside shows no pitched roof. A sloped ceiling is
-  one symmetric roof per level with its ridge along X or Y; hips, dormers, valleys and different pitches on each side are not
-  supported. Roof windows are openings in the ceiling finish (light comes through), without a frame or glass, and do not show
-  outside.
+- **Roofs are unions of rectangular wings.** A generated building is one closed solid per level (the room outlines grown by
+  the exterior wall, minus the rooms, the openings and the stair shaft) and one roof solid per level with roof parts
+  (`packages/core/src/solid/levels.ts`, `roofSolid.ts`). A pitched part (gable, hip, shed) covers one axis-aligned rectangle;
+  only a flat part may cover a polygon. L-, T- and U-shaped roofs are several wings; a wing whose end meets a crossing wing is
+  carried into it up to its ridge — joins between parallel wings, or of a shed with another wing, are not resolved (they meet as
+  given). Different overhangs of two joined wings (eaves 0.5 against a verge 0.3) leave a small step at the outer corner. No
+  roof follows a slanted outline (no straight skeleton), and there are no mansard, gambrel, barrel or conical roofs. Dormers are
+  gable or shed boxes on one plane; eyebrow, hipped and wall dormers are not supported. Chimneys are boxes from the slab of the
+  lowest level they stand in (inside a room they stand there as a column).
+- **The grid fallback has no roof.** With `?shell=grid`, or when the solid kernel cannot run, the shell is the older grid of
+  boxes with a flat slab on the top level; sloped ceilings are then only the interior finishes.
+- **Old packages: one gable per attic level.** A package written before roofs had attic ceilings only; at load a level whose
+  rooms all share one attic ceiling gets a gable with the same planes, the default thicknesses and overhangs
+  (`roofFromAttic`, `packages/core/src/model/roof.ts`). A level that mixes attic and flat ceilings gets no roof (its attic
+  rooms keep their sloped ceilings inside a flat-topped level). Rebuilding from `plan.json` gives the full roof.
+- **A lower level not covered by the one above is open without a roof part.** Where an upper level is smaller than the one
+  below it, the part of the lower level outside it needs a roof part (flat or pitched); without one it stays open at the top
+  (the compiler warns: `roof.missing`).
+- **The roof is hidden in the section of the level it covers.** The level section and the room views show the rooms under the
+  slopes from above with the walls cut; the roof itself (and its roof windows) is not cut but hidden there
+  (`src/home/scene/CoreShellLayer.tsx`). Wall finishes do not cover the cheeks of a dormer (they show the plain shell wall).
 - **The solid kernel needs WebAssembly and module workers.** The shell is built with manifold-3d (WASM, ~0.5 MB, ~0.2 MB
   gzipped) in a worker (`src/home/three/coreWorker.ts`). Where it cannot load or run, the older grid shell is shown
   instead; `?shell=grid` forces it. The grid shell (`packages/core/src/model/gridShell.ts`) stays for one release and still
   gives the wall mass of the plan views.
-- **No roof without a model.** There is no pitched roof, gable or chimney in the generated shell. A building that needs them
-  must bring a GLB model (`assets.model`).
 - **One stair type.** `StairDef` supports only `kind: "u-turn"`: two flights with the same number of risers, a landing and a
   gap between the flights. Straight, L-shaped, winding and spiral stairs are not supported. The stair box is axis-aligned; it
   can face any of the four directions and turn either way (`up`, `turn` in `plan.json`), but not stand at another angle

@@ -28,7 +28,7 @@ describe('sloped ceilings from plan.json', () => {
   for (const ridge of ['X', 'Y'] as const) {
     it(`ridge along ${ridge}: knee walls 1.40, flat top 2.50, geometry follows the slope`, () => withProject(attic(ridge), () => {
       const room = roomById('A1')!, at = (u: number, v: number) => (ridge === 'X' ? room.ceiling.heightAt(v, u) : room.ceiling.heightAt(u, v));
-      expect(room.ceiling.kind).toBe('attic');
+      expect(room.ceiling.kind).toBe('roof');
       expect(at(0.3, 4)).toBeCloseTo(1.4, 6);          // on the knee wall
       expect(at(1.3, 4)).toBeCloseTo(2.2, 6);          // on the 2.20 line
       expect(at(4.3, 4)).toBeCloseTo(2.5, 6);          // flat top in the middle

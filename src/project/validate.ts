@@ -70,6 +70,19 @@ export function validateProject(p: ProjectPackage, catalogIds?: ReadonlySet<stri
   for (const id of Object.keys(p.building.doorFacts?.overrides ?? {})) if (!doorIds.has(id)) e.push(`doorFacts.overrides: unknown door "${id}"`);
   // --- stairs
   for (const s of p.building.stairs ?? []) for (const l of [s.fromLevel, s.toLevel]) if (!levelIds.has(l)) e.push(`stairs "${s.id}": unknown level "${l}"`);
+  // --- roof: parts on known levels; dormers on known parts with their windows in rooms; a ceiling under the roof needs a part on its level
+  const roof = p.building.roof, partIds = new Set<string>(), roofLevels = new Set(roof?.parts.map((x) => x.level) ?? []);
+  for (const part of roof?.parts ?? []) {
+    if (partIds.has(part.id)) e.push(`roof part "${part.id}": repeated id`);
+    partIds.add(part.id);
+    if (!levelIds.has(part.level)) e.push(`roof part "${part.id}": unknown level "${part.level}"`);
+    if (part.type !== 'flat' && !part.rect) e.push(`roof part "${part.id}": a ${part.type} part needs a rect (a polygon is for flat parts only)`);
+  }
+  for (const d of roof?.dormers ?? []) {
+    if (!partIds.has(d.part)) e.push(`dormer "${d.id}": unknown roof part "${d.part}"`);
+    if (d.window && !roomIds.has(d.window.roomId)) e.push(`dormer "${d.id}": window in unknown room "${d.window.roomId}"`);
+  }
+  for (const r of data.rooms) if (r.ceiling.kind === 'roof' && !roofLevels.has(r.level)) e.push(`room "${r.id}": its ceiling is under the roof but level "${r.level}" has no roof part`);
   // --- default furnishing and electrical
   const keys = new Set<string>();
   for (const it of p.interiors.items) {

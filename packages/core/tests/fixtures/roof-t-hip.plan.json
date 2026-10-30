@@ -1,0 +1,120 @@
+{
+ "schema": "home-simulator/plan",
+ "version": 1,
+ "project": {
+  "id": "roof-t-hip",
+  "name": "T-shaped hip roof",
+  "buildingType": "house"
+ },
+ "units": "m",
+ "source": "synthetic test fixture: a T-shaped storey under two hip wings",
+ "levels": [
+  {
+   "id": "G",
+   "name": "Ground",
+   "floorZ": 0,
+   "ceiling": 2.6
+  }
+ ],
+ "rooms": [
+  {
+   "id": "M1",
+   "name": "M1",
+   "level": "G",
+   "kind": "living",
+   "rect": [
+    0.3,
+    0.3,
+    13.7,
+    7.7
+   ]
+  },
+  {
+   "id": "S1",
+   "name": "S1",
+   "level": "G",
+   "kind": "bed",
+   "rect": [
+    4.3,
+    7.82,
+    9.7,
+    13.7
+   ]
+  }
+ ],
+ "doors": [
+  {
+   "id": "D0",
+   "between": [
+    "M1",
+    "exterior"
+   ],
+   "at": [
+    0.15,
+    4.0
+   ],
+   "width": 1.0
+  },
+  {
+   "id": "D1",
+   "between": [
+    "M1",
+    "S1"
+   ],
+   "at": [
+    7.0,
+    7.76
+   ],
+   "width": 0.9
+  }
+ ],
+ "windows": [
+  {
+   "id": "W1",
+   "room": "M1",
+   "at": [
+    7.0,
+    0.3
+   ],
+   "width": 2.0
+  },
+  {
+   "id": "W2",
+   "room": "S1",
+   "at": [
+    7.0,
+    13.7
+   ],
+   "width": 1.2
+  }
+ ],
+ "roof": {
+  "parts": [
+   {
+    "id": "main",
+    "level": "G",
+    "type": "hip",
+    "rect": [
+     0,
+     0,
+     14,
+     8
+    ],
+    "pitch": 35
+   },
+   {
+    "id": "wing",
+    "level": "G",
+    "type": "hip",
+    "rect": [
+     4,
+     8,
+     10,
+     14
+    ],
+    "pitch": 35,
+    "ridge": "Y"
+   }
+  ]
+ }
+}

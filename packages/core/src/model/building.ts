@@ -2,9 +2,10 @@
 // package's `building` block by a pure function and cached by the identity of that block (ADR 0023). The app adapts it
 // through derived() (src/home/model/building.ts); tools and the plugin call it directly. Translated text (wall labels) is
 // added by the app, never here.
-import { ceilingOf, type CeilingProfile } from './ceiling.ts';
+import { flatCeiling, roofCeiling, type CeilingProfile } from './ceiling.ts';
 import { ccw, centroid, dist, norm, pointInPolygon, round, segDist, sub } from './geom2d.ts';
-import type { DoorDef, LevelId, ProjectPackage, RoomJson, RoomKind, ShellSpec, StairDef, Vec2 } from '../package/types.ts';
+import { atticPlanes, roofFromAttic, roofModel, type RoofModel, type RoofPiece } from './roof.ts';
+import type { DoorDef, LevelId, ProjectPackage, Rect, RoomJson, RoomKind, ShellSpec, StairDef, Vec2 } from '../package/types.ts';
 
 export type BuildingData = ProjectPackage['building'];
 
@@ -87,14 +88,28 @@ export interface Building {
   stairs: StairDef[];
   /** generated shell parameters (defaults + the package's `shell`) */
   shell: ShellSpec;
+  /** the roof (building.roof, or derived from attic ceilings); null — no roof: the top level is closed by a flat slab */
+  roof: RoofModel | null;
 }
 
 /** whether edge (a → b) lies on the line X = c / Y = c */
 const onLine = (a: Vec2, b: Vec2, axis: 'X' | 'Y', c: number, tol = 2e-3) => (axis === 'X' ? Math.abs(a[0] - c) < tol && Math.abs(b[0] - c) < tol : Math.abs(a[1] - c) < tol && Math.abs(b[1] - c) < tol);
 
-function buildRoom(r: RoomJson): Room {
+const EVERYWHERE: Rect = [-1e6, -1e6, 1e6, 1e6];
+/** the ceiling profile of a room: flat; under the roof of its level; or an attic ceiling (its own two planes — the single-ridge formula of packages written before the roof) */
+function ceilingFor(r: RoomJson, poly: Vec2[], roof: RoofModel | null, roofWindows: Rect[]): CeilingProfile {
+  const c = r.ceiling, under = roof?.byLevel(r.level) ?? [];
+  if (c.kind === 'attic') {
+    const own: RoofPiece = { id: `${r.id}-attic`, kind: 'part', level: r.level, region: EVERYWHERE, inner: EVERYWHERE, cover: EVERYWHERE, planes: atticPlanes(c) };
+    return roofCeiling([own], c.flat_z!, r.floor_z, poly, roofWindows);
+  }
+  if (c.kind === 'roof') return roofCeiling(under, c.flat_z!, r.floor_z, poly, roofWindows);
+  return under.length ? roofCeiling(under, c.z!, r.floor_z, poly, roofWindows) : flatCeiling(c.z!, r.floor_z, poly);
+}
+
+function buildRoom(r: RoomJson, roof: RoofModel | null): Room {
   const poly = ccw(r.polygon.map((p) => [p[0], p[1]] as Vec2));
-  const ceiling = ceilingOf(r.ceiling, r.floor_z);
+  const ceiling = ceilingFor(r, poly, roof, r.roof_windows.map((w) => [w.plan_rect[0], w.plan_rect[1], w.plan_rect[2], w.plan_rect[3]]));
   const walls: RoomWall[] = poly.map((a, i) => {
     const b = poly[(i + 1) % poly.length], d = norm(sub(b, a));
     return { id: `${r.id}-w${i + 1}`, index: i + 1, roomId: r.id, a, b, length: round(dist(a, b), 4), dir: d, inward: [-d[1], d[0]] as Vec2, holes: [] };
@@ -160,13 +175,15 @@ const cache = new WeakMap<BuildingData, Building>();
 export function building(data: BuildingData): Building {
   const hit = cache.get(data);
   if (hit) return hit;
-  const src = data.rooms;
+  const src = data.rooms, shell = { ...SHELL_DEFAULTS, ...data.shell };
+  const attic = data.roof ? null : roofFromAttic(src.rooms, shell.exteriorWall);
+  const roof = data.roof ? roofModel(data.roof) : attic ? roofModel(attic, true) : null;
   const levels: Level[] = Object.entries(src.levels).map(([id, l]) => ({ id, name: l.name, floorZ: l.floor_z, cutHeight: l.cut_height ?? DEFAULT_CUT_HEIGHT, planWallOffset: l.plan_wall_offset ?? DEFAULT_PLAN_WALL_OFFSET })).sort((a, b) => a.floorZ - b.floorZ);
-  const rooms = src.rooms.map(buildRoom);
+  const rooms = src.rooms.map((r) => buildRoom(r, roof));
   const roomsByLevel = new Map<LevelId, Room[]>(levels.map((l) => [l.id, rooms.filter((r) => r.level === l.id)]));
   const b: Building = {
     levels, levelById: new Map(levels.map((l) => [l.id, l])), rooms, roomById: new Map(rooms.map((r) => [r.id, r])), roomsByLevel,
-    doors: data.doors, stairs: data.stairs ?? NO_STAIRS, shell: { ...SHELL_DEFAULTS, ...data.shell },
+    doors: data.doors, stairs: data.stairs ?? NO_STAIRS, shell, roof,
   };
   cache.set(data, b);
   return b;

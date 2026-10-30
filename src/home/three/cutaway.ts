@@ -108,13 +108,16 @@ export function visibleAt(p: THREE.Vector3, boxes = true, cutY = clipState.cutY)
 }
 
 type Patched = THREE.Mesh & { __clipRaycast?: boolean };
-/** the raycast skips parts hidden by the section and the cutaway (a click hits what is visible); `boxes: false` — furniture (level section, no cutaways) */
+/** the raycast skips parts hidden by the section and the cutaway, and hidden meshes (three.js and the pointer events raycast
+ *  invisible objects too — a roof hidden in a section must not catch the clicks on the rooms under it): a click hits what is
+ *  visible; `boxes: false` — furniture (level section, no cutaways) */
 export function patchRaycast(mesh: THREE.Mesh, boxes = true) {
   const m = mesh as Patched;
   if (m.__clipRaycast) return;
   m.__clipRaycast = true;
   const orig = mesh.raycast;
   mesh.raycast = function (raycaster: THREE.Raycaster, intersects: THREE.Intersection[]) {
+    for (let o: THREE.Object3D | null = this; o; o = o.parent) if (!o.visible) return;
     const tmp: THREE.Intersection[] = [];
     orig.call(this, raycaster, tmp);
     if (!tmp.length) return;
@@ -171,13 +174,14 @@ export function cutBoxes(room: HomeRoom, walls: HomeRoom['walls'], cutHeight = 2
   const { keep, depth, top } = CUTAWAY, out: CutBox[] = [];
   for (const w of walls) {
     out.push({ w, d0: -0.01, d1: depth, z0: room.floorZ + keep, z1: room.floorZ + top, floor: room.floorZ });
-    if (room.ceiling.kind === 'attic') {
+    if (room.ceiling.kind !== 'flat') {
       // roof slope above the room next to a knee wall: from the wall face to where the ceiling reaches the section height
       const mx = w.a[0] + w.dir[0] * w.length / 2, my = w.a[1] + w.dir[1] * w.length / 2;
-      const h0 = room.ceiling.heightAt(mx, my);
+      const at = (d: number) => room.ceiling.heightAt(mx + w.inward[0] * d, my + w.inward[1] * d), h0 = at(0.01);
       if (h0 < cutHeight - 0.05) {
-        const s = (cutHeight - h0) / (room.ceiling.slope ?? 0.84) + 0.3;
-        out.push({ w, d0: -s, d1: 0.02, z0: room.floorZ + Math.max(0.3, h0 - 0.4), z1: room.floorZ + top });
+        let s = 0.01;
+        while (s < 8 && at(s) < cutHeight) s += 0.05;
+        out.push({ w, d0: -(s + 0.3), d1: 0.02, z0: room.floorZ + Math.max(0.3, h0 - 0.4), z1: room.floorZ + top });
       }
     }
   }

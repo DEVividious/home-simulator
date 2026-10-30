@@ -27,8 +27,7 @@ const m2 = (x: number) => `${fmtNum(x, 1)} m²`;
 
 export function roomHeightText(r: HomeRoom) {
   if (r.ceiling.kind === 'flat') return t('interiorsUi.heightFlat', { h: fmtM(r.ceiling.heightAt(r.center[0], r.center[1])) });
-  const ys = r.polygon.map((p) => r.ceiling.heightAt(p[0], p[1])), max = Math.max(r.ceiling.heightAt(r.center[0], r.center[1]), ...ys);
-  return t('interiorsUi.heightSloped', { h: fmtM(max) });
+  return t('interiorsUi.heightSloped', { h: fmtM(r.ceiling.range()[1]) });
 }
 
 /** phone: three large, unambiguous room modes (a function: labels follow the UI language) */

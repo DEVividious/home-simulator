@@ -23,6 +23,11 @@ The shared language of code, documents and conversations. English names are the 
 - **Opening** — a gap in a wall: door, passage, window; in wall coordinates a **wall hole**.
 - **Door** — an opening with a moving leaf joining two rooms or a room and the exterior; behaviour from data (hinge, direction, angle, type).
 - **Shell** — walls, slabs and roof in the scene: from the package's **model file** or **generated** from room outlines.
+- **Roof part** (wing) — the roof over a rectangle of a level's walls: gable, hip, shed or flat, bounded by its **planes** (the
+  underside of the structure; the covering lies above). A complex roof is the union of parts; a **dormer** is a small wing
+  standing on one plane of a part. *Avoid*: "attic" as a code concept — a room under the roof has a ceiling of kind `roof`.
+- **Knee wall** — the height above the floor where the underside of the roof meets the outer face of the eaves walls (`knee`).
+- **Eaves / verge** — the roof's overhang beyond the walls at the low edges / at a gable end.
 - **Site** and **environment** — the plot and what is around it. Both optional.
 
 ## Furnishing

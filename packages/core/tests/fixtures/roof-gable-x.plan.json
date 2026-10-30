@@ -1,0 +1,101 @@
+{
+ "schema": "home-simulator/plan",
+ "version": 1,
+ "project": {
+  "id": "roof-gable-x",
+  "name": "Gable along X",
+  "buildingType": "house"
+ },
+ "units": "m",
+ "source": "synthetic test fixture: one storey, a gable roof over the flat ceiling",
+ "levels": [
+  {
+   "id": "G",
+   "name": "Ground",
+   "floorZ": 0,
+   "ceiling": 2.6
+  }
+ ],
+ "rooms": [
+  {
+   "id": "A",
+   "name": "A",
+   "level": "G",
+   "kind": "living",
+   "rect": [
+    0.3,
+    0.3,
+    5.0,
+    6.7
+   ]
+  },
+  {
+   "id": "B",
+   "name": "B",
+   "level": "G",
+   "kind": "bed",
+   "rect": [
+    5.12,
+    0.3,
+    9.7,
+    6.7
+   ]
+  }
+ ],
+ "doors": [
+  {
+   "id": "D0",
+   "between": [
+    "A",
+    "exterior"
+   ],
+   "at": [
+    0.15,
+    3.0
+   ],
+   "width": 1.0
+  },
+  {
+   "id": "D1",
+   "between": [
+    "A",
+    "B"
+   ],
+   "at": [
+    5.06,
+    3.0
+   ],
+   "width": 0.9
+  }
+ ],
+ "windows": [
+  {
+   "id": "W1",
+   "room": "A",
+   "at": [
+    2.5,
+    0.3
+   ],
+   "width": 1.5
+  },
+  {
+   "id": "W2",
+   "room": "B",
+   "at": [
+    7.5,
+    6.7
+   ],
+   "width": 1.2
+  }
+ ],
+ "roof": {
+  "parts": [
+   {
+    "id": "main",
+    "level": "G",
+    "type": "gable",
+    "pitch": 35
+   }
+  ]
+ }
+}

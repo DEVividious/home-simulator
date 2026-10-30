@@ -67,7 +67,7 @@ describe('rooms (from the project package, every level)', () => {
   it('sloped ceiling: height = min(flat top, slope); 1.50 m at the knee wall, 2.60 m under the flat part; polygonal glazing as a wall hole', () => {
     withProject(slopedCeiling(), () => {
       const r = room('A1');
-      expect(r.ceiling.kind).toBe('attic');
+      expect(r.ceiling.kind).toBe('roof');                 // an attic ceiling of an old package: under the roof derived from it
       // ridge at y = 2.80, z 4.00, slope 1:1, flat top 2.60 → flat for |y − 2.80| ≤ 1.40
       expect(r.ceiling.heightAt(2, 2.8)).toBeCloseTo(2.6, 6);
       expect(r.ceiling.heightAt(2, 1.4)).toBeCloseTo(2.6, 6);

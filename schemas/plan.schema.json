@@ -223,7 +223,7 @@
       "exclusiveMinimum": 0
      },
      "slope": {
-      "description": "sloped ceilings of every room on this level (attic); a room with its own `ceiling` stays flat",
+      "description": "sloped ceilings of every room on this level (attic): without a roof block it becomes a gable roof part over the level; with one, a cross-check. A room's own `ceiling` is its flat top",
       "type": "object",
       "properties": {
        "ridge": {
@@ -708,6 +708,364 @@
     ],
     "additionalProperties": false
    }
+  },
+  "roof": {
+   "description": "the roof: parts over the levels (gable, hip, shed, flat), dormers, chimneys; without it a level slope builds a gable part",
+   "type": "object",
+   "properties": {
+    "covering": {
+     "default": 0.05,
+     "description": "covering thickness (tiles, sheet) across the planes [m]",
+     "type": "number",
+     "minimum": 0
+    },
+    "buildup": {
+     "default": 0.25,
+     "description": "thickness of the structure under it (rafters, insulation, lining) [m]",
+     "type": "number",
+     "exclusiveMinimum": 0
+    },
+    "eaves": {
+     "default": 0.5,
+     "description": "default overhang at the eaves [m]",
+     "type": "number",
+     "minimum": 0
+    },
+    "verge": {
+     "default": 0.3,
+     "description": "default overhang at a gable end [m]",
+     "type": "number",
+     "minimum": 0
+    },
+    "ridgeHeight": {
+     "description": "height of the highest ridge (top of the covering) above z = 0 from the drawings [m] — checked (±10 cm)",
+     "type": "number",
+     "exclusiveMinimum": 0
+    },
+    "parts": {
+     "minItems": 1,
+     "type": "array",
+     "items": {
+      "type": "object",
+      "properties": {
+       "id": {
+        "type": "string",
+        "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
+       },
+       "level": {
+        "type": "string",
+        "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$",
+        "description": "the level the part covers: its rooms get their ceilings from it"
+       },
+       "type": {
+        "type": "string",
+        "enum": [
+         "gable",
+         "hip",
+         "shed",
+         "flat"
+        ]
+       },
+       "rect": {
+        "description": "[x0, y0, x1, y1] — OUTER faces of the walls under the part (points); or \"rooms\"; default: the level outline (it must be a rectangle unless flat)",
+        "type": "array",
+        "prefixItems": [
+         {
+          "type": "number"
+         },
+         {
+          "type": "number"
+         },
+         {
+          "type": "number"
+         },
+         {
+          "type": "number"
+         }
+        ],
+        "items": false,
+        "minItems": 4,
+        "maxItems": 4
+       },
+       "rooms": {
+        "description": "the part covers these rooms (their outline grown by the exterior wall)",
+        "minItems": 1,
+        "type": "array",
+        "items": {
+         "type": "string",
+         "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
+        }
+       },
+       "polygon": {
+        "description": "flat part only: outer faces of the walls under it, axis-aligned edges",
+        "minItems": 4,
+        "type": "array",
+        "items": {
+         "type": "array",
+         "prefixItems": [
+          {
+           "type": "number"
+          },
+          {
+           "type": "number"
+          }
+         ],
+         "items": false,
+         "minItems": 2,
+         "maxItems": 2
+        }
+       },
+       "ridge": {
+        "description": "gable / hip: the ridge runs along this plan axis (default: along the longer side)",
+        "type": "string",
+        "enum": [
+         "X",
+         "Y"
+        ]
+       },
+       "ridgeAt": {
+        "description": "coordinate of the ridge line on the other axis (a point coordinate); default: the middle",
+        "type": "number"
+       },
+       "down": {
+        "description": "shed (and a flat roof with a pitch): the side the roof falls towards",
+        "type": "string",
+        "enum": [
+         "N",
+         "S",
+         "E",
+         "W"
+        ]
+       },
+       "pitch": {
+        "description": "roof pitch [°] (gable / hip / shed: 5–75; flat: 0–5)",
+        "type": "number",
+        "minimum": 0,
+        "exclusiveMaximum": 80
+       },
+       "pitchEnds": {
+        "description": "hip: pitch of the two end planes [°] (default: pitch)",
+        "type": "number",
+        "exclusiveMinimum": 0,
+        "exclusiveMaximum": 80
+       },
+       "knee": {
+        "description": "height above the level floor where the underside of the roof structure meets the OUTER face of the eaves walls [m] (knee wall); default: the level ceiling + slab (a roof on top of the ceiling), for flat: the level ceiling",
+        "type": "number"
+       },
+       "lines": {
+        "description": "instead of knee: ceiling height lines from the plan (1.40 / 2.20); two lines on one side of the ridge give the pitch",
+        "minItems": 1,
+        "maxItems": 2,
+        "type": "array",
+        "items": {
+         "type": "object",
+         "properties": {
+          "at": {
+           "type": "number",
+           "description": "coordinate across the ridge (point units)"
+          },
+          "height": {
+           "type": "number",
+           "exclusiveMinimum": 0,
+           "description": "ceiling height on this line [m]"
+          }
+         },
+         "required": [
+          "at",
+          "height"
+         ],
+         "additionalProperties": false
+        }
+       },
+       "eaves": {
+        "description": "overhang at the eaves [m] (default: roof.eaves; flat: 0)",
+        "type": "number",
+        "minimum": 0
+       },
+       "verge": {
+        "description": "overhang at a gable end [m] (default: roof.verge)",
+        "type": "number",
+        "minimum": 0
+       },
+       "parapet": {
+        "description": "flat: parapet height above the covering [m]",
+        "type": "number",
+        "exclusiveMinimum": 0
+       },
+       "source": {
+        "type": "string"
+       }
+      },
+      "required": [
+       "id",
+       "level",
+       "type"
+      ],
+      "additionalProperties": false
+     }
+    },
+    "dormers": {
+     "default": [],
+     "type": "array",
+     "items": {
+      "type": "object",
+      "properties": {
+       "id": {
+        "type": "string",
+        "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
+       },
+       "part": {
+        "type": "string",
+        "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$",
+        "description": "the roof part it stands on"
+       },
+       "type": {
+        "type": "string",
+        "enum": [
+         "gable",
+         "shed"
+        ]
+       },
+       "rect": {
+        "type": "array",
+        "prefixItems": [
+         {
+          "type": "number"
+         },
+         {
+          "type": "number"
+         },
+         {
+          "type": "number"
+         },
+         {
+          "type": "number"
+         }
+        ],
+        "items": false,
+        "minItems": 4,
+        "maxItems": 4,
+        "description": "[x0, y0, x1, y1] — outer faces of its walls in plan (points); the back may stop where it meets the roof — it is carried on to the ridge"
+       },
+       "front": {
+        "type": "number",
+        "exclusiveMinimum": 0,
+        "description": "height above the level floor of the underside of the dormer roof at its eaves (gable: at the cheeks; shed: at the front) [m]"
+       },
+       "pitch": {
+        "type": "number",
+        "exclusiveMinimum": 0,
+        "exclusiveMaximum": 80,
+        "description": "pitch of the dormer roof [°]"
+       },
+       "window": {
+        "description": "the window in its front: centred, sill / head above the room floor",
+        "type": "object",
+        "properties": {
+         "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
+         },
+         "room": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
+         },
+         "width": {
+          "type": "number",
+          "exclusiveMinimum": 0
+         },
+         "sill": {
+          "type": "number",
+          "minimum": 0
+         },
+         "head": {
+          "type": "number",
+          "exclusiveMinimum": 0
+         }
+        },
+        "required": [
+         "id",
+         "room",
+         "width"
+        ],
+        "additionalProperties": false
+       },
+       "source": {
+        "type": "string"
+       }
+      },
+      "required": [
+       "id",
+       "part",
+       "type",
+       "rect",
+       "front",
+       "pitch"
+      ],
+      "additionalProperties": false
+     }
+    },
+    "chimneys": {
+     "default": [],
+     "type": "array",
+     "items": {
+      "type": "object",
+      "properties": {
+       "id": {
+        "type": "string",
+        "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
+       },
+       "rect": {
+        "type": "array",
+        "prefixItems": [
+         {
+          "type": "number"
+         },
+         {
+          "type": "number"
+         },
+         {
+          "type": "number"
+         },
+         {
+          "type": "number"
+         }
+        ],
+        "items": false,
+        "minItems": 4,
+        "maxItems": 4,
+        "description": "[x0, y0, x1, y1] (points)"
+       },
+       "top": {
+        "type": "number",
+        "description": "height of its top above z = 0 [m]"
+       }
+      },
+      "required": [
+       "id",
+       "rect",
+       "top"
+      ],
+      "additionalProperties": false
+     }
+    },
+    "confidence": {
+     "type": "string",
+     "enum": [
+      "confirmed",
+      "probable",
+      "unknown"
+     ]
+    },
+    "source": {
+     "type": "string"
+    }
+   },
+   "required": [
+    "parts"
+   ],
+   "additionalProperties": false
   },
   "stairs": {
    "default": [],

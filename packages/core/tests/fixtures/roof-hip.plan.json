@@ -1,0 +1,102 @@
+{
+ "schema": "home-simulator/plan",
+ "version": 1,
+ "project": {
+  "id": "roof-hip",
+  "name": "Hip roof",
+  "buildingType": "house"
+ },
+ "units": "m",
+ "source": "synthetic test fixture: one storey under a hip roof with steeper ends",
+ "levels": [
+  {
+   "id": "G",
+   "name": "Ground",
+   "floorZ": 0,
+   "ceiling": 2.7
+  }
+ ],
+ "rooms": [
+  {
+   "id": "H1",
+   "name": "H1",
+   "level": "G",
+   "kind": "living",
+   "rect": [
+    0.3,
+    0.3,
+    6.0,
+    8.7
+   ]
+  },
+  {
+   "id": "H2",
+   "name": "H2",
+   "level": "G",
+   "kind": "bed",
+   "rect": [
+    6.12,
+    0.3,
+    11.7,
+    8.7
+   ]
+  }
+ ],
+ "doors": [
+  {
+   "id": "D0",
+   "between": [
+    "H1",
+    "exterior"
+   ],
+   "at": [
+    0.15,
+    4.5
+   ],
+   "width": 1.0
+  },
+  {
+   "id": "D1",
+   "between": [
+    "H1",
+    "H2"
+   ],
+   "at": [
+    6.06,
+    4.5
+   ],
+   "width": 0.9
+  }
+ ],
+ "windows": [
+  {
+   "id": "W1",
+   "room": "H1",
+   "at": [
+    3.0,
+    0.3
+   ],
+   "width": 1.5
+  },
+  {
+   "id": "W2",
+   "room": "H2",
+   "at": [
+    9.0,
+    8.7
+   ],
+   "width": 1.5
+  }
+ ],
+ "roof": {
+  "parts": [
+   {
+    "id": "main",
+    "level": "G",
+    "type": "hip",
+    "pitch": 30,
+    "pitchEnds": 40
+   }
+  ]
+ }
+}

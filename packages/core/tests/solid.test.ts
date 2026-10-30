@@ -20,11 +20,12 @@ const roleOfTri = (m: SolidMesh, i: number): Role => ROLES[m.role[i]];
 
 describe('level solids', () => {
   for (const [id, data] of Object.entries(PACKAGES)) {
-    it(`${id}: every level mesh is closed (each edge twice, in opposite directions) and every triangle has a role from its input`, () => {
+    it(`${id}: every level and roof mesh is closed (each edge twice, in opposite directions) and every triangle has a role from its input`, () => {
       const b = building(data()), shell = shellMeshes(geo, b);
       expect(shell.levels.map((l) => l.level)).toEqual(b.levels.filter((l) => b.roomsByLevel.get(l.id)!.length).map((l) => l.id));
-      for (const l of shell.levels) {
-        const m = l.solid, nTri = m.index.length / 3, key = (p: number[]) => p.map((v) => v.toFixed(5)).join(',');
+      expect(shell.roofs.map((r) => r.level)).toEqual(b.roof?.levels.filter((l) => b.levels.some((x) => x.id === l)) ?? []);
+      const closed = (m: SolidMesh) => {
+        const nTri = m.index.length / 3, key = (p: number[]) => p.map((v) => v.toFixed(5)).join(',');
         const edges = new Map<string, number>();
         for (let i = 0; i < nTri; i++) {
           const p = tri(m, i).map(key);
@@ -35,19 +36,38 @@ describe('level solids', () => {
           expect(n, e).toBe(1);
           expect(edges.get(`${c}>${a}`), e).toBe(1);
         }
+      };
+      for (const l of shell.levels) {
+        const m = l.solid, nTri = m.index.length / 3;
+        closed(m);
         for (let i = 0; i < nTri; i++) {
           const role = roleOfTri(m, i), tag = m.tags[m.tag[i]], n = normal(m, i), z = tri(m, i).map((p) => p[2]);
           expect(tag.level).toBe(l.level);
           if (role === 'elevation') expect(Math.abs(n[2])).toBeLessThan(0.5);
           if (role === 'room-floor') { expect(n[2]).toBeGreaterThan(0.99); expect(z.every((v) => Math.abs(v - b.roomById.get(tag.roomId!)!.floorZ) < 1e-4)).toBe(true); }
-          if (role === 'room-ceiling') expect(n[2]).toBeLessThan(-0.99);
+          if (role === 'room-ceiling') expect(n[2]).toBeLessThan(-0.02);           // flat, or the underside of a dormer cheek on a slope
           if (role === 'reveal') expect(tag.holeId).toBeTruthy();
           if (role === 'shaft') expect(b.stairs.some((s) => s.toLevel === l.level)).toBe(true);
+          expect(['roof', 'roof-flat', 'eaves', 'roof-underside']).not.toContain(role);
         }
         // the floor of every room and the elevation are there
         const roles = new Set([...m.role].map((r) => ROLES[r]));
         expect(roles.has('elevation') && roles.has('slab') && roles.has('room-wall') && roles.has('room-floor')).toBe(true);
         for (const r of b.roomsByLevel.get(l.level)!) expect([...m.role].some((code, i) => ROLES[code] === 'room-floor' && m.tags[m.tag[i]].roomId === r.id), r.id).toBe(true);
+      }
+      for (const r of shell.roofs) {
+        const m = r.solid, nTri = m.index.length / 3;
+        closed(m);
+        const roles = new Set([...m.role].map((x) => ROLES[x]));
+        expect(roles.has('roof') || roles.has('roof-flat')).toBe(true);
+        expect(roles.has('roof-underside')).toBe(true);
+        for (let i = 0; i < nTri; i++) {
+          const role = roleOfTri(m, i), n = normal(m, i);
+          expect(m.tags[m.tag[i]].level).toBe(r.level);
+          if (role === 'roof' || role === 'roof-flat') expect(n[2]).toBeGreaterThan(0.1);
+          if (role === 'roof-underside') expect(n[2]).toBeLessThan(0);
+          expect(['room-wall', 'room-floor', 'room-ceiling', 'shaft']).not.toContain(role);
+        }
       }
     });
   }
