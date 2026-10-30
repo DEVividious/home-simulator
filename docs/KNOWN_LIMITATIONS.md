@@ -64,9 +64,10 @@ the behaviour is named in brackets. When a limit is lifted, remove it here in th
   flat at that height (`eaves.cut` says how much); under the slopes it starts at the bottom of the eaves, so the walls of the
   rooms there are mostly in the roof part. Rooms with a flat top under the slopes (collar ties) and shallow dormer roofs are
   overhangs inside the roof part — the report lists them as needing supports.
-- **Stairs are solid and stop at the top of their level's part.** The steps above it (inside the slab of the upper level) are
-  not printed; the opening in the upper slab stays open. Railings, glass, window frames in walls, door leaves and furniture
-  are not printed; roof and dormer windows are recesses with a frame, left out when they are too small at the scale.
+- **Stairs are solid blocks.** They stand on the floor of their lower level; the steps inside the slab of the upper level are a
+  small block in that level's part (left out when lower than 0.5 mm on the print, as at 1:300). The opening in the upper slab
+  is the whole stair outline, as in the app. Railings, glass, window frames in walls, door leaves and furniture are not
+  printed; roof and dormer windows are recesses with a frame, left out when they are too small at the scale.
 - **Printability is judged, not simulated.** Thin spots come from horizontal sections at a few heights; overhangs from face
   angles, with bridges recognised only when held on two opposite sides of an axis-aligned region. Nothing measures warping,
   first-layer adhesion or the strength of the parts; the owner's test print decides (`print-report.json` says what was

@@ -102,7 +102,7 @@ describe('the sample house', () => {
     expect(m.split).toMatchObject({ level: 'L1', z: 5.55, rule: 'ceiling' });
     // 1:50 was tried first and does not fit (the roof is 212 mm long)
     expect(m.candidates.map((c) => [c.n, c.fits])).toEqual([[50, false], [75, true]]);
-    expect(m.notes.map((x) => x.code).sort()).toEqual(['eaves.cut', 'stairs.clipped']);
+    expect(m.notes.map((x) => x.code).sort()).toEqual(['eaves.cut', 'stairs.split']);
     // nothing to adjust at 1:75 — every wall is printable as it is
     expect(m.adjustments).toEqual([]);
     // the wide windows' lintels are long bridges: reported as needing supports, located and named
@@ -220,7 +220,7 @@ describe('stairs', () => {
       for (const rotate of [0, 90, 180, 270] as const) for (const mirror of [false, true]) for (const ramp of [false, true]) {
         const [x0, y0, x1, y1] = base.bbox, turned = rotate % 180 !== 0;
         const s: StairDef = { ...base, orient: { rotate, mirror }, bbox: turned ? [x0, y0, x0 + (y1 - y0), y0 + (x1 - x0)] : base.bbox };
-        const m = stairSolid(geo, keep, s, 0, 2.7, ramp)!;
+        const m = stairSolid(geo, keep, s, 0, [-Infinity, 2.7], ramp)!;
         expect(m.status()).toBe('NoError');
         expect(m.decompose().map((c) => keep(c)).length).toBe(1);
         const bb = m.boundingBox();
@@ -230,6 +230,21 @@ describe('stairs', () => {
       }
       for (const v of volumes) expect(v).toBeCloseTo(volumes[0], 6);
     });
+  });
+
+  it('the steps in the slab of the upper level stand in its floor opening, on the bed of its part, on top of the lower flight', () => {
+    const s = PACKAGES['sample-house']().stairs![0];                      // last step of the upper flight at 2.787, L0's part ends at 2.70
+    expect(print('sample-house').notes.map((x) => x.code)).toContain('stairs.split');
+    scoped((keep) => {
+      const parts = buildParts(geo, keep, PACKAGES['sample-house'](), 75, FDM, 'keep').parts, L0 = parts[0].solid, L1 = parts[1].solid;
+      // the last tread of the upper flight (canonical frame = plan here): x from the wall to the gap, one tread before the opening's edge
+      const tread = keep(geo.Manifold.cube([s.split - s.gap / 2 - s.bbox[0], s.tread, 0.5], false).translate([s.bbox[0], s.bbox[3] - s.tread, 2.6]));
+      expect(keep(L1.intersect(tread)).volume()).toBeCloseTo((s.split - s.gap / 2 - s.bbox[0]) * s.tread * (s.landingZ + 8 * s.riser - 2.7), 6);
+      expect(keep(L1.intersect(tread)).boundingBox().min[2]).toBeCloseTo(2.7, 6);
+      expect(keep(L0.intersect(tread)).boundingBox().max[2]).toBeCloseTo(2.7, 6);
+    });
+    // lower than the smallest step on the print: left out, and the note says why
+    expect(print('sample-house', 300).notes.find((x) => x.code === 'stairs.clipped')?.message).toMatch(/lower than 0.5 mm/);
   });
 });
 

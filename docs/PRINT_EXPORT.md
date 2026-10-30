@@ -43,7 +43,10 @@ The last level is split at a height `z` (`split` in the report):
 The level and the roof are one solid before the cut (the walls run 5 mm into the roof so the two unite without a seam); faces
 lying in the split plane are moved 5 mm off it in the inputs, so the cut never meets a face. A roof over a lower level (a
 wing beside a smaller upper floor) is printed with its level. Stairs are solid flights from the floor — stepped, or a ramp
-when the steps are lower than the profile's smallest step; steps above the top of their level's part are not printed. Roof
+when the steps are lower than the profile's smallest step. The steps in the thickness of the slab above (higher than the top
+of their level's part) are printed with the upper level's part: a block standing on the bed in the opening of its floor, run
+5 mm into the edge of the floor the stairs lead onto, right on top of the lower flight when the parts are stacked (note
+`stairs.split`; left out with `stairs.clipped` when lower than the smallest step on the print). Roof
 windows and dormer windows are recesses inside a frame (left out with a note when too small); glass, frames, door leaves and
 furniture are not printed.
 

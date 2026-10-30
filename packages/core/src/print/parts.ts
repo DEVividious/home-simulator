@@ -7,8 +7,9 @@
 //     lower; at least 0.3 m above the floor.
 // Faces lying in the split plane are moved off it in the inputs before the boolean (a ceiling at z rises 5 mm in the solid that
 // keeps what is below z, a sill at z drops 5 mm in the solid that keeps what is above), so the cut never meets a face of the
-// opposite side. Stairs are solid flights (stepped, or a ramp when steps are too small to print); roof windows and dormer windows
-// are recesses inside a frame; glass, frames, door leaves and furniture are not printed. Every solid is kept in the caller's
+// opposite side. Stairs are solid flights (stepped, or a ramp when steps are too small to print) in the part of their lower level;
+// the steps in the thickness of the slab above go with the upper level's part, standing in the opening of its floor. Roof windows
+// and dormer windows are recesses inside a frame; glass, frames, door leaves and furniture are not printed. Every solid is kept in the caller's
 // scope; heights are in metres of the building.
 import { building, roomsOfLevel, type Building, type BuildingData } from '../model/building.ts';
 import { offsetPolygon } from '../model/geom2d.ts';
@@ -99,10 +100,10 @@ const ccwPoly = (p: Vec2[]): Vec2[] => { let s = 0; for (let i = 0; i < p.length
  * A flight of stairs or the landing as a profile (u along the walking line, z up) extruded across the flight: the canonical frame
  * (stairs.ts) mapped onto the plan, the local axes turned so the map is a rotation (a mirror would turn the solid inside out).
  */
-function flightSolid(geo: Geometry, keep: Keep, s: StairDef, profile: Vec2[], origin: Vec2, along: Vec2, x0: number, x1: number, floorZ: number, topRel: number): Manifold | null {
+function flightSolid(geo: Geometry, keep: Keep, s: StairDef, profile: Vec2[], origin: Vec2, along: Vec2, x0: number, x1: number, floorZ: number, [z0, z1]: [number, number]): Manifold | null {
   const f = stairFrame(s);
   let cs = keep(new geo.CrossSection([ccwPoly(profile.map((p) => [snap(p[0]), snap(p[1])] as Vec2))]));
-  cs = keep(cs.intersect(keep(new geo.CrossSection([[[-1e3, -1], [1e3, -1], [1e3, topRel], [-1e3, topRel]]]))));
+  cs = keep(cs.intersect(keep(new geo.CrossSection([[[-1e3, z0], [1e3, z0], [1e3, z1], [-1e3, z1]]]))));
   if (cs.area() < 1e-8) return null;
   const w = (p: Vec2): Vec2 => f.toWorld(p);
   const o = w([x0, origin[1]]), uW = w([x0 + along[0], origin[1] + along[1]]), xW = w([x0 + 1, origin[1]]);
@@ -114,24 +115,29 @@ function flightSolid(geo: Geometry, keep: Keep, s: StairDef, profile: Vec2[], or
   return keep(m.transform([U[0], U[1], 0, 0, 0, 0, 1, 0, W[0], W[1], 0, 0, start[0], start[1], floorZ, 1]));
 }
 
-/** solid stairs from the floor of their lower level, up to `top` (absolute): two flights and the landing */
-export function stairSolid(geo: Geometry, keep: Keep, s: StairDef, floorZ: number, top: number, ramp: boolean): Manifold | null {
+/**
+ * Solid stairs from the floor of their lower level — two flights and the landing — between the heights `from` and `to`
+ * (absolute). `reach` carries the end of the upper flight that far beyond the stairs' outline: the piece printed with the upper
+ * level runs into the edge of its floor there.
+ */
+export function stairSolid(geo: Geometry, keep: Keep, s: StairDef, floorZ: number, [from, to]: [number, number], ramp: boolean, reach = 0): Manifold | null {
   const f = stairFrame(s), [bx0, by0, bx1, by1] = f.box, { tread: t, riser: r, risers, landingZ, split, gap } = s, le = s.landingEdge, P = PROUD, n = risers - 1;
-  const topRel = top - floorZ;
+  const clip: [number, number] = [Math.max(-1, from - floorZ), Math.min(1e3, to - floorZ)];
   // flight 1: from the entry (y = by1, u = 0) down the canonical y to the landing edge; its far end runs 5 mm into the landing
   const run1 = by1 - le, top1: Vec2[] = [];
   if (ramp) top1.push([0, r], [(n - 1) * t, r * n]);
   else for (let i = 0; i < n; i++) top1.push([i * t, r * (i + 1)], [(i + 1) * t, r * (i + 1)]);
   top1.push([run1 + P, r * n]);
-  const f1 = flightSolid(geo, keep, s, [[0, -P], [run1 + P, -P], ...[...top1].reverse()], [0, by1], [0, -1], split + gap / 2, bx1 + P, floorZ, topRel);
+  const f1 = flightSolid(geo, keep, s, [[0, -P], [run1 + P, -P], ...[...top1].reverse()], [0, by1], [0, -1], split + gap / 2, bx1 + P, floorZ, clip);
   // landing: the full width at the far end of the flights (flight 1 runs into it, flight 2 starts inside it)
-  const land = flightSolid(geo, keep, s, [[-P, -P], [le - by0, -P], [le - by0, landingZ], [-P, landingZ]], [0, by0], [0, 1], bx0 - P, bx1 + P, floorZ, topRel);
+  const land = flightSolid(geo, keep, s, [[-P, -P], [le - by0, -P], [le - by0, landingZ], [-P, landingZ]], [0, by0], [0, 1], bx0 - P, bx1 + P, floorZ, clip);
   // flight 2: from the landing edge up the canonical y; it starts 5 mm inside the landing
   const top2: Vec2[] = [[-P, landingZ], [0, landingZ]];
   if (ramp) top2.push([0, landingZ + r], [(n - 1) * t, landingZ + r * n], [n * t, landingZ + r * n]);
   else for (let i = 0; i < n; i++) top2.push([i * t, landingZ + r * (i + 1)], [(i + 1) * t, landingZ + r * (i + 1)]);
+  if (reach > 0) top2.push([top2[top2.length - 1][0] + reach, top2[top2.length - 1][1]]);
   const end2 = top2[top2.length - 1][0];
-  const f2 = flightSolid(geo, keep, s, [[-P, -P], [end2, -P], ...[...top2].reverse()], [0, le], [0, 1], bx0 - P, split - gap / 2, floorZ, topRel);
+  const f2 = flightSolid(geo, keep, s, [[-P, -P], [end2, -P], ...[...top2].reverse()], [0, le], [0, 1], bx0 - P, split - gap / 2, floorZ, clip);
   const parts = [f1, land, f2].filter((m): m is Manifold => !!m);
   return parts.length ? keep(geo.Manifold.union(parts)) : null;
 }
@@ -190,29 +196,43 @@ function sectionHeights(b: Building, level: LevelId, base: number, top: number):
   return [...zs].filter((z) => z > Math.max(base, floor) + 0.005 && z < top - 0.005).sort((p, q) => p - q);
 }
 
-/**
- * The parts of an adjusted building block at 1:n: the solids of every level, the last one split, and the roof part. Steps that
- * would stand above the top of their level's part are not printed (the opening in the slab above stays open).
- */
+/** The parts of an adjusted building block at 1:n: the solids of every level, the last one split, and the roof part. */
 export function buildParts(geo: Geometry, keep: Keep, data: BuildingData, n: number, profile: PrintProfile, eaves: EavesMode): BuiltParts {
   const withWindows = building(data), inputs = solidInputs(data), b = building(inputs), levels = builtLevels(b), notes: PrintNote[] = [];
   if (!levels.length) return { parts: [], split: null, notes };
   const k = mmPerM(n), [lo, hi] = span(b), parts: PartSolid[] = [], last = levels[levels.length - 1].id;
   const ramp = (s: StairDef) => s.riser * k < profile.step || s.tread * k < profile.step;
+  const built = new Set(levels.map((l) => l.id));
+  const clipped = (s: StairDef, level: LevelId, why: string) => notes.push({ code: 'stairs.clipped', element: s.id, message: `stairs ${s.id}: the steps above the top of level ${level}'s part are not printed (${why})` });
+  // stairs from a level: in its part up to the part's top
   const withStairs = (m: Manifold, bb: Building, level: LevelId, top: number): Manifold => {
     const flights: Manifold[] = [];
     for (const s of bb.stairs.filter((x) => x.fromLevel === level)) {
-      const floor = bb.levelById.get(level)!.floorZ, st = stairSolid(geo, keep, s, floor, top, ramp(s));
+      const floor = bb.levelById.get(level)!.floorZ, st = stairSolid(geo, keep, s, floor, [-Infinity, top], ramp(s));
       if (ramp(s)) notes.push({ code: 'stairs.ramp', element: s.id, message: `stairs ${s.id}: steps lower than ${profile.step} mm print as a ramp` });
-      if (floor + s.topZ > top + 1e-6) notes.push({ code: 'stairs.clipped', element: s.id, message: `stairs ${s.id}: the steps above the top of level ${level}'s part are not printed` });
+      if (floor + s.topZ > top + 1e-6 && !built.has(s.toLevel)) clipped(s, level, 'the level they lead to has no part');
       if (st) flights.push(st);
     }
     return flights.length ? keep(geo.Manifold.union([m, ...flights])) : m;
   };
+  // stairs arriving at a level: the steps in the thickness of its slab (above the top of the part below) stand in the opening
+  // of the slab, on the bed, and run 5 mm into the edge of the floor the stairs lead onto
+  const arriving = (m: Manifold, bb: Building, level: LevelId): Manifold => {
+    for (const s of bb.stairs.filter((x) => x.toLevel === level && built.has(x.fromLevel))) {
+      const from = bb.levelById.get(s.fromLevel)!, top = levelFrame(bb, s.fromLevel).top;
+      if (from.floorZ + s.topZ <= top + 1e-6) continue;
+      const st = stairSolid(geo, keep, s, from.floorZ, [top, Infinity], ramp(s), PROUD), high = st ? st.boundingBox().max[2] - top : 0;
+      if (!st || high * k < profile.step) { clipped(s, s.fromLevel, `they are lower than ${profile.step} mm on the print`); continue; }
+      if (keep(st.intersect(m)).volume() < 1e-9) { clipped(s, s.fromLevel, `they do not meet the floor of level ${level}`); continue; }
+      notes.push({ code: 'stairs.split', element: s.id, message: `stairs ${s.id}: the steps in the slab of level ${level} (${Math.round(high * 100)} cm) are printed with level ${level}'s part, in the opening of its floor` });
+      m = keep(geo.Manifold.union([m, st]));
+    }
+    return m;
+  };
   for (const l of levels) {
     if (l.id === last) continue;
     const s = levelSolid(geo, keep, b, l.id, { roofOverlap: PROUD })!, f = s.frame;
-    let m = withStairs(s.solid, b, l.id, f.top);
+    let m = arriving(withStairs(s.solid, b, l.id, f.top), b, l.id);
     const roof = roofSolid(geo, keep, b, l.id, lo, hi);
     if (roof) {
       notes.push({ code: 'roof.fixed', element: l.id, message: `the roof over level ${l.id} is printed with its level (only the roof of the last level comes off)` });
@@ -227,7 +247,7 @@ export function buildParts(geo: Geometry, keep: Keep, data: BuildingData, n: num
   const split = splitHeight(b, last, eaves), z = split.z;
   const below = building(atSplit(inputs, last, z, 'below')), above = building(atSplit(inputs, last, z, 'above'));
   const sb = levelSolid(geo, keep, below, last, { roofOverlap: PROUD })!, footprint = sb.plan.footprint;
-  let lower = withStairs(sb.solid, below, last, z);
+  let lower = arriving(withStairs(sb.solid, below, last, z), below, last);
   const roofed = !!b.roof?.byLevel(last).length, fp = () => prism(keep, loopsSection(geo, keep, footprint), lo, hi);
   if (roofed && split.roofBelow) {
     const r = roofSolid(geo, keep, below, last, lo, hi);
