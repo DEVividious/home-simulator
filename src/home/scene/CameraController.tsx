@@ -13,7 +13,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { wake } from './renderLoop';
 import { DEFAULT_VIEW_DIR, exteriorViews, homeViewId, INTERIOR_VIEW_ID, viewById } from '../model/views';
 import type { SceneBounds, SceneData } from './sceneData';
-import { clampToPolygon, pointInPolygon } from '../model/geom2d';
+import { clampToPolygon, pointInPolygon } from '@home-sim/core/model/geom2d';
 import { walkInputVector, walkNearestAllowed, walkRoomAt, walkStep } from '../model/walk';
 import { inStairBox } from '../model/stairs';
 import { nearExteriorDoor } from '../model/walkWorld';

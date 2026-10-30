@@ -69,7 +69,7 @@ switches to it.
 A project without a site has no corridors to the outside and no walking on the ground; a project without stairs keeps the walk
 on its single level.
 
-## 4. Stairs — `src/home/model/stairs.ts`
+## 4. Stairs — `packages/core/src/model/stairs.ts`, `src/home/model/stairs.ts`
 
 The engine supports one stair kind: **two-flight U-turn stairs with a landing** (`kind: "u-turn"`), in any of four
 directions and turning either way. In `plan.json`:
@@ -89,7 +89,7 @@ directions and turning either way. In `plan.json`:
 The engine computes in one canonical frame (up `S`, turn `right`: lower flight on the larger-X side rising towards −Y, landing
 at the smaller-Y edge, upper flight on the smaller-X side); `StairDef.orient` (`rotate` 0 / 90 / 180 / 270 counter-clockwise,
 `mirror`) maps it onto the plan, and `split` / `landingEdge` are canonical coordinates (`stairFrame` in
-`src/home/model/stairs.ts`). Other shapes (straight, L, winding, spiral) need an engine extension.
+`packages/core/src/model/stairs.ts`). Other shapes (straight, L, winding, spiral) need an engine extension.
 
 **Walking on stairs.** The rendered steps are real; navigation uses an **invisible ramp** over the step nosings that matches the
 flights (`stairZ`): flight 1 from the lower floor to the landing, the landing flat, flight 2 to the upper floor. Single steps are

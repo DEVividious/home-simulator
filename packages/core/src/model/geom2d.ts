@@ -1,5 +1,5 @@
-// Plan geometry (LCS, metres): polygons, rotated rectangles (furniture outline), segments. Pure TS — tested with vitest.
-import type { Vec2 } from './types';
+// Plan geometry (project coordinates, metres): polygons, rotated rectangles (furniture outline), segments. Pure TS.
+import type { Vec2 } from '../package/types.ts';
 
 export const EPS = 1e-9;
 export const deg = (r: number) => (r * 180) / Math.PI;

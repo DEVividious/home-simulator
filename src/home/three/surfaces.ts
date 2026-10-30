@@ -5,21 +5,14 @@
 import { shellSpec } from '../model/shell';
 import { stairArrivesAt } from '../model/stairs';
 import * as THREE from 'three';
-import { area as polyArea } from '../model/geom2d';
+import { heightBreaks } from '@home-sim/core/model/ceiling';
+import { area as polyArea } from '@home-sim/core/model/geom2d';
 import type { HomeRoom, RoomWall, WallHole } from '../model/rooms';
 import type { Vec2 } from '../model/types';
 
 export const SURFACE_OFFSET = 0.003;
 
 const lcs = (x: number, y: number, z: number): [number, number, number] => [x, z, -y];
-
-/** where a sloped ceiling profile breaks (edges of the flat ceiling, ridge): coordinates on axis 1 (y, ridge along X) or 0 (x) */
-function ceilingBreaks(room: HomeRoom): { axis: 0 | 1; at: number[] } {
-  const c = room.ceiling;
-  if (c.kind !== 'attic') return { axis: 1, at: [] };
-  const d = (c.zAtRidge! - c.flatZ!) / c.slope!, axis = c.ridgeX !== undefined ? 0 : 1, r = axis === 0 ? c.ridgeX! : c.ridgeY!;
-  return { axis, at: [r - d, r, r + d] };
-}
 
 /** ceiling height above the floor at wall position t */
 const topAt = (room: HomeRoom, w: RoomWall, t: number) => room.ceiling.heightAt(w.a[0] + w.dir[0] * t, w.a[1] + w.dir[1] * t);
@@ -54,7 +47,7 @@ function solidAt(top: number, holes: WallHole[], t: number): [number, number][] 
 export function wallGeometry(room: HomeRoom, w: RoomWall, offset = SURFACE_OFFSET): THREE.BufferGeometry {
   const ts = new Set<number>([0, w.length]);
   for (const h of w.holes) { ts.add(Math.max(0, h.t0)); ts.add(Math.min(w.length, h.t1)); h.polygon?.forEach((p) => ts.add(Math.min(w.length, Math.max(0, p[0])))); }
-  const br = ceilingBreaks(room);
+  const br = heightBreaks(room);
   if (Math.abs(w.dir[br.axis]) > 0.5) for (const v of br.at) { const t = (v - w.a[br.axis]) / w.dir[br.axis]; if (t > 0 && t < w.length) ts.add(t); }
   const T = [...ts].sort((a, b) => a - b).filter((t, i, arr) => i === 0 || t - arr[i - 1] > 1e-4);
   const pos: number[] = [], uv: number[] = [];
@@ -202,7 +195,7 @@ export function ceilingGeometry(room: HomeRoom, offset = SURFACE_OFFSET): THREE.
     const holes = room.stairOpening ? [rectPoly(room.stairOpening)] : [];
     return toGeometry([flatGeometry(room.polygon, holes, zOf, true)]);
   }
-  const br = ceilingBreaks(room), vs = [-Infinity, ...br.at, Infinity], ax = br.axis;
+  const br = heightBreaks(room), vs = [-Infinity, ...br.at, Infinity], ax = br.axis;
   const parts = [];
   for (let i = 0; i < vs.length - 1; i++) {
     let piece = room.polygon;

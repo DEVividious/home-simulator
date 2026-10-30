@@ -4,7 +4,7 @@ description: Validate, preview, run or diagnose a Home Simulator project package
 allowed-tools: Bash(npm run project:*) Bash(npm run -s project:*) Bash(npm run dev*) Bash(npm run build) Bash(node scripts/*) Read Edit Glob Grep
 metadata:
   version: 1
-  requires: node>=22.12, Chrome or Chromium for previews (CHROME=/path if not found)
+  requires: node>=22.18, Chrome or Chromium for previews (CHROME=/path if not found)
 ---
 
 # home-check

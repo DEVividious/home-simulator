@@ -23,6 +23,12 @@ export default defineConfig({
   server: { port: 5173, strictPort: true, watch: { ignored: ['**/userdata/**', '**/reports/**', '**/projects/*/preview/**'] } },
   preview: { port: 4173, strictPort: true },
   build: { outDir: 'dist', chunkSizeWarningLimit: 1500 },
-  // unit tests: the demo project is active before engine modules are imported (src/test/setup.ts)
-  test: { setupFiles: ['src/test/setup.ts'], include: ['src/**/*.test.ts', 'scripts/**/*.test.ts'] },
+  test: {
+    projects: [
+      // app tests: the demo project is active before engine modules are imported (src/test/setup.ts)
+      { extends: true, test: { name: 'app', setupFiles: ['src/test/setup.ts'], include: ['src/**/*.test.ts', 'scripts/**/*.test.ts'] } },
+      // core tests: pure functions, no active project, no app setup (ADR 0023)
+      { test: { name: 'core', include: ['packages/core/tests/**/*.test.ts'] } },
+    ],
+  },
 });

@@ -1,6 +1,6 @@
 // Furniture snapping (plan, metres): to a wall (item back, with rotation alignment), to a corner (two perpendicular walls),
 // edge / centre alignment with other items, optionally a grid. ALT in the UI → options.enabled = false (no snapping).
-import { angleDiff, axes, dot, normDeg, obbAabb, round, supportAlong, type OBB } from './geom2d';
+import { angleDiff, axes, dot, normDeg, obbAabb, round, supportAlong, type OBB } from '@home-sim/core/model/geom2d';
 import type { HomeRoom, RoomWall } from './rooms';
 import type { Vec2 } from './types';
 

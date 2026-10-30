@@ -7,7 +7,7 @@
 // building / plot outline come from the project package (project().electrical, project().site). Pure TS (tests without a browser).
 import { derived, project } from '../../project/active';
 import { fmtNum, lang, t } from '../../i18n';
-import { segDist } from './geom2d';
+import { segDist } from '@home-sim/core/model/geom2d';
 import { levelIndex, levelName, type RoomWall } from './rooms';
 import type { LevelId, Vec2, Vec3 } from './types';
 

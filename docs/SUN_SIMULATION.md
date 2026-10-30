@@ -13,7 +13,7 @@ Sun data is an optional module of the project package (`sun`). In `plan.json`:
          "confidence": "probable", "placeName": "Example town" }
 ```
 
-The compiler (`src/authoring/compile.ts`) validates the time zone (`Intl`) and writes `project().sun` (`SunSite`,
+The compiler (`packages/core/src/authoring/compile.ts`) validates the time zone (`Intl`) and writes `project().sun` (`SunSite`,
 `src/home/model/sun.ts`):
 
 | Field | Meaning |

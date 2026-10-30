@@ -10,9 +10,9 @@ import path from 'node:path';
 import { createHash } from 'node:crypto';
 
 const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..', '..');
-const SCAN = ['src', 'scripts', 'docs', 'projects', 'data', 'schemas', 'skills', 'tools', 'public', '.cursor', 'index.html', 'vite.config.ts', 'tsconfig.json',
+const SCAN = ['src', 'packages', 'scripts', 'docs', 'projects', 'data', 'schemas', 'skills', 'tools', 'public', '.cursor', 'index.html', 'vite.config.ts', 'tsconfig.json',
   'README.md', 'AGENTS.md', 'LICENSE', 'package.json', '.gitignore'];
-const SKIP_DIRS = new Set(['node_modules', 'dist', '.git', '__pycache__', 'preview']);
+const SKIP_DIRS = new Set(['node_modules', 'dist', 'build', '.git', '__pycache__', 'preview']);
 const TEXT = /\.(ts|tsx|js|mjs|cjs|json|webmanifest|svg|md|mdc|html|css|py|sh|txt|ya?ml|tsv)$|(^|\/)(LICENSE|\.gitignore)$/i;
 const SELF = path.relative(ROOT, new URL(import.meta.url).pathname);
 /** files allowed to contain Polish text */

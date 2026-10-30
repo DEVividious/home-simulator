@@ -5,41 +5,8 @@
 // User state (open / closed, "Show doors") is separate (DoorState) — it neither changes nor removes door definitions.
 import { derived } from '../../project/active';
 import type { LevelId, Vec2 } from './types';
-
-export type DoorType = 'hinged-single' | 'hinged-double' | 'sliding' | 'pocket';
-
-export interface DoorDef {
-  id: string;
-  level: LevelId;
-  /** rooms on both sides (the second: a room id or 'exterior') */
-  rooms: [string, string];
-  floorZ: number;
-  /** wall opening: wall axis, range along the axis, wall faces (cross coordinate), clear width and height of the masonry opening */
-  opening: { along: 'X' | 'Y'; from: number; to: number; faces: number[]; width: number; height: number };
-  /** leaf width [m] */
-  leafWidth: number;
-  /** leaf height [m] */
-  height: number;
-  type: DoorType;
-  /** hinge axis in plan (LCS) — hinged leaves */
-  hinge: Vec2 | null;
-  /** direction of the closed leaf (from hinge to lock) and of the leaf opened by 90° — unit vectors */
-  closedDir: Vec2 | null;
-  openDir: Vec2 | null;
-  /** hinge side as seen from the room the door opens into */
-  hingeSide: 'left' | 'right' | null;
-  /** room the leaf opens into */
-  swingInto: string | null;
-  /** full opening angle [°] */
-  openAngle: number | null;
-  /** sliding leaf: opening start on the wall axis, sliding direction, travel [m] */
-  slide: { origin: Vec2; dir: Vec2; travel: number } | null;
-  source: string[];
-  confidence: 'confirmed' | 'probable' | 'unknown';
-  notes?: string;
-  /** door flush with the wall (concealed frame, leaf face in the wall face on the opening side) */
-  flush?: boolean;
-}
+import type { DoorDef, DoorType } from '@home-sim/core/package/types';
+export type { DoorDef, DoorType } from '@home-sim/core/package/types';
 
 interface DoorsModel { all: DoorDef[]; byId: Map<string, DoorDef>; interactive: DoorDef[] }
 const model = derived((p): DoorsModel => {

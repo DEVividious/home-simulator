@@ -3,21 +3,9 @@
 // View direction: yaw [rad] — forward = (−sin yaw, cos yaw) in LCS (as in walk mode), pitch [rad] upwards.
 // When opened, the point is "settled" in the walk model (WalkWorld.settle) — it avoids walls; furniture does not block.
 import { project } from '../../project/active';
-import type { LevelId, Vec2 } from './types';
-
-export interface Viewpoint {
-  id: string;
-  /** name shown in the UI; `en` — optional working name (tests, scripts) */
-  name: string;
-  en?: string;
-  p: Vec2;
-  /** level / site: hint for the feet height when settling */
-  level: LevelId | 'SITE';
-  /** point the person looks at (LCS, height above the floor / ground) */
-  look: [number, number, number];
-  fov: number;
-  hint: string;
-}
+import type { Vec2 } from './types';
+import type { Viewpoint } from '@home-sim/core/package/types';
+export type { Viewpoint } from '@home-sim/core/package/types';
 
 /** view direction from point p to point look (yaw, pitch) with the eyes at height eye */
 export function lookAngles(p: Vec2, look: [number, number, number], eye: number): { yaw: number; pitch: number } {

@@ -1,7 +1,7 @@
 // MATERIALS section: pick a room surface (floor, walls — from the plan or the list, ceiling) — material, colour and pattern
 // are chosen in the right-hand panel (inspector). Overview: what is already changed in the active arrangement.
 import { materialById, neutralFinish } from '../catalog/materials';
-import { roomById, type HomeRoom } from '../model/rooms';
+import { roomById, wallLabel, type HomeRoom } from '../model/rooms';
 import type { FinishRef } from '../model/types';
 import { arrangementOf, useDesign } from '../store/design';
 import { selectedWallIds, ui, useUi } from '../store/ui';
@@ -60,7 +60,7 @@ function RoomMaterials({ room }: { room: HomeRoom }) {
         <div className="hm-list">
           {room.walls.map((w) => (
             <button key={w.id} className={`hm-row hm-row-main${selWalls.includes(w.id) ? ' on' : ''}`} onClick={(e) => pickWall(w.id, e.ctrlKey || e.metaKey || e.shiftKey)} data-testid={`wall-${w.index}`}>
-              <span>{w.label}</span><FinishChip f={a.finishes.walls[w.id]} fallback={t('materialsUi.plaster')} neutral={nf('wall')} />
+              <span>{wallLabel(w)}</span><FinishChip f={a.finishes.walls[w.id]} fallback={t('materialsUi.plaster')} neutral={nf('wall')} />
             </button>
           ))}
         </div>

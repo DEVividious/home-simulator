@@ -8,7 +8,7 @@ import * as THREE from 'three';
 import { elevationOf, generatorOptions, isWallMounted, resolveDims, slotMaterials, type CatalogItem } from '../catalog/furniture';
 import { itemById } from '../catalog/providers';
 import { furnitureWarnings, warningLevel } from '../model/collision';
-import { pointInPolygon, rad } from '../model/geom2d';
+import { pointInPolygon, rad } from '@home-sim/core/model/geom2d';
 import { storedMountWarnings } from '../model/mountedFurniture';
 import { neighbours } from '../model/placement';
 import { hasDefaultFurniture } from '../model/defaults';

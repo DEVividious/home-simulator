@@ -1,7 +1,7 @@
 # Project package — specification
 
 A package is a directory `projects/<id>/` with `project.json` (this document) and optional files referenced by `assets`.
-Structure: `schemas/project.schema.json` (generated from `src/project/schema.ts`); semantic rules: `src/project/validate.ts`.
+Structure: `schemas/project.schema.json` (generated from `packages/core/src/package/schema.ts`); semantic rules: `src/project/validate.ts`.
 `npm run project:validate -- projects/<id>` runs both. Most packages are compiled from `source/plan.json` (docs/AUTHORING.md).
 
 Top level: `{ "schema": "home-simulator/project", "version": 1, manifest, building, interiors, electrical, site?, sun?, assets?, catalog?, views?, viewpoints? }`.

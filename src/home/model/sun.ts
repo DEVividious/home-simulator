@@ -6,26 +6,11 @@
 //   • Local time: any IANA time zone via Intl (DST rules come from the platform's time zone database).
 import { project } from '../../project/active';
 import type { Vec3 } from './types';
+import type { SunSite } from '@home-sim/core/package/types';
+export type { SunSite } from '@home-sim/core/package/types';
 
 const rad = (d: number) => (d * Math.PI) / 180;
 const deg = (r: number) => (r * 180) / Math.PI;
-
-/** project position and orientation — sun simulation input (project module `sun`) */
-export interface SunSite {
-  lat: number; lon: number;
-  /** azimuth of the project's +X axis from grid north and the meridian convergence [°] */
-  gridAzimuthX: number; convergence: number;
-  /** geographic azimuth of the +X axis = grid + convergence */
-  trueAzimuthX: number;
-  /** orientation confidence; 'confirmed' removes the "approximate north" badge */
-  confidence: string;
-  /** estimated uncertainty of north [°] */
-  uncertaintyDeg: number;
-  /** IANA time zone, e.g. "Europe/Berlin", "America/New_York" */
-  timeZone: string;
-  /** place name shown in the sun panel */
-  placeName?: string;
-}
 
 /** time zone of the device (fallback when a project has no sun data) */
 export function deviceTimeZone(): string {

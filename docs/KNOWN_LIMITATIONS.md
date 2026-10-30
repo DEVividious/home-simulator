@@ -8,7 +8,7 @@ the behaviour is named in brackets. When a limit is lifted, remove it here in th
 - **Generated walls need an orthogonal plan.** A project without a building model file gets its shell computed on a
   rectangular grid spanned by the room outlines. Every room edge must run along X or Y. The compiler rejects a slanted edge
   (`room.orthogonal`), and validation rejects a package without `assets.model` whose outlines are not axis-aligned
-  (`src/home/model/shell.ts`, `src/authoring/compile.ts`, `src/project/validate.ts`).
+  (`packages/core/src/model/gridShell.ts`, `packages/core/src/authoring/compile.ts`, `src/project/validate.ts`).
 - **The generated shell is a box.** It draws walls, a floor slab under every level and a flat slab over the top level, up to
   the highest ceiling of the level. Sloped attic ceilings (level `slope` in `plan.json`) are drawn inside as ceiling and gable
   finishes, but the outside shows no pitched roof. A sloped ceiling is one symmetric roof per level with its ridge along X or
@@ -19,7 +19,7 @@ the behaviour is named in brackets. When a limit is lifted, remove it here in th
 - **One stair type.** `StairDef` supports only `kind: "u-turn"`: two flights with the same number of risers, a landing and a
   gap between the flights. Straight, L-shaped, winding and spiral stairs are not supported. The stair box is axis-aligned; it
   can face any of the four directions and turn either way (`up`, `turn` in `plan.json`), but not stand at another angle
-  (`src/home/model/stairs.ts`).
+  (`packages/core/src/model/stairs.ts`).
 - **Stair geometry is not editable in the app.** The user chooses only the finish (treads, risers, handrail, balustrade);
   step count and size are building data (`src/home/model/stairsConfig.ts`).
 - **Wall ids depend on the outline.** A wall id is `<room>-w<n>`, where `n` is the edge index of the room outline in

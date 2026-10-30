@@ -4,7 +4,7 @@
 //   with them. --check fails when a committed file is out of date.
 import fs from 'node:fs';
 import { z } from 'zod';
-import { PlanSchema } from '../../src/authoring/plan';
+import { PlanSchema } from '@home-sim/core/authoring/plan';
 import { ProjectIndexSchema, ProjectSchema } from '../../src/project/schema';
 
 const out: [string, z.ZodType, string][] = [

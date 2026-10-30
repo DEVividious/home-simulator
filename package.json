@@ -6,11 +6,14 @@
   "license": "MIT",
   "displayName": "Home Simulator",
   "description": "Generic 3D home and apartment configurator engine. A building is a data package (projects/<id>/project.json) that AI-agent skills can author from CAD files or 2D floor plans. Runs in the browser and as an offline PWA on Android.",
+  "workspaces": [
+    "packages/*"
+  ],
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit && vite build",
+    "build": "npm run typecheck && vite build",
     "preview": "vite preview",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc -b packages/* && tsc --noEmit",
     "test": "vitest run",
     "test:e2e": "node scripts/verify/run_suite.mjs",
     "audit:genericity": "node scripts/audit/no-house-refs.mjs",
@@ -21,10 +24,11 @@
     "project:preview": "node scripts/project/preview.mjs",
     "skills:catalog": "node scripts/skills/catalog-table.mjs",
     "phone": "node scripts/phone/phone.mjs",
-    "audit:i18n": "node scripts/audit/i18n-check.mjs"
+    "audit:i18n": "node scripts/audit/i18n-check.mjs",
+    "audit:core": "node scripts/audit/core-boundary.mjs"
   },
   "engines": {
-    "node": ">=22.12"
+    "node": ">=22.18"
   },
   "dependencies": {
     "@react-three/drei": "10.7.9",

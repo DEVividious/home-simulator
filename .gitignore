@@ -30,3 +30,6 @@ docs/ARCHITECTURE.md
 docs/DEVELOPER_GUIDE.md
 docs/PERFORMANCE_BUDGETS.md
 docs/MOBILE_UX.md
+
+# core package declaration output (tsc -b)
+packages/*/build/

@@ -15,11 +15,11 @@ import {
 import { itemById } from '../catalog/providers';
 import { furnitureThumbnail } from '../catalog/thumbnails';
 import { furnitureWarnings, type FurnitureWarning } from '../model/collision';
-import { round } from '../model/geom2d';
+import { round } from '@home-sim/core/model/geom2d';
 import { furnitureById, updateFurniture } from '../model/interiors';
 import { patchPlacement, storedMountWarnings } from '../model/mountedFurniture';
 import { neighbours } from '../model/placement';
-import { roomById, type HomeRoom } from '../model/rooms';
+import { roomById, wallLabel, type HomeRoom } from '../model/rooms';
 import type { FinishLayout, FinishRef } from '../model/types';
 import { architectItemOf } from '../model/defaults';
 import { finishLook, resolveStairs, STAIR_FINISHES, STAIR_LIMITS, STAIRS_PRESETS, stairsSummary, type BalustradeType, type HandrailPlace, type StairFinish, type StairFinishId } from '../model/stairsConfig';
@@ -275,7 +275,7 @@ function SurfaceInspector({ room, kind, wallId }: { room: HomeRoom; kind: 'wall'
   const title = kind === 'floor' ? tr('inspector.floor') : kind === 'ceiling' ? tr('inspector.ceiling') : scope === 'house' ? tr('inspector.wallsWholeHome') : scope === 'all' ? tr('inspector.allWalls') : nSel > 1 ? tr('inspector.wallsN', { n: nSel }) : tr('inspector.wallN', { n: wall!.index });
   const sub = kind === 'wall'
     ? (scope === 'house' ? tr('inspector.wholeHomeRooms', { n: HOUSE_WALL_ROOMS().length }) : scope === 'all' ? tr('inspector.wallsCount', { n: room.walls.length, room: room.label })
-      : nSel > 1 ? room.walls.filter((w) => wallIds.includes(w.id)).map((w) => w.index).join(', ') + ` · ${room.label}` : wall!.label.replace(/^[^·]+ · /, ''))
+      : nSel > 1 ? room.walls.filter((w) => wallIds.includes(w.id)).map((w) => w.index).join(', ') + ` · ${room.label}` : wallLabel(wall!).replace(/^[^·]+ · /, ''))
     : `${room.label} · ${fmtNum(room.area, 1)} m²`;
   return (
     <Panel testid={kind} title={title} sub={sub} img={<Icon name={kind === 'floor' ? 'grid' : kind === 'ceiling' ? 'top' : 'brush'} size={26} />}>
@@ -286,7 +286,7 @@ function SurfaceInspector({ room, kind, wallId }: { room: HomeRoom; kind: 'wall'
             <div className="hm-field">
               <span>{tr('inspector.pickWalls')} <small className="hm-muted">{tr('inspector.pickWallsHint')}</small></span>
               <div className="hm-chips small" data-testid="wall-pick">
-                {room.walls.map((w) => <button key={w.id} className={wallIds.includes(w.id) ? 'on' : ''} title={w.label} onClick={() => toggleWall(w.id)} data-testid={`wall-pick-${w.index}`}>{w.index}</button>)}
+                {room.walls.map((w) => <button key={w.id} className={wallIds.includes(w.id) ? 'on' : ''} title={wallLabel(w)} onClick={() => toggleWall(w.id)} data-testid={`wall-pick-${w.index}`}>{w.index}</button>)}
               </div>
             </div>
           )}

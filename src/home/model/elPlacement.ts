@@ -13,7 +13,7 @@ import {
   EL_TYPES, elRoom, EXT, measure, placeFree, pointWarnings, snapAlong, snapHeight, wallRuns,
   type CoordContext, type ElectricalPlan, type ElPoint, type ElRoom, type ElType, type ElWall, type Placement,
 } from './electrical';
-import { pointInPolygon } from './geom2d';
+import { pointInPolygon } from '@home-sim/core/model/geom2d';
 import { doorHoleAt, EXTERIOR_HEIGHT, pickFromRay, spaceAtPlan, wallFromPlan, type PlanViewId, type RayPointer, type Surface, type WallRef } from './mount';
 import type { RoomWall } from './rooms';
 import type { LevelId, Vec2 } from './types';

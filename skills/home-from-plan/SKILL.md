@@ -4,7 +4,7 @@ description: Build, import or update a 3D home / apartment project for Home Simu
 allowed-tools: Bash(python3 tools/*) Bash(.venv/bin/python tools/*) Bash(npm run project:*) Bash(npm run -s project:*) Bash(pdftotext *) Bash(pdftocairo *) Bash(pdftoppm *) Bash(mkdir -p projects/*) Bash(cp *) Read Write Edit Glob Grep
 metadata:
   version: 1
-  requires: node>=22.12; python3>=3.11 with tools/requirements.txt for CAD / PDF / raster tools; poppler-utils for PDF; ODA File Converter for DWG
+  requires: node>=22.18; python3>=3.11 with tools/requirements.txt for CAD / PDF / raster tools; poppler-utils for PDF; ODA File Converter for DWG
 ---
 
 # home-from-plan

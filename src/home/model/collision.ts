@@ -3,7 +3,7 @@
 import { fmtCm, t } from '../../i18n';
 import { stairArrivesAt } from './stairs';
 import { mayOverlap, type CatalogItem } from '../catalog/furniture';
-import { convexInsidePolygon, convexOverlap, obbCorners, obbOverlap, type OBB } from './geom2d';
+import { convexInsidePolygon, convexOverlap, obbCorners, obbOverlap, type OBB } from '@home-sim/core/model/geom2d';
 import { doorById, leafSegment } from './doors';
 import type { HomeRoom } from './rooms';
 import type { Dims, FurniturePlacement, Vec2 } from './types';

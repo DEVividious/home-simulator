@@ -6,7 +6,7 @@ import { t } from '../../i18n';
 import { itemById } from '../catalog/providers';
 import { isWallMounted, resolveDims, type CatalogItem } from '../catalog/furniture';
 import { furnitureWarnings, obbOf, type Neighbour } from './collision';
-import { dist, obbPoint, pointInPolygon, round } from './geom2d';
+import { dist, obbPoint, pointInPolygon, round } from '@home-sim/core/model/geom2d';
 import { newId } from './interiors';
 import { mountSurfaces } from './mount';
 import { checkMount } from './mountDrag';

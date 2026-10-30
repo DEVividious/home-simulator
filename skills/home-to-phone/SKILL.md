@@ -4,7 +4,7 @@ description: Install, update or troubleshoot the Home Simulator app on an Androi
 allowed-tools: Bash(node scripts/phone/*) Bash(npm run phone*) Bash(npm run build) Read
 metadata:
   version: 1
-  requires: node>=22.12; an Android phone with Chrome and USB debugging; adb (downloaded by the script if missing)
+  requires: node>=22.18; an Android phone with Chrome and USB debugging; adb (downloaded by the script if missing)
 ---
 
 # home-to-phone

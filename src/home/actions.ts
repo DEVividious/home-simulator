@@ -11,7 +11,7 @@ import { homeViewId } from './model/views';
 import { displayName, resolveDims } from './catalog/furniture';
 import { itemById } from './catalog/providers';
 import { materialById } from './catalog/materials';
-import { round } from './model/geom2d';
+import { round } from '@home-sim/core/model/geom2d';
 import {
   activeArrangement, deleteArrangement, duplicateArrangement, duplicateFurniture, furnitureById, loadArrangement, newEmptyArrangement,
   newId, removeFurniture, renameArrangement, saveArrangement, setFinish, withActive, withInterior, type FinishTarget,

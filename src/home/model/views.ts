@@ -6,25 +6,8 @@
 import { t } from '../../i18n';
 import { project } from '../../project/active';
 import type { Vec3 } from './types';
-
-/** explicit camera pose in project coordinates */
-export interface CameraViewPose { position: Vec3; target: Vec3; fov: number }
-
-export interface ViewPreset {
-  id: string;
-  label: string;
-  icon: string;
-  hint: string;
-  /** direction from the building centre to the camera (project coordinates) — the whole building in frame */
-  dir?: Vec3;
-  /** explicit camera pose; used when `dir` is absent */
-  pose?: CameraViewPose;
-  /** framing distance multiplier (default 1.02) */
-  fit?: number;
-}
-
-/** project views: list, start view */
-export interface ProjectViews { presets: ViewPreset[]; home?: string }
+import type { ViewPreset } from '@home-sim/core/package/types';
+export type { CameraViewPose, ProjectViews, ViewPreset } from '@home-sim/core/package/types';
 
 export const INTERIOR_VIEW_ID = 'interior';
 export const DEFAULT_VIEW_DIR: Vec3 = [-0.62, -0.78, 0.6];

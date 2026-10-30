@@ -2,7 +2,7 @@
 // (2) room — selectable walls (materials), furniture as outlines. Orientation as on floor plans: X to the right, Y up.
 import { resolveDims } from '../catalog/furniture';
 import { itemById } from '../catalog/providers';
-import { obbCorners } from '../model/geom2d';
+import { obbCorners } from '@home-sim/core/model/geom2d';
 import { roomsOfLevel, type HomeRoom } from '../model/rooms';
 import type { Arrangement, LevelId } from '../model/types';
 import { doorsOfLevel, doorsOfRoom, isInteractive, leafSegment, openOf, swingArc, type DoorDef } from '../model/doors';

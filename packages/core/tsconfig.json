@@ -1,0 +1,25 @@
+{
+  // The core boundary: ES2022 only, no ambient types — DOM, Node, three.js and React do not typecheck here (ADR 0023).
+  // Relative imports carry the .ts extension and type-only imports are explicit, so Node (type stripping) runs the sources
+  // as they are — the Vite config loads them that way through the document server.
+  "compilerOptions": {
+    "composite": true,
+    "target": "ES2022",
+    "lib": ["ES2022"],
+    "types": [],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "skipLibCheck": true,
+    "isolatedModules": true,
+    "verbatimModuleSyntax": true,
+    "allowImportingTsExtensions": true,
+    "emitDeclarationOnly": true,
+    "rootDir": "src",
+    "outDir": "build",
+    "tsBuildInfoFile": "build/.tsbuildinfo"
+  },
+  "include": ["src"]
+}

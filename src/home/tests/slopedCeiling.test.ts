@@ -2,7 +2,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { compilePlan, type CatalogItemInfo } from '../../authoring/compile';
+import { compilePlan, type CatalogItemInfo } from '@home-sim/core/authoring/compile';
 import { withProject } from '../../project/active';
 import { roomById } from '../model/rooms';
 import { shellBounds } from '../model/shell';

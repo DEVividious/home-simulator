@@ -1,0 +1,14 @@
+{
+  "name": "@home-sim/core",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "description": "Pure building model of Home Simulator: the project package contract, the plan.json compiler and the derived building geometry. No DOM, three.js or React.",
+  "exports": {
+    "./*": "./src/*.ts"
+  },
+  "dependencies": {
+    "zod": "4.6.7"
+  }
+}

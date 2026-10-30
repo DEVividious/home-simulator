@@ -1,8 +1,9 @@
-// plan.json → project.json compiler (src/authoring/compile.ts).
+// plan.json → project.json compiler (packages/core/src/authoring/compile.ts) on the shipped examples and small plans.
 import fs from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { compilePlan, normalizePolygon, outerOutline, type CatalogItemInfo } from '../compile';
+import { compilePlan, normalizePolygon, type CatalogItemInfo } from '@home-sim/core/authoring/compile';
+import { outerOutline } from '@home-sim/core/model/outline';
 import { packageErrors } from '../../project/registry';
 
 const ROOT = path.resolve(__dirname, '..', '..', '..');

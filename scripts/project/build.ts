@@ -1,5 +1,5 @@
 // npm run project:build -- projects/<id> [--check] [--lock] [--force-relock]
-// Compiles projects/<id>/source/plan.json into projects/<id>/project.json (src/authoring/compile.ts), validates the result
+// Compiles projects/<id>/source/plan.json into projects/<id>/project.json (packages/core/src/authoring/compile.ts), validates the result
 // with the same rules the app uses at load time and prints every issue. Exit codes: 0 — written (or up to date with --check),
 // 2 — errors (nothing written), 3 — --check: project.json differs from the compiled plan.
 //   --lock          records room ids and outlines in projects/<id>/ids.lock.json (do this when the package is released:
@@ -7,7 +7,7 @@
 //   --force-relock  accept a changed outline of a locked room and rewrite the lock
 import fs from 'node:fs';
 import path from 'node:path';
-import { compilePlan, type CatalogItemInfo } from '../../src/authoring/compile';
+import { compilePlan, type CatalogItemInfo } from '@home-sim/core/authoring/compile';
 import { catalogIdsWith, packageErrors } from '../../src/project/registry';
 import { readProjectCatalogs } from '../../src/project/node';
 

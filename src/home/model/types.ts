@@ -1,13 +1,9 @@
 // Home configurator — types of the user's design state (USER DESIGN STATE).
 // Everything in metres, in the building LCS (project X / Y axes, Z up; ±0.00 = finished floor of the base level).
 // The state is part of ConfiguratorDoc (v6): Variant.interiors + document-level bookmarks / importedAssets — a single source of truth.
-export type Vec2 = [number, number];
-export type Vec3 = [number, number, number];
-/** level id — from the project data (project().building.rooms.levels) */
-export type LevelId = string;
-
-/** item dimensions: w — width (local x axis), d — depth (local y axis, back → front), h — height */
-export interface Dims { w: number; d: number; h: number }
+import type { Dims, FurniturePlacement, Vec2, Vec3 } from '@home-sim/core/package/types';
+// package-contract types shared with the core (ADR 0023)
+export type { Dims, FurniturePlacement, LevelId, Vec2, Vec3, WallMount } from '@home-sim/core/package/types';
 
 /** layout parameters of a repeating material (tiles, boards, panels) — override the catalog values */
 export interface FinishLayout {
@@ -40,33 +36,6 @@ export interface RoomFinishes {
   ceiling: FinishRef | null;
 }
 
-/**
- * Mount record of a wall object (TV, mirror, shelf, wall lamp, wall cabinet): the room wall from the project data,
- * the distance of the object axis from the start of that wall and the bottom height above the finished floor. The source of truth
- * for a wall object's position — the world position (x, y, rot, elevation) is computed from it.
- */
-export interface WallMount { wallId: string; u: number; height: number }
-
-/** item in a room: (x, y) — outline centre in LCS, rot — rotation about Z [°, counter-clockwise];
- *  rot = 0: item front (local +y) faces building +Y, back (local −y) towards −Y */
-export interface FurniturePlacement {
-  id: string;
-  catalogId: string;
-  variant?: string | null;
-  x: number;
-  y: number;
-  rot: number;
-  /** bottom height above the room floor (default 0) */
-  elevation?: number;
-  /** overridden dimensions (parametric items; within catalog limits) */
-  dims?: Partial<Dims> | null;
-  /** main part material (overrides the catalog defaultMaterial) */
-  materialId?: string | null;
-  /** materials of additional parts (e.g. { top: 'quartz-white' } — worktop) */
-  slots?: Record<string, string> | null;
-  /** wall object: mount record (x, y, rot, elevation are then values computed by the mounting engine) */
-  mount?: WallMount | null;
-}
 
 export type ScenarioPreset = 'office' | 'guest' | 'hybrid';
 

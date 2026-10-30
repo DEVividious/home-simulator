@@ -1,13 +1,13 @@
 # Door system
 
 Doors are part of the project package: every door is a `DoorDef` in `project().building.doors`, usually compiled from the
-`doors` list of `plan.json` (`src/authoring/compile.ts`). The engine draws the leaves with a pivot on the hinge, opens them
+`doors` list of `plan.json` (`packages/core/src/authoring/compile.ts`). The engine draws the leaves with a pivot on the hinge, opens them
 from a card or by tapping in walk mode, uses them as gates in the walk model and offers a global "Show doors" switch. Door
 behaviour follows from the data only — the engine has no door ids of its own.
 
 ## 1. Authoring — `plan.json`
 
-A door is stated once, as a fact about the plan (`src/authoring/plan.ts`):
+A door is stated once, as a fact about the plan (`packages/core/src/authoring/plan.ts`):
 
 | Field | Meaning |
 |---|---|

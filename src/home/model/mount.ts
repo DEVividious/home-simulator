@@ -10,7 +10,7 @@
 // Description: docs/WALL_MOUNTED_OBJECT_PLACEMENT.md.
 import { derived, derivedByKey } from '../../project/active';
 import { t } from '../../i18n';
-import { segDist } from './geom2d';
+import { segDist } from '@home-sim/core/model/geom2d';
 import { allLevels, roomById, roomsOfLevel, type HoleKind, type HomeRoom, type RoomWall, type WallHole } from './rooms';
 import { stairs } from './stairs';
 import type { LevelId, Vec2, Vec3 } from './types';

@@ -8,7 +8,7 @@ import * as THREE from 'three';
 import type { SceneData } from './sceneData';
 import { resolveDims } from '../catalog/furniture';
 import { itemById } from '../catalog/providers';
-import { axes, obbPoint, pointInPolygon, round } from '../model/geom2d';
+import { axes, obbPoint, pointInPolygon, round } from '@home-sim/core/model/geom2d';
 import { furnitureById } from '../model/interiors';
 import { levelName, roomById, roomsOfLevel, type HomeRoom } from '../model/rooms';
 import type { Vec2, Vec3 } from '../model/types';

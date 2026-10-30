@@ -8,7 +8,7 @@ import { generateParts, partBounds } from '../catalog/generators';
 import { MATERIALS, materialById, physicalSize, repeatPerMeter, textureExtent } from '../catalog/materials';
 import { itemById } from '../catalog/providers';
 import { furnitureWarnings, obbOf } from '../model/collision';
-import { obbCorners, obbOverlap, pointInPolygon, signedArea } from '../model/geom2d';
+import { obbCorners, obbOverlap, pointInPolygon, signedArea } from '@home-sim/core/model/geom2d';
 import { arrangeScenario, findFreeSpot } from '../model/placement';
 import { allLevels, allRooms, levelAtZ, roomAt, roomById, type HomeRoom } from '../model/rooms';
 import { DEFAULT_SNAP, rotFacing, snapPlacement, snapRotation } from '../model/snapping';

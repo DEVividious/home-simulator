@@ -17,7 +17,7 @@ npm run dev              # http://localhost:5173/ — your own project if there 
                          # ?project=demo-apartment (or any id) opens another; port busy: npm run dev -- --port 5180
 ```
 
-Requirements: Node.js ≥ 22.12. For importing plans: Python 3.11 + `tools/requirements.txt`; poppler for PDF sheets; the ODA File
+Requirements: Node.js ≥ 22.18. For importing plans: Python 3.11 + `tools/requirements.txt`; poppler for PDF sheets; the ODA File
 Converter for DWG. For previews and the phone: Google Chrome / Chromium; an Android phone with Chrome.
 
 ## Make your home in five lines
@@ -84,6 +84,8 @@ skills/ ──► tools/ (Python: CAD, PDF, image) ──► projects/<id>/sourc
                                                                                                                 │
 src/ engine (React 19, three.js r181, react-three-fiber, Vite 7, TypeScript) ◄── projects/index.json ◄──────────┘
    project boundary (src/project) · model (src/home/model) · scene · UI · document & sync (src/document) · PWA (src/pwa)
+packages/core: the pure core shared by the app, the CLI and tools — package contract and schema, plan.json compiler,
+   building model (no DOM, three.js or React)
 ```
 Glossary: [docs/GLOSSARY.md](docs/GLOSSARY.md).
 
@@ -94,8 +96,8 @@ two-flight U-turn only; iOS is not covered by the phone flow. Full list: [docs/K
 
 ## Contributing
 
-`npm run typecheck && npm test && npm run test:e2e`, plus `npm run audit:genericity` (no building-specific code) and
-`npm run audit:i18n`.
+`npm run typecheck && npm test && npm run test:e2e`, plus `npm run audit:genericity` (no building-specific code),
+`npm run audit:i18n` and `npm run audit:core` (the core stays pure).
 Code, comments and docs are English; UI strings go through `t()`.
 
 ## Licence

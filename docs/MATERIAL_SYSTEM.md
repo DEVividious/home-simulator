@@ -75,7 +75,7 @@ ref)` (`src/home/model/interiors.ts`) takes `floor`, `ceiling`, `wall` (one wall
 **Whole room** and **Whole home** (all rooms except bathrooms, garages and technical rooms — `applyWallsHouse`). `null`
 restores the shell finish. One change = one history entry, also for the whole home.
 
-Room walls (`src/home/model/rooms.ts`) are the edges of the room outline (`<roomId>-w<n>`) with their openings:
+Room walls (`packages/core/src/model/building.ts`) are the edges of the room outline (`<roomId>-w<n>`) with their openings:
 doors and passages, windows (sill / head), roof windows. A finish (`src/home/three/surfaces.ts`) is a thin layer 3 mm
 (`SURFACE_OFFSET`) in front of the shell face — the shell itself is never changed:
 

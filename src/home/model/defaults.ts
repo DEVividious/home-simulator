@@ -6,20 +6,14 @@
 // variant, save your own arrangement). The engine knows nothing about the rooms or layout of any specific project.
 import { derivedByKey, project } from '../../project/active';
 import { itemById } from '../catalog/providers';
-import { round } from './geom2d';
+import { round } from '@home-sim/core/model/geom2d';
 import { setDefaultFurnitureProvider } from './interiors';
 import { attachMounted } from './mountedFurniture';
 import { roomById, type HomeRoom } from './rooms';
-import type { Dims, FurniturePlacement } from './types';
+import type { FurniturePlacement } from './types';
+import type { ArchitectItem } from '@home-sim/core/package/types';
+export type { ArchitectItem } from '@home-sim/core/package/types';
 
-export interface ArchitectItem {
-  key: string; room: string; catalogId: string; variant: string | null; x: number; y: number; rot: number;
-  dims?: Partial<Dims>; fit?: 'ceiling' | 'hood'; elevation?: number; source: string;
-  /** front material when given by the sources (otherwise the item's default material) */
-  materialId?: string;
-  /** dimensioned — dimension annotated on the plan; drawn — outline from the plan vectors; approximate — position from the plan, dimension assumed */
-  basis: 'dimensioned' | 'drawn' | 'approximate'; note: string; group?: string;
-}
 export const architectItems = (): ArchitectItem[] => project().interiors.items;
 export const architectNotIncluded = () => project().interiors.notIncluded;
 /** id prefix of items from the architect's layout (distinguishes ARCHITECT DEFAULT / USER ARRANGEMENT) */

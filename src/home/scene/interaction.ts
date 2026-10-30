@@ -7,7 +7,7 @@
 import { displayName, elevationOf, isWallMounted, resolveDims, type CatalogItem } from '../catalog/furniture';
 import { itemById } from '../catalog/providers';
 import { furnitureWarnings, obbOf } from '../model/collision';
-import { angleDiff, clampToPolygon, deg, normDeg, pointInPolygon, round } from '../model/geom2d';
+import { angleDiff, clampToPolygon, deg, normDeg, pointInPolygon, round } from '@home-sim/core/model/geom2d';
 import { addFurniture, furnitureById, newId, removeFurniture, updateFurniture } from '../model/interiors';
 import { pickFromRay, pickOnSurface, surfacePoint, wallFromPlan } from '../model/mount';
 import { beginMountDrag, gridU, MOUNT, moveMountDrag, nudgeMount, mountPose, reanchorMountDrag, type MountDrag, type MountDragOptions } from '../model/mountDrag';

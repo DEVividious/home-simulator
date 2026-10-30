@@ -5,7 +5,7 @@ import { itemById } from '../catalog/providers';
 import { obbOf } from '../model/collision';
 import { allDoors, leafSegment } from '../model/doors';
 import type { CoordContext } from '../model/electrical';
-import { obbCorners } from '../model/geom2d';
+import { obbCorners } from '@home-sim/core/model/geom2d';
 import { allRooms } from '../model/rooms';
 import type { LevelId, Vec2 } from '../model/types';
 import { arrangementOf, design, type DesignState } from '../store/design';

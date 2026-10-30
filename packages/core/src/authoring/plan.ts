@@ -8,7 +8,7 @@
 // POINT (rect, polygon, at, box, boundary) is in pixels of the source image (x right, y DOWN) and is converted with the
 // calibration block; every SIZE (width, sill, head, heights, dims, offsets) is always in metres.
 import { z } from 'zod';
-import { ProjectSchema, RoomKindSchema } from '../project/schema';
+import { ProjectSchema, RoomKindSchema } from '../package/schema.ts';
 
 const num = z.number().finite();
 const pt = z.tuple([num, num]);

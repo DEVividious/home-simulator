@@ -14,7 +14,7 @@ import { fixtureDir } from '../../test/setup';
 import { BUILTIN_ITEMS, resolveDims } from '../catalog/furniture';
 import { furnitureThumbnail } from '../catalog/thumbnails';
 import { itemById, setImportedAssets } from '../catalog/providers';
-import { pointInPolygon } from '../model/geom2d';
+import { pointInPolygon } from '@home-sim/core/model/geom2d';
 import {
   activeArrangement, addFurniture, defaultInterior, deleteArrangement, duplicateArrangement, loadArrangement, newEmptyArrangement, renameArrangement,
   removeFurniture, saveArrangement, setFinish, updateFurniture,

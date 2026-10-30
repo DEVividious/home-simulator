@@ -4,14 +4,9 @@
 // rooms with the wall faces it crosses, hinge position and directions from "hinge side + room it opens into", window wall
 // axis and face, stairs from risers and level heights, furniture against a wall, provenance on every fact.
 // Problems are returned as issues (error / warning); the CLI refuses to write a package with errors.
-import type { ArchitectItem } from '../home/model/defaults';
-import type { DoorDef } from '../home/model/doors';
-import type { RoomJson } from '../home/model/rooms';
-import type { StairDef } from '../home/model/stairs';
-import type { Vec2 } from '../home/model/types';
-import type { Viewpoint } from '../home/model/viewpoints';
-import type { ElectricalDefaults, ProjectModule, ProjectPackage } from '../project/types';
-import { PlanSchema, type Plan, type PlanInput } from './plan';
+import { outerOutline } from '../model/outline.ts';
+import type { ArchitectItem, DoorDef, ElectricalDefaults, ProjectModule, ProjectPackage, RoomJson, StairDef, Vec2, Viewpoint } from '../package/types.ts';
+import { PlanSchema, type Plan, type PlanInput } from './plan.ts';
 
 export interface Issue { level: 'error' | 'warning'; code: string; message: string }
 export interface CatalogItemInfo { id: string; dimensions: { w: number; d: number; h: number }; variants?: { id: string; dimensions?: Partial<{ w: number; d: number; h: number }> }[]; mount?: string }
@@ -44,51 +39,6 @@ function inPolygon(p: Vec2, poly: Vec2[]): boolean {
   }
   return inside;
 }
-/**
- * Outer outline of orthogonal rooms grown by the exterior wall t — the cells of the outline grid within t of a room (as the
- * generated shell fills them), traced counter-clockwise; the largest loop when the rooms form several buildings.
- */
-export function outerOutline(rooms: Vec2[][], t: number): Vec2[] {
-  const uniq = (v: number[]) => [...new Set(v.map((x) => Math.round(x * 1e5) / 1e5))].sort((a, b) => a - b);
-  const xs = uniq(rooms.flatMap((p) => p.flatMap((q) => [q[0] - t, q[0], q[0] + t]))), ys = uniq(rooms.flatMap((p) => p.flatMap((q) => [q[1] - t, q[1], q[1] + t])));
-  const nx = xs.length - 1, ny = ys.length - 1;
-  const near = (c: Vec2) => rooms.some((p) => {
-    const [x0, y0, x1, y1] = bboxOf(p);
-    if (c[0] < x0 - t || c[0] > x1 + t || c[1] < y0 - t || c[1] > y1 + t) return false;
-    if (inPolygon(c, p)) return true;
-    // within t (Chebyshev) of an edge: orthogonal edges are their own bounding boxes
-    return p.some((a, i) => { const b = p[(i + 1) % p.length]; return Math.max(a[0], b[0]) >= c[0] - t && Math.min(a[0], b[0]) <= c[0] + t && Math.max(a[1], b[1]) >= c[1] - t && Math.min(a[1], b[1]) <= c[1] + t; });
-  });
-  const full = new Uint8Array(nx * ny);
-  for (let i = 0; i < nx; i++) for (let j = 0; j < ny; j++) full[i * ny + j] = near([(xs[i] + xs[i + 1]) / 2, (ys[j] + ys[j + 1]) / 2]) ? 1 : 0;
-  const on = (i: number, j: number) => i >= 0 && j >= 0 && i < nx && j < ny && full[i * ny + j] === 1;
-  // boundary edges with the filled cell on the left, keyed by their start grid point
-  const next = new Map<string, [number, number][]>(), key = (i: number, j: number) => `${i},${j}`;
-  const add = (a: [number, number], b: [number, number]) => { const k = key(...a); next.set(k, [...(next.get(k) ?? []), b]); };
-  for (let i = 0; i < nx; i++) for (let j = 0; j < ny; j++) {
-    if (!on(i, j)) continue;
-    if (!on(i, j - 1)) add([i, j], [i + 1, j]);
-    if (!on(i + 1, j)) add([i + 1, j], [i + 1, j + 1]);
-    if (!on(i, j + 1)) add([i + 1, j + 1], [i, j + 1]);
-    if (!on(i - 1, j)) add([i, j + 1], [i, j]);
-  }
-  let best: Vec2[] = [], bestArea = 0;
-  for (const k0 of [...next.keys()]) {
-    while (next.get(k0)?.length) {
-      const loop: Vec2[] = [];
-      let k = k0;
-      while (next.get(k)?.length) {
-        const [i, j] = k.split(',').map(Number), b = next.get(k)!.pop()!;
-        loop.push([xs[i], ys[j]]);
-        k = key(...b);
-      }
-      const area = loop.reduce((s, a, i) => { const b = loop[(i + 1) % loop.length]; return s + a[0] * b[1] - b[0] * a[1]; }, 0) / 2;
-      if (area > bestArea) { bestArea = area; best = loop; }
-    }
-  }
-  // drop the vertices in the middle of straight runs
-  return best.filter((p, i) => { const a = best[(i - 1 + best.length) % best.length], b = best[(i + 1) % best.length]; return !((a[0] === p[0] && p[0] === b[0]) || (a[1] === p[1] && p[1] === b[1])); });
-}
 /** area shared by two orthogonal outlines: cells of the grid spanned by both outlines' coordinates, inside both */
 function overlapArea(pa: Vec2[], pb: Vec2[]): number {
   const [ax0, ay0, ax1, ay1] = bboxOf(pa), [bx0, by0, bx1, by1] = bboxOf(pb);
@@ -119,7 +69,9 @@ const alongOf = (e: Edge, p: Vec2) => (e.axis === 'X' ? p[0] : p[1]);
 const acrossOf = (e: Edge, p: Vec2) => (e.axis === 'X' ? p[1] : p[0]);
 
 export interface CompileOptions {
-  catalog: CatalogItemInfo[];
+  /** furniture catalog the plan's items are checked against; null — no catalog: items are placed with their own `dims` and not
+   *  checked (tools that only need the building, e.g. the print export) */
+  catalog: CatalogItemInfo[] | null;
   /** room ids and their vertex counts recorded when the package was released (projects/<id>/ids.lock.json) */
   lock?: { rooms: Record<string, { vertices: number; first: Vec2 }> } | null;
 }
@@ -403,7 +355,7 @@ export function compilePlan(input: PlanInput | unknown, opts: CompileOptions): C
   });
 
   // ---- furniture
-  const cat = new Map(opts.catalog.map((c) => [c.id, c]));
+  const cat = opts.catalog && new Map(opts.catalog.map((c) => [c.id, c]));
   const keys = new Map<string, number>();
   /** the wall of a room facing a side (N = +Y): the one holding `along`, else the longest; an L room has two west walls */
   const sideEdge = (room: string, side: 'N' | 'S' | 'E' | 'W', along?: number): Edge => {
@@ -416,12 +368,13 @@ export function compilePlan(input: PlanInput | unknown, opts: CompileOptions): C
   };
   const items: ArchitectItem[] = [];
   for (const f of plan.furniture) {
-    const it = cat.get(f.catalogId), poly = polys.get(f.room);
+    const it: CatalogItemInfo | undefined = cat ? cat.get(f.catalogId) : { id: f.catalogId, dimensions: { w: 0, d: 0, h: 0 } };
+    const poly = polys.get(f.room);
     if (!it) { err('furniture.catalog', `furniture in "${f.room}": unknown catalog item "${f.catalogId}" (see data/furnitureCatalog.json)`); continue; }
     if (!poly) { err('ref', `furniture "${f.catalogId}": unknown room "${f.room}"`); continue; }
     const vd = it.variants?.find((v) => v.id === f.variant)?.dimensions ?? {};
     const dims = { ...it.dimensions, ...vd, ...(f.dims ?? {}) };
-    if (f.variant && !it.variants?.some((v) => v.id === f.variant)) err('furniture.variant', `furniture "${f.catalogId}" in "${f.room}": unknown variant "${f.variant}" (${(it.variants ?? []).map((v) => v.id).join(', ') || 'no variants'})`);
+    if (cat && f.variant && !it.variants?.some((v) => v.id === f.variant)) err('furniture.variant', `furniture "${f.catalogId}" in "${f.room}": unknown variant "${f.variant}" (${(it.variants ?? []).map((v) => v.id).join(', ') || 'no variants'})`);
     let x: number, y: number, rot: number;
     if (f.wall) {
       const half = dims.d / 2 + 0.005;

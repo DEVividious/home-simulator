@@ -12,7 +12,7 @@ import {
   LEAF_T, leafAngle, leafSegment, openOf, parseDoorState, PASS_OPEN, serializeDoorState, setAllDoors, setDoorOpen, swingArc, toggleDoor,
   type DoorState,
 } from '../model/doors';
-import { pointInPolygon } from '../model/geom2d';
+import { pointInPolygon } from '@home-sim/core/model/geom2d';
 import { roomById } from '../model/rooms';
 import type { LevelId, Vec2 } from '../model/types';
 import { setDoorGate, walkAllowed, walkRoomAt, walkStep } from '../model/walk';

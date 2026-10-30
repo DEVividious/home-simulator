@@ -3,7 +3,7 @@
 // motion; motion along a wall "slides" (X and Y components separately). Exterior doors do not lead outside. Under sloped
 // ceilings, places where the ceiling is lower than eye height + clearance are not walkable. Pure TS (tests without a browser).
 import { derivedByKey } from '../../project/active';
-import { distToPolygonEdges, pointInPolygon } from './geom2d';
+import { distToPolygonEdges, pointInPolygon } from '@home-sim/core/model/geom2d';
 import { roomsOfLevel, type HomeRoom } from './rooms';
 import type { LevelId, Vec2 } from './types';
 

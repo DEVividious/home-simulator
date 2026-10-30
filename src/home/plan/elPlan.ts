@@ -8,7 +8,7 @@ import { allDoors, leafSegment, swingArc } from '../model/doors';
 import {
   EL_LAYERS, EL_TYPES, elRooms, EXT, hasSite, houseFootprint, layerOf, measure, plotBoundary, siteLevelId, wallRuns, type ElectricalPlan, type ElLayer, type ElPoint, type ElRoom, type ElType,
 } from '../model/electrical';
-import { offsetPolygon } from '../model/geom2d';
+import { offsetPolygon } from '@home-sim/core/model/geom2d';
 import { allLevels, DEFAULT_PLAN_WALL_OFFSET, levelById, levelName, roomById, roomsOfLevel, type RoomWall } from '../model/rooms';
 import { stairs } from '../model/stairs';
 import type { LevelId, Vec2 } from '../model/types';

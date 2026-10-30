@@ -14,7 +14,7 @@ import { t } from '../../i18n';
 import { siteLevelId } from './electrical';
 import { derived, project } from '../../project/active';
 import { doorById } from './doors';
-import { distToPolygonEdges, pointInPolygon } from './geom2d';
+import { distToPolygonEdges, pointInPolygon } from '@home-sim/core/model/geom2d';
 import { levelAtZ, levelById, levelName, roomById, roomsOfLevel, type HomeRoom } from './rooms';
 import { inStairBox, stairAllowed, stairZ } from './stairs';
 import type { LevelId, Vec2 } from './types';
