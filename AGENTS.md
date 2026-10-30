@@ -5,7 +5,7 @@ This repository is a 3D home / apartment configurator engine. Buildings are data
 **Skills** live in `skills/<name>/SKILL.md` (Agent Skills format). Before acting on any of these requests, read the SKILL.md
 and follow it:
 - build / import / update a home or flat from plans, drawings, images → `skills/home-from-plan/SKILL.md`
-- check, preview, run a project, explain an error → `skills/home-check/SKILL.md`
+- check, preview, run a project, print it as a 3D scale model (STL), explain an error → `skills/home-check/SKILL.md`
 - install or update the app on an Android phone → `skills/home-to-phone/SKILL.md`
 
 Rules:

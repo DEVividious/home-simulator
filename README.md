@@ -35,7 +35,7 @@ Converter for DWG. For previews and the phone: Google Chrome / Chromium; an Andr
 | Skill | What it does |
 |---|---|
 | [`home-from-plan`](skills/home-from-plan/SKILL.md) | builds or updates a project from DWG / DXF, PDF sheets, plan images or a description |
-| [`home-check`](skills/home-check/SKILL.md) | validates, previews and runs a project; explains every error |
+| [`home-check`](skills/home-check/SKILL.md) | validates, previews and runs a project; prints it as a scale model (STL); explains every error |
 | [`home-to-phone`](skills/home-to-phone/SKILL.md) | installs and updates the app on an Android phone over USB (PWA, no store) |
 
 Skills use the open Agent Skills format (`SKILL.md` + scripts + references). Everything they do is also a command you can run
@@ -66,6 +66,7 @@ the project id), set `project.id` and `project.name`, and edit it — format and
 npm run project:build -- projects/<id>       # plan.json → project.json (errors and warnings explained)
 npm run project:validate -- projects/<id>    # the checks the app runs at load time
 npm run project:preview -- projects/<id>     # projects/<id>/preview/plan-<level>.png + 3d.png (git-ignored)
+npm run project:print -- projects/<id> --bed K1C   # STL scale model that fits the printer bed: docs/PRINT_EXPORT.md
 ```
 Write down in `projects/<id>/README.md` where the facts come from and what you assumed — the skills do the same.
 
@@ -85,7 +86,7 @@ skills/ ──► tools/ (Python: CAD, PDF, image) ──► projects/<id>/sourc
 src/ engine (React 19, three.js r181, react-three-fiber, Vite 7, TypeScript) ◄── projects/index.json ◄──────────┘
    project boundary (src/project) · model (src/home/model) · scene · UI · document & sync (src/document) · PWA (src/pwa)
 packages/core: the pure core shared by the app, the CLI and tools — package contract and schema, plan.json compiler,
-   building model, the shell as manifold solids (no DOM, three.js or React)
+   building model, the shell as manifold solids, the print export (no DOM, three.js or React)
 ```
 Glossary: [docs/GLOSSARY.md](docs/GLOSSARY.md).
 

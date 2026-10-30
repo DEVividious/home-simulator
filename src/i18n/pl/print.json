@@ -1,0 +1,10 @@
+{
+ "print.preview.assembled": "Złożony model",
+ "print.preview.exploded": "Części",
+ "print.preview.onBed": "Na stole",
+ "print.preview.roof": "Dach",
+ "print.preview.supports": "Miejsca wymagające podpór: {n}",
+ "print.preview.upsideDown": "do góry nogami",
+ "print.preview.rotated": "obrócone o 90°",
+ "print.preview.notWritten": "nie zapisano: {problem}"
+}

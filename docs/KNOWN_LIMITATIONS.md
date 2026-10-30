@@ -55,6 +55,25 @@ the behaviour is named in brackets. When a limit is lifted, remove it here in th
   `buildingType` is `house` or `apartment`. Behaviour keyed on anything else needs an engine change.
 - **Project ids are permanent.** `manifest.projectId` names the user's saved data; renaming it orphans that data.
 
+## Print export
+
+- **Only the last level's roof comes off.** The print is one part per level and a removable roof over the last level; a roof
+  over a lower level (a wing beside a smaller upper floor) is printed with that level, and its rooms are closed under it
+  (`packages/core/src/print/parts.ts`). There are no connectors: the parts stand on flat faces and are not glued or keyed.
+- **The split is horizontal.** Over a cold roof space the roof part starts at the ceiling, so eaves reaching lower are cut
+  flat at that height (`eaves.cut` says how much); under the slopes it starts at the bottom of the eaves, so the walls of the
+  rooms there are mostly in the roof part. Rooms with a flat top under the slopes (collar ties) and shallow dormer roofs are
+  overhangs inside the roof part — the report lists them as needing supports.
+- **Stairs are solid and stop at the top of their level's part.** The steps above it (inside the slab of the upper level) are
+  not printed; the opening in the upper slab stays open. Railings, glass, window frames in walls, door leaves and furniture
+  are not printed; roof and dormer windows are recesses with a frame, left out when they are too small at the scale.
+- **Printability is judged, not simulated.** Thin spots come from horizontal sections at a few heights; overhangs from face
+  angles, with bridges recognised only when held on two opposite sides of an axis-aligned region. Nothing measures warping,
+  first-layer adhesion or the strength of the parts; the owner's test print decides (`print-report.json` says what was
+  changed and what needs supports).
+- **Standard scales and 90° turns only.** The automatic scale is the largest of 1:50 … 1:300 that fits; a part is never placed
+  diagonally on the bed and never split to fit. A building too large for the bed at 1:300 is not printable.
+
 ## Authoring and import
 
 - **Model files are not made by the tools.** `plan.json` can name a building, terrain or surroundings GLB (`assets`), camera

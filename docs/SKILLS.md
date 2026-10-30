@@ -8,7 +8,7 @@ Claude Code finds them through `.claude/skills/` (links), Codex / Gemini CLI thr
 | Skill | Use | Main commands |
 |---|---|---|
 | `home-from-plan` | build or update a building from DWG / DXF, PDF, images or a description | `tools/*`, `npm run project:build / validate / preview` |
-| `home-check` | validate, preview, run, explain errors | `npm run project:validate / preview`, `npm run dev` |
+| `home-check` | validate, preview, run, print (STL), explain errors | `npm run project:validate / preview / print`, `npm run dev` |
 | `home-to-phone` | install / update the PWA on Android over USB | `node scripts/phone/phone.mjs …` |
 
 Writing a skill: keep it a procedure (what to run, what to look at, when to ask the user); put logic into versioned tools; every

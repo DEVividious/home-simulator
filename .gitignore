@@ -13,6 +13,7 @@ userdata/
 # generated reports (tests, previews, audits)
 reports/
 projects/*/preview/
+projects/*/print/
 
 # locally downloaded tools (adb for phone install)
 .tools/

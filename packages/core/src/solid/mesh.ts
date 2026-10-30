@@ -36,13 +36,33 @@ function weld(P: Float32Array, np: number): Uint32Array {
   return rep;
 }
 
+/** triangles of the kernel's mesh with their vertices welded; those that collapse are dropped (kept: their index in the mesh) */
+function welded(raw: Uint32Array, rep: Uint32Array): number[] {
+  const keptTri: number[] = [];
+  for (let i = 0; i < raw.length / 3; i++) { const a = rep[raw[i * 3]], b = rep[raw[i * 3 + 1]], c = rep[raw[i * 3 + 2]]; if (a !== b && b !== c && a !== c) keptTri.push(i); }
+  return keptTri;
+}
+
+/** a solid as a plain indexed mesh (the print export and its checks): vertices welded, collapsed triangles dropped, unused vertices removed */
+export function plainMesh(m: Manifold): { positions: Float64Array; index: Uint32Array } {
+  const mesh = m.getMesh(), P = mesh.vertProperties, np = mesh.numProp, rep = weld(P, np), raw = mesh.triVerts, keptTri = welded(raw, rep);
+  const map = new Map<number, number>(), pos: number[] = [], index = new Uint32Array(keptTri.length * 3);
+  keptTri.forEach((i, j) => {
+    for (let k = 0; k < 3; k++) {
+      const v = rep[raw[i * 3 + k]];
+      let o = map.get(v);
+      if (o === undefined) { o = pos.length / 3; map.set(v, o); pos.push(P[v * np], P[v * np + 1], P[v * np + 2]); }
+      index[j * 3 + k] = o;
+    }
+  });
+  return { positions: new Float64Array(pos), index };
+}
+
 /** the mesh of a solid; every triangle must come from a tagged input */
 export function solidMesh(m: Manifold, table: TagTable): SolidMesh {
   const mesh = m.getMesh();
   const P = mesh.vertProperties, np = mesh.numProp, rep = weld(P, np), raw = mesh.triVerts;
-  // triangles with their vertices welded; those that collapse are dropped (kept: their index in the kernel's mesh)
-  const keptTri: number[] = [];
-  for (let i = 0; i < raw.length / 3; i++) { const a = rep[raw[i * 3]], b = rep[raw[i * 3 + 1]], c = rep[raw[i * 3 + 2]]; if (a !== b && b !== c && a !== c) keptTri.push(i); }
+  const keptTri = welded(raw, rep);
   const T = new Uint32Array(keptTri.length * 3);
   keptTri.forEach((i, j) => { T[j * 3] = rep[raw[i * 3]]; T[j * 3 + 1] = rep[raw[i * 3 + 1]]; T[j * 3 + 2] = rep[raw[i * 3 + 2]]; });
   const nTri = keptTri.length;

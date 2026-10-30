@@ -45,7 +45,7 @@ export function wallTop(rooms: Room[], floorZ: number): number {
 }
 
 /** levels that have rooms (the others have no solid) */
-const builtLevels = (b: Building) => b.levels.filter((l) => roomsOfLevel(b, l.id).length);
+export const builtLevels = (b: Building) => b.levels.filter((l) => roomsOfLevel(b, l.id).length);
 const nextBuilt = (b: Building, level: LevelId): Level | null => { const L = builtLevels(b), i = L.findIndex((l) => l.id === level); return L[i + 1] ?? null; };
 /** the walls of a level in plan: every room grown by the exterior wall */
 const grownRooms = (b: Building, level: LevelId) => roomsOfLevel(b, level).map((r) => offsetPolygon(r.polygon, b.shell.exteriorWall));
@@ -97,7 +97,7 @@ function cutterSolid(geo: Geometry, keep: Keep, c: OpeningCut): Manifold {
 
 /** windows in the fronts of dormers set back from the walls: cutters through the front and frames (a front in a wall plane
  *  holds an ordinary room window instead) */
-function dormerOpenings(b: Building, rooms: Room[]): { cuts: OpeningCut[]; windows: ShellWindow[] } {
+export function dormerOpenings(b: Building, rooms: Room[]): { cuts: OpeningCut[]; windows: ShellWindow[] } {
   const cuts: OpeningCut[] = [], windows: ShellWindow[] = [];
   for (const d of b.roof?.json.dormers ?? []) {
     const w = d.window, room = w && rooms.find((r) => r.id === w.roomId);
@@ -131,13 +131,19 @@ export interface LevelSolid {
 }
 
 /** the heights every solid of a building lies between (prisms that are trimmed by roof planes start and end here) */
-function span(b: Building): [number, number] {
+export function span(b: Building): [number, number] {
   const s = shellBounds(b);
   return [snap(s.min[2] - 1), snap(s.max[2] + 1)];
 }
 
+export interface LevelSolidOptions {
+  /** how far the walls rise into the roof above them (the rooms still 5 mm further): the print adds the level and the roof into
+   *  one solid, and overlapping solids unite cleanly where solids that only touch keep a seam along the valleys [m] (default 0) */
+  roofOverlap?: number;
+}
+
 /** the solid of one level, built in the caller's scope; null for a level without rooms */
-export function levelSolid(geo: Geometry, keep: Keep, b: Building, level: LevelId): LevelSolid | null {
+export function levelSolid(geo: Geometry, keep: Keep, b: Building, level: LevelId, opts: LevelSolidOptions = {}): LevelSolid | null {
   const rooms = roomsOfLevel(b, level);
   if (!rooms.length) return null;
   const { Manifold, CrossSection } = geo, frame = levelFrame(b, level), tags = new TagTable(), t = b.shell.exteriorWall;
@@ -154,7 +160,8 @@ export function levelSolid(geo: Geometry, keep: Keep, b: Building, level: LevelI
     const pieces = roofPieces(b, level), [lo, hi] = span(b), up = nextBuilt(b, level), slab = b.shell.slab;
     // walls: up to the roof's underside, and under the next level up to its slab; rooms: up to their flat top under the roof
     // (into the roof where it is lower — 5 mm above the walls, so no face is shared), through the top under the next level
-    const space = roofSpace(geo, keep, pieces, 'region', 0, lo, hi), spaceUp = roofSpace(geo, keep, pieces, 'inner', PROUD, lo, hi);
+    const o = opts.roofOverlap ?? 0;
+    const space = roofSpace(geo, keep, pieces, 'region', o, lo, hi), spaceUp = roofSpace(geo, keep, pieces, 'inner', PROUD + o, lo, hi);
     const nextFp = up ? keep(keep(new CrossSection(roomsOfLevel(b, up.id).map((r) => r.polygon.map(snap2)))).offset(t, 'Miter', 2)) : null;
     const nextTop = up ? snap(up.floorZ - slab) : 0;
     cap = nextFp ? keep(Manifold.union(space, prism(keep, nextFp, lo, nextTop))) : space;

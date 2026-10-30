@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "license": "MIT",
-  "description": "Pure building model of Home Simulator: the project package contract, the plan.json compiler, the derived building geometry and the shell as manifold solids. No DOM, three.js or React.",
+  "description": "Pure building model of Home Simulator: the project package contract, the plan.json compiler, the derived building geometry, the shell as manifold solids and the print export (STL parts, report, preview). No DOM, three.js or React.",
   "exports": {
     "./*": "./src/*.ts"
   },

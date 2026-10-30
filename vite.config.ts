@@ -20,7 +20,7 @@ function documentApi(): Plugin {
 export default defineConfig({
   plugins: [projectsPlugin(), react(), documentApi(), pwaPlugin()],
   publicDir: 'public',
-  server: { port: 5173, strictPort: true, watch: { ignored: ['**/userdata/**', '**/reports/**', '**/projects/*/preview/**'] } },
+  server: { port: 5173, strictPort: true, watch: { ignored: ['**/userdata/**', '**/reports/**', '**/projects/*/preview/**', '**/projects/*/print/**'] } },
   preview: { port: 4173, strictPort: true },
   build: { outDir: 'dist', chunkSizeWarningLimit: 1500 },
   // the solid kernel (manifold-3d) runs in a module worker and finds its WASM through an explicit URL (three/coreWorker.ts)

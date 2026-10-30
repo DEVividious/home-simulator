@@ -1,6 +1,6 @@
 ---
 name: home-check
-description: Validate, preview, run or diagnose a Home Simulator project package (projects/<id>). Use after editing plan.json or project.json, or when the user says "check my project", "show me the plan", "run the app", "open my flat in 3D", "why does my project not load", "the 3D looks wrong".
+description: Validate, preview, run, print or diagnose a Home Simulator project package (projects/<id>). Use after editing plan.json or project.json, or when the user says "check my project", "show me the plan", "run the app", "open my flat in 3D", "print my house", "make an STL", "why does my project not load", "the 3D looks wrong".
 allowed-tools: Bash(npm run project:*) Bash(npm run -s project:*) Bash(npm run dev*) Bash(npm run build) Bash(node scripts/*) Read Edit Glob Grep
 metadata:
   version: 1
@@ -28,6 +28,18 @@ npm run -s project:preview -- projects/<id> [--room <roomId>]
 Renders the package headless in Chrome into `projects/<id>/preview/`: `plan-<level>.png` (top-down section of each level with
 rooms, doors and windows) and `3d.png` (exterior view; `room-<id>.png` with --room). Look at the images; compare them with the
 source drawing when the package was imported.
+
+## Print
+
+```bash
+npm run -s project:print -- projects/<id> --bed "<printer>"     # e.g. K1C, "prusa mk4", or 220x220x250 (mm)
+npm run -s project:print -- projects/<id> --bed K1C --scales    # every scale with the size of each part — to propose one
+```
+Writes `projects/<id>/print/1to<N>/`: one STL per level and a removable roof, `print-report.json` and `preview-1to<N>.png`.
+Ask for the printer if the user has not named it (the bed size from the slicer works too). Look at the preview, then tell the
+user the scale, the parts with their size, what was thickened for printing (`adjustments`) and where supports are needed
+(`warnings`, each overhang with `what`/`at`). Exit 3 = a part failed its checks or nothing fits — the report's `problems` say
+which; `--dry-run` checks without writing STL. Options and rules: `docs/PRINT_EXPORT.md`.
 
 ## Run
 

@@ -1,0 +1,10 @@
+{
+ "print.preview.assembled": "Assembled",
+ "print.preview.exploded": "Parts",
+ "print.preview.onBed": "On the bed",
+ "print.preview.roof": "Roof",
+ "print.preview.supports": "{n} overhang(s) need supports",
+ "print.preview.upsideDown": "upside down",
+ "print.preview.rotated": "turned 90°",
+ "print.preview.notWritten": "not written: {problem}"
+}

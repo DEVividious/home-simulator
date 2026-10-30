@@ -22,6 +22,7 @@
     "schema:generate": "vite-node scripts/schema/generate.ts",
     "i18n:gen": "node scripts/i18n/gen.mjs",
     "project:preview": "node scripts/project/preview.mjs",
+    "project:print": "node scripts/project/print.mjs",
     "skills:catalog": "node scripts/skills/catalog-table.mjs",
     "phone": "node scripts/phone/phone.mjs",
     "audit:i18n": "node scripts/audit/i18n-check.mjs",
