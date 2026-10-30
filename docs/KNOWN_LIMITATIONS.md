@@ -5,15 +5,21 @@ the behaviour is named in brackets. When a limit is lifted, remove it here in th
 
 ## Geometry and project package
 
-- **Generated walls need an orthogonal plan.** A project without a building model file gets its shell computed on a
-  rectangular grid spanned by the room outlines. Every room edge must run along X or Y. The compiler rejects a slanted edge
-  (`room.orthogonal`), and validation rejects a package without `assets.model` whose outlines are not axis-aligned
-  (`packages/core/src/model/gridShell.ts`, `packages/core/src/authoring/compile.ts`, `src/project/validate.ts`).
-- **The generated shell is a box.** It draws walls, a floor slab under every level and a flat slab over the top level, up to
-  the highest ceiling of the level. Sloped attic ceilings (level `slope` in `plan.json`) are drawn inside as ceiling and gable
-  finishes, but the outside shows no pitched roof. A sloped ceiling is one symmetric roof per level with its ridge along X or
-  Y; hips, dormers, valleys and different pitches on each side are not supported. Roof windows are openings in the ceiling
-  finish (light comes through), without a frame or glass, and do not show outside.
+- **Generated walls need an orthogonal plan.** A project without a building model file gets its shell computed from the room
+  outlines. Every room edge must run along X or Y: doors and windows are placed on walls along the plan axes, the compiler
+  rejects a slanted edge (`room.orthogonal`), and validation rejects a package without `assets.model` whose outlines are not
+  axis-aligned (`packages/core/src/model/building.ts`, `packages/core/src/authoring/compile.ts`, `src/project/validate.ts`).
+- **The generated shell is a box.** Every level is one closed solid: the room outlines grown by the exterior wall, minus the
+  rooms, the door and window openings and the stair shaft — a floor slab under every level and a flat slab over the top
+  level, up to the highest ceiling of the level (`packages/core/src/solid/levels.ts`). Sloped attic ceilings (level `slope`
+  in `plan.json`) are drawn inside as ceiling and gable finishes, but the outside shows no pitched roof. A sloped ceiling is
+  one symmetric roof per level with its ridge along X or Y; hips, dormers, valleys and different pitches on each side are not
+  supported. Roof windows are openings in the ceiling finish (light comes through), without a frame or glass, and do not show
+  outside.
+- **The solid kernel needs WebAssembly and module workers.** The shell is built with manifold-3d (WASM, ~0.5 MB, ~0.2 MB
+  gzipped) in a worker (`src/home/three/coreWorker.ts`). Where it cannot load or run, the older grid shell is shown
+  instead; `?shell=grid` forces it. The grid shell (`packages/core/src/model/gridShell.ts`) stays for one release and still
+  gives the wall mass of the plan views.
 - **No roof without a model.** There is no pitched roof, gable or chimney in the generated shell. A building that needs them
   must bring a GLB model (`assets.model`).
 - **One stair type.** `StairDef` supports only `kind: "u-turn"`: two flights with the same number of risers, a landing and a

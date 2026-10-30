@@ -23,6 +23,9 @@ export default defineConfig({
   server: { port: 5173, strictPort: true, watch: { ignored: ['**/userdata/**', '**/reports/**', '**/projects/*/preview/**'] } },
   preview: { port: 4173, strictPort: true },
   build: { outDir: 'dist', chunkSizeWarningLimit: 1500 },
+  // the solid kernel (manifold-3d) runs in a module worker and finds its WASM through an explicit URL (three/coreWorker.ts)
+  worker: { format: 'es' },
+  optimizeDeps: { exclude: ['manifold-3d'] },
   test: {
     projects: [
       // app tests: the demo project is active before engine modules are imported (src/test/setup.ts)

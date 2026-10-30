@@ -6,8 +6,10 @@
 // stairs to the first floor and out of the front door onto the site), variants (new, rename, switch, compare), save → reload.
 // Across projects: isolation of documents and device keys, project switch from Settings, language switch (Polish and back),
 // the project index, a broken package (temporary directory projects/__e2e_broken/, removed in `finally`) → readable error.
-// Usage: node scripts/verify/verify_core.mjs [--no-build] [--only demo-apartment,sample-house]
-//        HOME_SIM_BROWSER=auto|gpu|swiftshader. Output: reports/e2e/core/ (screenshots, core.json).
+// Both shells run the same scenario: by default the core's manifold solids, with --shell grid the grid shell (?shell=grid, the
+// fallback kept for one release — ADR 0026).
+// Usage: node scripts/verify/verify_core.mjs [--no-build] [--only demo-apartment,sample-house] [--shell core|grid]
+//        HOME_SIM_BROWSER=auto|gpu|swiftshader. Output: reports/e2e/core/ (core-grid/ with --shell grid; screenshots, core.json).
 import { execSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -16,11 +18,12 @@ import { join, resolve } from 'node:path';
 import { launch, ROOT, sleep, startServer, waitForApp } from './browser.mjs';
 import { appKeys, resetOrigin } from './app_data.mjs';
 
-const NAME = 'core', PORT = 4301;
-const OUT = resolve(ROOT, 'reports/e2e', NAME);
-const UD = mkdtempSync(join(tmpdir(), 'home-sim-e2e-core-'));
-const BROKEN_ID = '__e2e_broken', BROKEN = resolve(ROOT, 'projects', BROKEN_ID);
 const arg = (k, d) => { const i = process.argv.indexOf(`--${k}`); return i > 0 ? process.argv[i + 1] : d; };
+const SHELL = arg('shell', 'core') === 'grid' ? 'grid' : 'core', SHELL_Q = SHELL === 'grid' ? '&shell=grid' : '';
+const NAME = SHELL === 'grid' ? 'core-grid' : 'core', PORT = SHELL === 'grid' ? 4307 : 4301;
+const OUT = resolve(ROOT, 'reports/e2e', NAME);
+const UD = mkdtempSync(join(tmpdir(), `home-sim-e2e-${NAME}-`));
+const BROKEN_ID = SHELL === 'grid' ? '__e2e_broken_grid' : '__e2e_broken', BROKEN = resolve(ROOT, 'projects', BROKEN_ID);
 const ONLY = (arg('only', '') ?? '').split(',').filter(Boolean);
 mkdirSync(OUT, { recursive: true });
 for (const f of readdirSync(OUT)) rmSync(resolve(OUT, f), { recursive: true, force: true });
@@ -73,9 +76,10 @@ async function still(timeout = 8000) {
 const click = async (s, wait = 400) => { const el = await page.$(s); if (!el) throw new Error(`no element ${s}`); await el.scrollIntoView(); await sleep(60); await el.click(); await sleep(wait); };
 const key = async (mods, k) => { for (const m of mods) await page.keyboard.down(m); await page.keyboard.press(k); for (const m of [...mods].reverse()) await page.keyboard.up(m); await sleep(350); };
 const waitFor = async (fn, ms = 15000, step = 150) => { const t0 = Date.now(); for (;;) { const v = await fn().catch(() => null); if (v) return v; if (Date.now() - t0 > ms) return null; await sleep(step); } };
-const ready = async (p = page) => { await waitForApp(p); await p.waitForFunction(() => !!window.__home3d?.camera?.() && !!window.__homeScene, { timeout: 60000 }); };
+/** app up, scene up and the generated shell built (the core shell arrives from a worker) */
+const ready = async (p = page) => { await waitForApp(p); await p.waitForFunction(() => !!window.__home3d?.camera?.() && !!window.__homeScene && ['ready', 'error'].includes(window.__home3d.shell?.().status), { timeout: 60000 }); };
 async function open(id, extra = '') {
-  await page.goto(`${BASE}/?onboarding=off&project=${id}${extra}`, { waitUntil: 'load' });
+  await page.goto(`${BASE}/?onboarding=off&project=${id}${SHELL_Q}${extra}`, { waitUntil: 'load' });
   await ready(); await sleep(800); await still();
 }
 /** the element at a screen point is the 3D canvas (not covered by a panel, label or button) */
@@ -136,15 +140,18 @@ async function runProject(F) {
   await stage(`[${tag}] shell`, async () => {
     await click(T('cam-overview'), 900); await still();
     const parts = {};
-    for (const l of F.levels) parts[l] = { wall: await obj(`WALL_${l}`), floor: await obj(`SLAB_${l}_Floor`), frames: await obj(`WINDOW_FRAMES_${l}`) };
-    const house = await obj('HOUSE'), s = await st();
+    // core: one closed solid per level (walls and slabs); grid: walls and slabs as separate meshes
+    for (const l of F.levels) parts[l] = SHELL === 'grid'
+      ? { wall: await obj(`WALL_${l}`), floor: await obj(`SLAB_${l}_Floor`), frames: await obj(`WINDOW_FRAMES_${l}`) }
+      : { wall: await obj(`SOLID_${l}`), floor: await obj(`SOLID_${l}`), frames: await obj(`WINDOW_FRAMES_${l}`) };
+    const house = await obj('HOUSE'), s = await st(), shell = await s3('shell');
     await shot(`${tag}_01_shell`);
     // the shell is drawn: pixels in the middle of the building differ from the background
     const px = await page.evaluate(() => { const c = document.querySelector('canvas').getBoundingClientRect(); const a = window.__home3d.pixel(c.left + c.width / 2, c.top + c.height / 2), b = window.__home3d.pixel(c.left + 4, c.top + 4); return { a, b }; });
     const diff = Math.max(...px.a.map((v, i) => Math.abs(v - px.b[i])));
-    check(`[${tag}] generated shell visible: walls, floor slab and window frames of every level (${F.levels.join(', ')}) in the scene; building drawn over the background`,
-      !!house?.visible && F.levels.every((l) => parts[l].wall?.visible && parts[l].wall.tris > 50 && parts[l].floor && parts[l].frames?.tris > 0) && s.houseView === 'exterior' && diff > 12,
-      `${F.levels.map((l) => `${l}: walls ${parts[l].wall?.tris} tris, frames ${parts[l].frames?.tris}`).join('; ')}; centre ${px.a} vs corner ${px.b}`);
+    check(`[${tag}] generated shell (${SHELL}) visible: walls, floor slab and window frames of every level (${F.levels.join(', ')}) in the scene; building drawn over the background`,
+      shell.kind === SHELL && shell.status === 'ready' && !!house?.visible && F.levels.every((l) => parts[l].wall?.visible && parts[l].wall.tris > 50 && parts[l].floor && parts[l].frames?.tris > 0) && s.houseView === 'exterior' && diff > 12,
+      `${shell.kind} ${shell.status}; ${F.levels.map((l) => `${l}: walls ${parts[l].wall?.tris} tris, frames ${parts[l].frames?.tris}`).join('; ')}; centre ${px.a} vs corner ${px.b}`);
   });
 
   // ---------------------------------------------------------------- views from the bottom bar
@@ -416,7 +423,7 @@ try {
   await resetOrigin(page, BASE);
   // ================================================================== project index
   const idx = await (await fetch(`${BASE}/projects/index.json`)).json();
-  const dirs = readdirSync(resolve(ROOT, 'projects'), { withFileTypes: true }).filter((e) => e.isDirectory() && existsSync(resolve(ROOT, 'projects', e.name, 'project.json')) && e.name !== BROKEN_ID).map((e) => e.name).sort();
+  const dirs = readdirSync(resolve(ROOT, 'projects'), { withFileTypes: true }).filter((e) => e.isDirectory() && existsSync(resolve(ROOT, 'projects', e.name, 'project.json')) && !e.name.startsWith('__e2e_broken')).map((e) => e.name).sort();
   check('project index /projects/index.json: schema, one entry per package directory (id, name, dir), default project', idx.schema === 'home-simulator/projects-index' && idx.version === 1
     && dirs.every((d) => idx.projects.some((p) => p.id === d && p.dir === `projects/${d}/` && p.name === pkg(d).manifest.name)) && dirs.includes(idx.default) && ['demo-apartment', 'sample-house'].every((d) => dirs.includes(d)),
     `${idx.projects.map((p) => `${p.id} "${p.name}"`).join(', ')}; default ${idx.default}`);

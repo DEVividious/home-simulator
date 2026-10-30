@@ -16,13 +16,15 @@ const arg = (k, d) => { const i = process.argv.indexOf(`--${k}`); return i > 0 ?
 const workers = Math.max(1, Number(arg('workers', '3')) || 3);
 const only = (arg('only', '') ?? '').split(',').filter(Boolean);
 
-/** [name, script, relative duration (order: longest first)] */
+/** [name, script, relative duration (order: longest first), extra arguments] */
 const ALL = [
   ['core', 'verify_core.mjs', 10],
+  ['core-grid', 'verify_core.mjs', 9, ['--shell', 'grid']],
   ['mobile', 'verify_mobile.mjs', 8],
   ['pwa', 'verify_pwa.mjs', 7],
   ['mounted', 'verify_mounted.mjs', 5],
   ['electrical', 'verify_electrical.mjs', 5],
+  ['shell', 'verify_shell.mjs', 3],
 ];
 const unknown = only.filter((n) => !ALL.some(([x]) => x === n));
 if (unknown.length) { console.error(`unknown test(s): ${unknown.join(', ')} — available: ${ALL.map(([n]) => n).join(', ')}`); process.exit(2); }
@@ -40,11 +42,11 @@ if (!process.argv.includes('--no-build')) {
 }
 
 const results = [];
-function runOne([name, script]) {
+function runOne([name, script, , extra = []]) {
   return new Promise((done) => {
     const start = Date.now();
     // the build is fresh: the tests do not build again
-    const p = spawn(process.execPath, [`scripts/verify/${script}`, '--no-build'], { cwd: ROOT, env: process.env });
+    const p = spawn(process.execPath, [`scripts/verify/${script}`, '--no-build', ...extra], { cwd: ROOT, env: process.env });
     let out = '';
     p.stdout.on('data', (d) => { out += d; });
     p.stderr.on('data', (d) => { out += d; });

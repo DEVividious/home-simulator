@@ -104,7 +104,10 @@ try {
   await stopServer();
   await reload();
   const sOff = await sync(), stOff = await st();
-  check('5. server stopped → the app starts from the offline cache and opens the project from the device', stOff.loaded && sOff.offline && sOff.target === 'localStorage' && (await points()).includes(p0) && (await pwa()).ready, JSON.stringify(sOff));
+  // the generated shell comes from the solid kernel (worker + WASM) out of the offline cache — not the grid fallback
+  const shellOff = await page.waitForFunction(() => { const s = window.__home3d?.shell?.(); return s && ['ready', 'error'].includes(s.status) && s; }, { timeout: 30000 }).then((h) => h.jsonValue()).catch(() => null);
+  check('5. server stopped → the app starts from the offline cache and opens the project from the device; the shell is built by the solid kernel from the cache',
+    stOff.loaded && sOff.offline && sOff.target === 'localStorage' && (await points()).includes(p0) && (await pwa()).ready && shellOff?.kind === 'core' && shellOff.status === 'ready', `${JSON.stringify(sOff)}; shell ${JSON.stringify(shellOff)}`);
   // room, furniture, material, electrical point, save
   const room = 'R1';
   await page.evaluate((r, lv) => window.__home.ui({ section: 'interiors', roomId: r, level: lv, roomView: '3d', houseView: 'interior', camera: { preset: 'room', n: Date.now() } }), room, LEVEL); await sleep(1500);

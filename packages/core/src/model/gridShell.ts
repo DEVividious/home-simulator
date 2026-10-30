@@ -6,24 +6,16 @@
 // The grid is spanned by the outline coordinates, so it applies to ORTHOGONAL plans (walls along the X / Y axes) — just like
 // the room door and window data (along / plane_axis). Sloped ceilings are not represented. The manifold shell replaces it
 // (ADR 0024); this one stays as a fallback for one release (ADR 0026).
-import { stairArrivesAt, roomsOfLevel, type Building, type HoleKind, type Room, type RoomWall, type WallHole } from './building.ts';
+import { stairArrivesAt, roomsOfLevel, type Building, type Room, type RoomWall, type WallHole } from './building.ts';
 import { pointInPolygon } from './geom2d.ts';
 import type { LevelId, ShellSpec, Vec2, Vec3 } from '../package/types.ts';
+import { wallTop } from '../solid/levels.ts';
+import type { ShellWindow } from '../solid/openings.ts';
+
+export type { ShellWindow } from '../solid/openings.ts';
 
 /** shell surface quad; corners counter-clockwise as seen from outside the solid */
 export interface ShellQuad { p: [Vec3, Vec3, Vec3, Vec3]; n: Vec3 }
-
-/** window in a generated shell wall: an opening cut through from the room face */
-export interface ShellWindow {
-  id: string; roomId: string; wallId: string; kind: HoleKind;
-  /** opening start on the room face, direction along the wall and outward normal */
-  a: Vec2; dir: Vec2; out: Vec2;
-  width: number;
-  /** bottom and top of the opening (absolute) */
-  z0: number; z1: number;
-  /** wall thickness at the opening */
-  depth: number;
-}
 
 export interface LevelShell {
   level: LevelId;
@@ -73,18 +65,6 @@ function surface(xs: number[], ys: number[], zs: number[], solid: (i: number, j:
     if (!at(i, j, k - 1)) out.push({ p: [[x0, y1, z0], [x1, y1, z0], [x1, y0, z0], [x0, y0, z0]], n: [0, 0, -1] });
   }
   return out;
-}
-
-/** wall height of a level: the highest ceiling of its rooms above the level floor */
-function wallTop(rooms: Room[], floorZ: number): number {
-  let top = 0;
-  for (const r of rooms) {
-    for (const q of r.polygon) top = Math.max(top, r.floorZ + r.ceiling.heightAt(q[0], q[1]));
-    // sloped ceiling: highest where the room comes closest to the ridge (the corners lie on the knee walls)
-    const c = r.ceiling, [x0, y0, x1, y1] = r.bbox;
-    if (c.kind === 'attic') top = Math.max(top, r.floorZ + c.heightAt(Math.min(x1, Math.max(x0, c.ridgeX ?? x0)), Math.min(y1, Math.max(y0, c.ridgeY ?? y0))));
-  }
-  return top > floorZ ? top : floorZ + 2.6;
 }
 
 function buildLevel(b: Building, level: LevelId, spec: ShellSpec): LevelShell {
@@ -148,7 +128,8 @@ function buildLevel(b: Building, level: LevelId, spec: ShellSpec): LevelShell {
   const windows: ShellWindow[] = [], seen = new Set<string>();
   for (const { room, wall, hole, p0, p1, out } of holes) {
     if ((hole.kind !== 'window' && hole.kind !== 'glazing') || seen.has(hole.id)) continue;
-    const depth = depthAt([(p0[0] + p1[0]) / 2, (p0[1] + p1[1]) / 2], out);
+    // sampled a hair off the opening centre along the wall: the centre may lie exactly on a grid line (no cell there)
+    const depth = depthAt([(p0[0] + p1[0]) / 2 + wall.dir[0] * 1e-4, (p0[1] + p1[1]) / 2 + wall.dir[1] * 1e-4], out);
     if (depth < 0.02) continue;
     seen.add(hole.id);
     windows.push({ id: hole.id, roomId: room.id, wallId: wall.id, kind: hole.kind, a: p0, dir: wall.dir, out, width: hole.t1 - hole.t0, z0: room.floorZ + hole.z0, z1: Math.min(z1, room.floorZ + hole.z1), depth });

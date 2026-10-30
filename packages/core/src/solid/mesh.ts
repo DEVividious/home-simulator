@@ -1,0 +1,59 @@
+// A solid as plain arrays: flat-shaded triangles (a vertex per corner of a face, not per triangle), the role of every triangle
+// and the tag of the input it came from (ADR 0025). The kernel's mesh is read once; nothing of the WASM heap is kept.
+import type { Vec3 } from '../package/types.ts';
+import { roleCode, roleOf, type Tag, type TagTable } from './tags.ts';
+import type { Manifold } from './wasm.ts';
+
+export interface SolidMesh {
+  /** vertex positions and unit normals (project coordinates, z up) */
+  positions: Float32Array;
+  normals: Float32Array;
+  /** triangles, counter-clockwise from outside */
+  index: Uint32Array;
+  /** per triangle: role code (tags.ts ROLES) and the index of its input in `tags` */
+  role: Uint8Array;
+  tag: Uint16Array;
+  tags: Tag[];
+}
+
+/** the mesh of a solid; every triangle must come from a tagged input */
+export function solidMesh(m: Manifold, table: TagTable): SolidMesh {
+  const mesh = m.getMesh();
+  const P = mesh.vertProperties, np = mesh.numProp, T = mesh.triVerts, nTri = T.length / 3;
+  const runId = mesh.runOriginalID, runAt = mesh.runIndex, faceID = mesh.faceID;
+  // tag of every triangle: one entry in `tags` per original that has triangles
+  const tags: Tag[] = [], tagOf = new Map<number, number>(), triTag = new Uint16Array(nTri);
+  for (let r = 0; r < runId.length; r++) {
+    const id = runId[r], tag = table.get(id);
+    if (!tag) throw new Error(`solid: triangles of an untagged input (original ${id})`);
+    let k = tagOf.get(id);
+    if (k === undefined) { k = tags.length; tags.push(tag); tagOf.set(id, k); }
+    triTag.fill(k, runAt[r] / 3, runAt[r + 1] / 3);
+  }
+  // faces (input, face id): area-weighted normal; a vertex is shared only within one face
+  const faceOf = new Map<number, number>(), triFace = new Uint32Array(nTri), fn: number[] = [];
+  const nTags = Math.max(1, tags.length);
+  for (let i = 0; i < nTri; i++) {
+    const a = T[i * 3] * np, b = T[i * 3 + 1] * np, c = T[i * 3 + 2] * np;
+    const ux = P[b] - P[a], uy = P[b + 1] - P[a + 1], uz = P[b + 2] - P[a + 2], vx = P[c] - P[a], vy = P[c + 1] - P[a + 1], vz = P[c + 2] - P[a + 2];
+    const key = (faceID.length ? faceID[i] : i) * nTags + triTag[i];
+    let f = faceOf.get(key);
+    if (f === undefined) { f = fn.length / 3; faceOf.set(key, f); fn.push(0, 0, 0); }
+    triFace[i] = f;
+    fn[f * 3] += uy * vz - uz * vy; fn[f * 3 + 1] += uz * vx - ux * vz; fn[f * 3 + 2] += ux * vy - uy * vx;
+  }
+  for (let f = 0; f < fn.length / 3; f++) { const l = Math.hypot(fn[f * 3], fn[f * 3 + 1], fn[f * 3 + 2]) || 1; fn[f * 3] /= l; fn[f * 3 + 1] /= l; fn[f * 3 + 2] /= l; }
+  const nFaces = fn.length / 3, vertOf = new Map<number, number>(), pos: number[] = [], nor: number[] = [], index = new Uint32Array(nTri * 3);
+  const role = new Uint8Array(nTri);
+  for (let i = 0; i < nTri; i++) {
+    const f = triFace[i], n: Vec3 = [fn[f * 3], fn[f * 3 + 1], fn[f * 3 + 2]];
+    role[i] = roleCode(roleOf(tags[triTag[i]], n));
+    for (let k = 0; k < 3; k++) {
+      const v = T[i * 3 + k], key = v * nFaces + f;
+      let o = vertOf.get(key);
+      if (o === undefined) { o = pos.length / 3; vertOf.set(key, o); pos.push(P[v * np], P[v * np + 1], P[v * np + 2]); nor.push(n[0], n[1], n[2]); }
+      index[i * 3 + k] = o;
+    }
+  }
+  return { positions: new Float32Array(pos), normals: new Float32Array(nor), index, role, tag: triTag, tags };
+}

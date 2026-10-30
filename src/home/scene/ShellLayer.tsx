@@ -1,6 +1,7 @@
-// Generated building shell in the scene (model/shell.ts, three/shellGeometry.ts): walls with openings, floor and ceiling slabs,
-// simple windows (frame + glass) — for projects without a building model file. The root is named HOUSE, like the file model, so
-// section caps (SectionCaps), the cutaway of walls hiding the room and architecture raycasts work regardless of the shell source.
+// Grid shell in the scene (model/shell.ts, three/shellGeometry.ts): walls with openings, floor and ceiling slabs, simple windows
+// (frame + glass) — for projects without a building model file when the core's solids are not available (CoreShellLayer falls
+// back to it; ?shell=grid forces it; kept for one release, ADR 0026). The root is named HOUSE, like the file model, so section
+// caps (SectionCaps), the cutaway of walls hiding the room and architecture raycasts work regardless of the shell source.
 import { useEffect, useMemo } from 'react';
 import * as THREE from 'three';
 import { allLevels } from '../model/rooms';

@@ -87,7 +87,8 @@ export async function startServer({ port, mode = 'dev', userdata, env = {} }) {
   return { url: `http://localhost:${port}`, stop };
 }
 
-/** waits until the app has loaded its project and document */
+/** waits until the app has loaded its project and document, and the generated shell (built in a worker) is in the scene */
 export async function waitForApp(page, timeout = 90000) {
   await page.waitForFunction(() => !!window.__home?.state?.().loaded, { timeout });
+  await page.waitForFunction(() => ['ready', 'error'].includes(window.__home3d?.shell?.().status), { timeout: 20000 }).catch(() => {});
 }

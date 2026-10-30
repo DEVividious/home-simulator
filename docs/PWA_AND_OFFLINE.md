@@ -27,7 +27,8 @@ is another app with separate data.
 
 ## 2. Offline cache
 
-**App files.** At build time the plugin lists every file of `dist` (code, fonts, icons, the project packages and their models).
+**App files.** At build time the plugin lists every file of `dist` (code, fonts, icons, the solid kernel `manifold-*.wasm` and
+its worker, the project packages and their models).
 On install the service worker fetches the **whole** list into the cache `home-sim-app-<version>` with `cache: "reload"` —
 everything or nothing (a failed install keeps the previous version).
 

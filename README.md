@@ -85,7 +85,7 @@ skills/ ──► tools/ (Python: CAD, PDF, image) ──► projects/<id>/sourc
 src/ engine (React 19, three.js r181, react-three-fiber, Vite 7, TypeScript) ◄── projects/index.json ◄──────────┘
    project boundary (src/project) · model (src/home/model) · scene · UI · document & sync (src/document) · PWA (src/pwa)
 packages/core: the pure core shared by the app, the CLI and tools — package contract and schema, plan.json compiler,
-   building model (no DOM, three.js or React)
+   building model, the shell as manifold solids (no DOM, three.js or React)
 ```
 Glossary: [docs/GLOSSARY.md](docs/GLOSSARY.md).
 

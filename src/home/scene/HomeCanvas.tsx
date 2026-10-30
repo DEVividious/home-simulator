@@ -23,6 +23,7 @@ import { doors } from '../store/doors';
 import { doorMotion } from './doorRuntime';
 import { seeUniforms } from '../three/seeThrough';
 import { clipState, cutUniforms } from '../three/cutaway';
+import { shellStatus } from '../three/coreShell';
 import { CameraController } from './CameraController';
 import { FurnitureLayer, knobAngle, ringRadius } from './FurnitureLayer';
 import { HouseLayer } from './HouseLayer';
@@ -125,6 +126,9 @@ function SceneBridge() {
           aspect: c.isPerspectiveCamera ? round(c.aspect, 4) : round((c.right - c.left) / Math.max(1e-6, c.top - c.bottom), 4), canvasAspect: round(r.width / Math.max(1, r.height), 4) } : null;
       },
       cutaway: () => cutUniforms.uCutCount.value,
+      /** generated shell: which one is shown (core solids, grid, model file), its state and cost (worker / main-thread ms, triangles);
+       *  rebuild — builds the core shell again from a copy of the building block (budget measurements) */
+      shell: (rebuild?: boolean) => { if (rebuild) shellStatus.set({ rebuilds: shellStatus.get().rebuilds + 1, status: 'loading' }); return { ...shellStatus.get() }; },
       /** see-through trees between the camera and the building: state; argument — force (tests compare the same frame with and without the effect) */
       seeThrough(force?: boolean) { if (force !== undefined) { seeUniforms.uSeeOn.value = force ? 1 : 0; wake(); } return { on: seeUniforms.uSeeOn.value > 0.5, patched: (() => { let n = 0; sceneRef.current?.getObjectByName('ENV_TREES')?.traverse((o) => { const m = (o as THREE.Mesh).material as THREE.Material | undefined; if (m?.userData?.seeThrough) n++; }); return n; })() }; },
       /** doors: state, animated opening amount, leaf point on screen (tests) */
