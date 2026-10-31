@@ -8,6 +8,6 @@ command -v node >/dev/null && ok "node $(node --version)" || no node "install No
 PY=.venv/bin/python; [ -x "$PY" ] || PY=python3
 if "$PY" -c 'import PIL, numpy' 2>/dev/null; then ok "python image tools ($PY)"; else no "python image tools" "python3 -m venv .venv && .venv/bin/pip install -r tools/requirements.txt (only for plan images, PDF and CAD)"; fi
 "$PY" -c 'import ezdxf, shapely' 2>/dev/null && ok "python CAD tools (ezdxf, shapely)" || no "python CAD tools" "pip install -r tools/requirements.txt (only for DXF / DWG)"
-command -v pdftotext >/dev/null && ok "poppler (pdftotext, pdftocairo)" || no "poppler" "apt install poppler-utils / brew install poppler (only for PDF sheets)"
+if "$PY" -c 'import pymupdf' 2>/dev/null; then ok "PDF reader (pymupdf)"; elif command -v pdftotext >/dev/null; then ok "PDF reader (poppler)"; else no "PDF reader" "pip install -r tools/requirements.txt (pymupdf) or apt install poppler-utils (only for PDF sheets)"; fi
 [ -n "$ODA_FILE_CONVERTER" ] || ls ~/.local/opt/oda* >/dev/null 2>&1 || command -v ODAFileConverter >/dev/null && ok "ODA File Converter" || no "ODA File Converter" "only for DWG: install it and set ODA_FILE_CONVERTER"
 command -v google-chrome >/dev/null || command -v chromium >/dev/null || [ -n "$CHROME" ] && ok "Chrome / Chromium (previews)" || no "Chrome" "install Chrome or set CHROME=/path/to/chrome (needed by npm run project:preview)"

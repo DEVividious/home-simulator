@@ -1,0 +1,7 @@
+{
+ "preview.plan.planTitle": "{name} · {level} ({id}) · 1 kratka = 1 m · +X w prawo, +Y w górę",
+ "preview.plan.roofTitle": "{name} · rzut dachu · szczyt {top} m · czerwone: kalenice i narożniki, niebieskie: kosze · 1 kratka = 1 m",
+ "preview.plan.printed": "na planie {area}",
+ "preview.plan.up": "w górę",
+ "preview.plan.down": "w dół"
+}

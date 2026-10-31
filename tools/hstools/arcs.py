@@ -1,6 +1,7 @@
 """Vector paths and door swing arcs.
 
-Parsing of SVG produced by `pdftocairo -svg` (group and path transforms, M / L / C / Z commands, Béziers sampled), circle
+Parsing of SVG produced by `pdftocairo -svg` (group and path transforms, M / L / C / Z commands, Béziers sampled; definitions
+such as glyph outlines skipped) — the poppler backend of hstools.pdfdoc — circle
 fitting, and detection of door swing arcs: quarter circles whose centre is the hinge, one end lies on the wall line (closed
 leaf) and the other end is the open leaf. Coordinates stay in the units of the drawing; callers convert to metres."""
 from __future__ import annotations
@@ -13,6 +14,7 @@ import numpy as np
 
 NS = '{http://www.w3.org/2000/svg}'
 NUM = r'-?\d*\.?\d+(?:e-?\d+)?'
+SKIP = {'defs', 'symbol', 'clipPath', 'mask', 'pattern'}
 
 
 def _mat(t: str | None):
@@ -86,6 +88,8 @@ def load_svg_paths(svg_path) -> list[dict]:
     def walk(el, m):
         m2 = _mul(m, _mat(el.get('transform')))
         tag = el.tag.replace(NS, '')
+        if tag in SKIP:  # glyph outlines, clip paths, patterns: not drawn where they are defined
+            return
         if tag == 'path':
             st = el.get('style', '')
             get = lambda k: el.get(k) or (re.search(k + r':([^;]+)', st).group(1).strip() if k + ':' in st else None)  # noqa: E731

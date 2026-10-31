@@ -1,10 +1,10 @@
 ---
 name: home-from-plan
 description: Build, import or update a 3D home / apartment project for Home Simulator from floor plans — CAD files (DWG, DXF), architectural PDF sheets, or plain 2D floor-plan images (PNG / JPG real-estate plans, scans, screenshots), or from a description. Use when the user says "build my home / flat from these files", "import this floor plan", "make a 3D model of my apartment", "add a room / door / window to my project", or drops a plan image. Produces projects/<id>/source/plan.json and the compiled projects/<id>/project.json, validated and previewed.
-allowed-tools: Bash(python3 tools/*) Bash(.venv/bin/python tools/*) Bash(npm run project:*) Bash(npm run -s project:*) Bash(pdftotext *) Bash(pdftocairo *) Bash(pdftoppm *) Bash(mkdir -p projects/*) Bash(cp *) Read Write Edit Glob Grep
+allowed-tools: Bash(python3 tools/*) Bash(.venv/bin/python tools/*) Bash(npm run project:*) Bash(npm run -s project:*) Bash(mkdir -p projects/*) Bash(cp *) Read Write Edit Glob Grep
 metadata:
   version: 1
-  requires: node>=22.18; python3>=3.11 with tools/requirements.txt for CAD / PDF / raster tools; poppler-utils for PDF; ODA File Converter for DWG
+  requires: node>=22.18; python3>=3.11 with tools/requirements.txt for CAD / PDF / raster tools; pymupdf (in tools/requirements.txt) or poppler-utils for PDF; ODA File Converter for DWG
 ---
 
 # home-from-plan
@@ -38,7 +38,7 @@ Create `projects/<id>/source/` and copy the inputs to `projects/<id>/source/inpu
 
 ## 2. Read the plan — pick the branch from intake
 
-### A. Raster image (real-estate plan, scan, photo of a drawing, PDF page rendered with pdftoppm)
+### A. Raster image (real-estate plan, scan, photo of a drawing, PDF page rendered with `tools/pdf/render.py <sheet.pdf> --out <page.png>`)
 
 1. `.venv/bin/python tools/image/prepare.py <image> --out projects/<id>/source/prep` → look at `grid.png` and the
    `tile_*.png` zooms. Labels are SOURCE pixel coordinates (x right, y down). On a small image (intake warns below 1200 px; walls

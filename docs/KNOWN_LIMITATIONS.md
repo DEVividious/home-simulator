@@ -93,8 +93,10 @@ the behaviour is named in brackets. When a limit is lifted, remove it here in th
   tools work without it ([IMPORT_CAD.md](IMPORT_CAD.md)).
 - **CAD layer mapping needs judgement.** `dxf_walls.py` proposes candidate rooms with orthogonal outlines only; layer choice
   and units must be confirmed with a dimension, because DXF header units are often wrong.
-- **Vector PDF import needs poppler** (`pdftotext`, `pdftocairo`, `pdftoppm`) and a confirmed drawing scale
+- **Vector PDF import needs a PDF reader** — pymupdf (`tools/requirements.txt`) or poppler-utils — and a confirmed drawing scale
   ([IMPORT_PDF.md](IMPORT_PDF.md)).
+- **The house-forge plugin** needs Node.js 20+ and, for plan images, PDF and CAD, uv (the first run downloads the locked Python
+  libraries); DWG still needs the ODA File Converter; native Windows is not verified ([HOUSE_FORGE.md](HOUSE_FORGE.md)).
 - **Python 3.11 is needed for imports only.** The engine and the build need Node.js only.
 
 ## Scene and walk

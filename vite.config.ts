@@ -32,6 +32,8 @@ export default defineConfig({
       { extends: true, test: { name: 'app', setupFiles: ['src/test/setup.ts'], include: ['src/**/*.test.ts', 'scripts/**/*.test.ts'] } },
       // core tests: pure functions, no active project, no app setup (ADR 0023)
       { test: { name: 'core', include: ['packages/core/tests/**/*.test.ts'] } },
+      // the house-forge plugin: builds it into temporary directories and runs the bundle (ADR 0033)
+      { test: { name: 'plugin', include: ['packages/house-forge/tests/**/*.test.ts'] } },
     ],
   },
 });

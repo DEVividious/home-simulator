@@ -41,6 +41,9 @@ Converter for DWG. For previews and the phone: Google Chrome / Chromium; an Andr
 Skills use the open Agent Skills format (`SKILL.md` + scripts + references). Everything they do is also a command you can run
 yourself — see [docs/SKILLS.md](docs/SKILLS.md).
 
+Without this repository: the Claude Code plugin **house-forge** turns floor plans straight into a printable scale model (STL) with
+the same engine — built here from `packages/house-forge` by `npm run plugin:build` ([docs/HOUSE_FORGE.md](docs/HOUSE_FORGE.md)).
+
 ## What you can do in the app
 
 - Walk through the building at eye level, up the stairs and out onto the plot; look at it from outside or cut through a level.
@@ -86,7 +89,8 @@ skills/ ──► tools/ (Python: CAD, PDF, image) ──► projects/<id>/sourc
 src/ engine (React 19, three.js r181, react-three-fiber, Vite 7, TypeScript) ◄── projects/index.json ◄──────────┘
    project boundary (src/project) · model (src/home/model) · scene · UI · document & sync (src/document) · PWA (src/pwa)
 packages/core: the pure core shared by the app, the CLI and tools — package contract and schema, plan.json compiler,
-   building model, the shell as manifold solids, the print export (no DOM, three.js or React)
+   building model, the shell as manifold solids, the print export, previews without a browser (no DOM, three.js or React)
+packages/house-forge: the Claude Code plugin (CLI bundle of the core + the Python tools through uv)
 ```
 Glossary: [docs/GLOSSARY.md](docs/GLOSSARY.md).
 

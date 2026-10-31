@@ -1,6 +1,6 @@
-// A small software rasteriser for previews without a browser or GPU (ADR 0035): RGB images, rectangles, lines and 5×7 text,
-// meshes in an orthographic view with a z-buffer, Lambert shading and outlines (creases and silhouettes), drawn at twice the
-// resolution and averaged down; PNG with a deflate the caller passes (the CLI: node:zlib) or uncompressed blocks. Everything
+// A small software rasteriser for previews without a browser or GPU (ADR 0035): RGB images, rectangles, filled polygons, lines
+// and 5×7 text; meshes in an orthographic view with a z-buffer, Lambert shading and outlines (creases and silhouettes), drawn at
+// twice the resolution and averaged down; PNG with a deflate the caller passes (the CLI: node:zlib) or uncompressed blocks. Everything
 // is deterministic: the same input gives the same bytes.
 import { CELL_H, CELL_W, glyph } from './font5x7.ts';
 
@@ -8,8 +8,9 @@ export type RGB = [number, number, number];
 export interface Image { width: number; height: number; rgb: Uint8Array }
 
 export function image(width: number, height: number, bg: RGB = [255, 255, 255]): Image {
-  const rgb = new Uint8Array(width * height * 3);
-  for (let i = 0; i < width * height; i++) rgb.set(bg, i * 3);
+  const rgb = new Uint8Array(width * height * 3), n = rgb.length;
+  if (n) rgb.set(bg, 0);
+  for (let filled = 3; filled < n; filled *= 2) rgb.copyWithin(filled, 0, Math.min(filled, n - filled));
   return { width, height, rgb };
 }
 
@@ -21,6 +22,66 @@ export function fillRect(img: Image, x0: number, y0: number, w: number, h: numbe
 
 export function strokeRect(img: Image, x0: number, y0: number, w: number, h: number, c: RGB): void {
   fillRect(img, x0, y0, w, 1, c); fillRect(img, x0, y0 + h - 1, w, 1, c); fillRect(img, x0, y0, 1, h, c); fillRect(img, x0 + w - 1, y0, 1, h, c);
+}
+
+/**
+ * Polygons filled by the even-odd rule (rings may be holes), sampled at pixel centres; corners in image pixels (x right, y down).
+ * `alpha` (0–1) blends the colour over what is there.
+ */
+export function fillPolygon(img: Image, rings: ArrayLike<number>[][] | number[][][], c: RGB, alpha = 1): void {
+  let y0 = Infinity, y1 = -Infinity;
+  for (const ring of rings) for (const p of ring) { y0 = Math.min(y0, p[1]); y1 = Math.max(y1, p[1]); }
+  if (!Number.isFinite(y0)) return;
+  const a = Math.max(0, Math.min(1, alpha));
+  for (let y = Math.max(0, Math.floor(y0)); y <= Math.min(img.height - 1, Math.ceil(y1)); y++) {
+    const sy = y + 0.5, xs: number[] = [];
+    for (const ring of rings) for (let i = 0; i < ring.length; i++) {
+      const p = ring[i], q = ring[(i + 1) % ring.length];
+      if ((p[1] > sy) !== (q[1] > sy)) xs.push(p[0] + ((sy - p[1]) * (q[0] - p[0])) / (q[1] - p[1]));
+    }
+    xs.sort((u, v) => u - v);
+    for (let k = 0; k + 1 < xs.length; k += 2) {
+      const x0 = Math.max(0, Math.ceil(xs[k] - 0.5)), x1 = Math.min(img.width - 1, Math.floor(xs[k + 1] - 0.5));
+      if (x1 < x0) continue;
+      const o0 = (y * img.width + x0) * 3, end = (y * img.width + x1 + 1) * 3;
+      if (a >= 1) {
+        // the colour once, then the span doubled into itself
+        img.rgb.set(c, o0);
+        for (let done = 3; o0 + done < end; done *= 2) img.rgb.copyWithin(o0 + done, o0, o0 + Math.min(done, end - o0 - done));
+      } else for (let o = o0; o < end; o++) img.rgb[o] = Math.round(img.rgb[o] * (1 - a) + c[(o - o0) % 3] * a);
+    }
+  }
+}
+
+/** a straight line `width` pixels wide with square ends; `dash` = [drawn, gap] lengths in pixels */
+export function line(img: Image, x0: number, y0: number, x1: number, y1: number, c: RGB, width = 1, dash?: [number, number]): void {
+  const len = Math.hypot(x1 - x0, y1 - y0);
+  if (len < 1e-9) { fillPolygon(img, [[[x0 - width / 2, y0 - width / 2], [x0 + width / 2, y0 - width / 2], [x0 + width / 2, y0 + width / 2], [x0 - width / 2, y0 + width / 2]]], c); return; }
+  const ux = (x1 - x0) / len, uy = (y1 - y0) / len, nx = (-uy * width) / 2, ny = (ux * width) / 2, h = width / 2;
+  const piece = (s0: number, s1: number) => {
+    const ax = x0 + ux * (s0 - h), ay = y0 + uy * (s0 - h), bx = x0 + ux * (s1 + h), by = y0 + uy * (s1 + h);
+    fillPolygon(img, [[[ax + nx, ay + ny], [bx + nx, by + ny], [bx - nx, by - ny], [ax - nx, ay - ny]]], c);
+  };
+  if (!dash) { piece(0, len); return; }
+  for (let s = 0; s < len; s += dash[0] + dash[1]) piece(s, Math.min(len, s + dash[0]));
+}
+
+/** a polyline (open, or closed with `closed`) of lines */
+export function polyline(img: Image, pts: number[][], c: RGB, width = 1, closed = false, dash?: [number, number]): void {
+  for (let i = 0; i + 1 < pts.length + (closed ? 1 : 0); i++) { const p = pts[i], q = pts[(i + 1) % pts.length]; line(img, p[0], p[1], q[0], q[1], c, width, dash); }
+}
+
+/** the image made `k` times smaller, every pixel the average of its k × k block (drawing at k× and shrinking smooths edges) */
+export function shrink(img: Image, k: number): Image {
+  const w = Math.floor(img.width / k), h = Math.floor(img.height / k), out = image(w, h);
+  const src = img.rgb, dst = out.rgb, kk = k * k;
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    let r = 0, g = 0, b = 0;
+    for (let j = 0; j < k; j++) for (let i = 0; i < k; i++) { const o = ((y * k + j) * img.width + (x * k + i)) * 3; r += src[o]; g += src[o + 1]; b += src[o + 2]; }
+    const o = (y * w + x) * 3;
+    dst[o] = Math.round(r / kk); dst[o + 1] = Math.round(g / kk); dst[o + 2] = Math.round(b / kk);
+  }
+  return out;
 }
 
 /** text in capitals with the 5×7 font, its top-left corner at (x, y), each font pixel `scale` pixels; returns the width drawn */

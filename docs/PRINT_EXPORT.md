@@ -1,8 +1,9 @@
 # Print export: a scale model as STL
 
 `npm run project:print` turns a project into a printable scale model: STL parts that fit the printer bed, a report of every
-check and change, and a preview image. The same code (`packages/core/src/print/`) will run in the `house-forge` plugin and in
-the app, so the same input, printer and scale give the same bytes everywhere.
+check and change, and a preview image. The same code (`packages/core/src/print/`) runs in the `house-forge` plugin
+(`house-forge print`, [HOUSE_FORGE.md](HOUSE_FORGE.md)) and will run in the app, so the same input, printer and scale give the
+same bytes everywhere.
 
 ```bash
 npm run project:print -- projects/<id> --bed K1C                 # automatic scale, FDM 0.4 mm

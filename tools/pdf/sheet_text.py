@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Words of a vector PDF sheet with positions (pdftotext -bbox-layout) and what they probably are.
+"""Words of a vector PDF sheet with positions (pymupdf or poppler, hstools.pdfdoc) and what they probably are.
 
   python3 tools/pdf/sheet_text.py SHEET.pdf --out DIR [--page 1] [--find pitch,ridge]
 
@@ -14,17 +14,13 @@ Writes DIR/words.json: page size [pt], every word {x0, y0, x1, y1, t} (pt, y dow
 from __future__ import annotations
 
 import argparse
-import html
 import re
-import subprocess
 import sys
-import tempfile
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from hstools import write_json  # noqa: E402
+from hstools import pdfdoc, write_json  # noqa: E402
 
-WORD_RE = re.compile(r'<word xMin="([\d.]+)" yMin="([\d.]+)" xMax="([\d.]+)" yMax="([\d.]+)">([^<]*)</word>')
 AREA_RE = re.compile(r'^(\d{1,3}[.,]\d{1,2})$')
 NUM_RE = re.compile(r'^\d{1,4}([.,]\d{1,3})?$')
 SCALE_RE = re.compile(r'1\s*:\s*(\d{2,4})')
@@ -66,13 +62,7 @@ def main(argv=None):
     ap.add_argument('pdf'); ap.add_argument('--out', required=True); ap.add_argument('--page', type=int, default=1)
     ap.add_argument('--find', default='', help='comma-separated roof facts to look for: pitch, ridge')
     a = ap.parse_args(argv)
-    with tempfile.TemporaryDirectory() as td:
-        html_file = Path(td) / 'w.html'
-        subprocess.run(['pdftotext', '-f', str(a.page), '-l', str(a.page), '-bbox-layout', a.pdf, str(html_file)], check=True)
-        t = html_file.read_text(encoding='utf-8')
-    m = re.search(r'<page width="([\d.]+)" height="([\d.]+)"', t)
-    page = [float(m.group(1)), float(m.group(2))] if m else None
-    words = [dict(x0=float(x0), y0=float(y0), x1=float(x1), y1=float(y1), t=html.unescape(w)) for x0, y0, x1, y1, w in WORD_RE.findall(t)]
+    page, words = pdfdoc.words(a.pdf, a.page)
     areas, dims, labels = [], [], []
     scales = sorted({int(s) for s in SCALE_RE.findall(' '.join(w['t'] for w in words))})
     for i, w in enumerate(words):

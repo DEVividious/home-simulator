@@ -13,7 +13,7 @@
     "dev": "vite",
     "build": "npm run typecheck && vite build",
     "preview": "vite preview",
-    "typecheck": "tsc -b packages/* && tsc --noEmit",
+    "typecheck": "tsc -b packages/core && tsc -p packages/house-forge && tsc --noEmit",
     "test": "vitest run",
     "test:e2e": "node scripts/verify/run_suite.mjs",
     "audit:genericity": "node scripts/audit/no-house-refs.mjs",
@@ -26,7 +26,8 @@
     "skills:catalog": "node scripts/skills/catalog-table.mjs",
     "phone": "node scripts/phone/phone.mjs",
     "audit:i18n": "node scripts/audit/i18n-check.mjs",
-    "audit:core": "node scripts/audit/core-boundary.mjs"
+    "audit:core": "node scripts/audit/core-boundary.mjs",
+    "plugin:build": "node scripts/plugin/build.mjs"
   },
   "engines": {
     "node": ">=22.18"
@@ -46,6 +47,7 @@
     "@types/react-dom": "19.3.0",
     "@types/three": "0.181.0",
     "@vitejs/plugin-react": "5.2.0",
+    "esbuild": "0.28.2",
     "fake-indexeddb": "^6.2.5",
     "puppeteer-core": "25.16.0",
     "typescript": "5.9.3",

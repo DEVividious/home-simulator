@@ -15,5 +15,9 @@ Writing a skill: keep it a procedure (what to run, what to look at, when to ask 
 step must also work when a person runs it by hand. Generated references (`catalog-ids.md`) are refreshed by
 `npm run skills:catalog`.
 
+The plugin `house-forge` (`packages/house-forge`, [HOUSE_FORGE.md](HOUSE_FORGE.md)) carries a skill of its own built from these:
+its references are generated from `home-from-plan`'s, its commands run the same core and tools. Change the repository skill,
+then `npm run plugin:build`.
+
 Sample input for trying `home-from-plan`: `skills/home-from-plan/assets/samples/flat-2room.png` (a flat with a bedroom,
 bathroom, open kitchen and living room, hallway and stairs).

@@ -3,6 +3,7 @@ Run: .venv/bin/python -m unittest discover -s tools/tests -v"""
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import sys
 import tempfile
@@ -126,6 +127,90 @@ class SheetRoofFacts(unittest.TestCase):
         found = find_roof(words, ['pitch', 'ridge'])
         self.assertEqual(sorted({w['deg'] for w in found['pitch']}), [35.0, 40.0])
         self.assertEqual([w['m'] for w in found['ridge']], [8.45])
+
+
+def _have(mod: str) -> bool:
+    try:
+        __import__(mod)
+        return True
+    except ImportError:
+        return False
+
+
+def make_sheet(path: Path) -> None:
+    """a small vector sheet: wall poché, a 0.80 m door swing at 1:50, a red polyline, room names, areas, the scale and a pitch"""
+    import pymupdf
+    doc = pymupdf.open()
+    page = doc.new_page(width=842, height=595)
+    for (x, y, t) in [(120, 80, 'SALON'), (120, 95, '24,50 m2'), (400, 80, 'POKOJ 12,40 m2'), (600, 560, 'skala 1:50'), (600, 540, 'kat nachylenia dachu 40°')]:  # i18n-ok: drawing words in Polish
+        page.insert_text((x, y), t, fontsize=9)
+    sh = page.new_shape()
+    for r in [(50, 40, 760, 52), (50, 40, 62, 400), (748, 40, 760, 400), (50, 388, 760, 400), (350, 52, 356, 388)]:
+        sh.draw_rect(pymupdf.Rect(*r))
+        sh.finish(color=None, fill=(0.2, 0.2, 0.2), width=0)
+    R = 0.8 * 72 / 0.0254 / 50
+    k, hx, hy = 0.5523 * R, 356, 250
+    sh.draw_bezier((hx + R, hy), (hx + R, hy + k), (hx + k, hy + R), (hx, hy + R))
+    sh.finish(color=(0, 0, 0), width=0.25, closePath=False)
+    sh.draw_line((hx, hy), (hx + R, hy))
+    sh.finish(color=(0, 0, 0), width=0.5, closePath=False)
+    sh.draw_polyline([(100, 300), (200, 300), (200, 350)])
+    sh.finish(color=(1, 0, 0), width=0.18, closePath=False)
+    sh.commit()
+    doc.save(str(path))
+
+
+@unittest.skipUnless(_have('pymupdf'), 'pymupdf not installed')
+class PdfBackends(unittest.TestCase):
+    """pymupdf (the plugin) and poppler (this repository) read a sheet the same way (ADR 0034)"""
+
+    def test_same_words_and_paths(self):
+        import shutil
+        from hstools import pdfdoc
+        if not shutil.which('pdftotext'):
+            self.skipTest('poppler not installed')
+        with tempfile.TemporaryDirectory() as td:
+            pdf = Path(td) / 's.pdf'
+            make_sheet(pdf)
+            got = {}
+            for b in ('pymupdf', 'poppler'):
+                os.environ['HSTOOLS_PDF'] = b
+                try:
+                    got[b] = (pdfdoc.page_count(pdf), pdfdoc.words(pdf, 1), pdfdoc.paths(pdf, 1))
+                finally:
+                    del os.environ['HSTOOLS_PDF']
+            (n1, (s1, w1), p1), (n2, (s2, w2), p2) = got['pymupdf'], got['poppler']
+            self.assertEqual((n1, s1), (n2, s2))
+            self.assertEqual([w['t'] for w in w1], [w['t'] for w in w2])
+            for a, b in zip(w1, w2):
+                self.assertAlmostEqual(a['x0'], b['x0'], delta=0.5)
+                self.assertAlmostEqual(a['x1'], b['x1'], delta=0.5)
+                self.assertAlmostEqual((a['y0'] + a['y1']) / 2, (b['y0'] + b['y1']) / 2, delta=1.5)
+            self.assertEqual(len(p1), len(p2))
+            pts = lambda p: sorted({(round(x), round(y)) for sp in p['subs'] for x, y in sp})  # noqa: E731
+            for a, b in zip(p1, p2):
+                self.assertEqual((a['stroke'], a['fill'], a['curved']), (b['stroke'], b['fill'], b['curved']))
+                self.assertEqual(pts(a), pts(b))
+
+    def test_tools_on_the_sheet(self):
+        with tempfile.TemporaryDirectory() as td:
+            pdf = Path(td) / 's.pdf'
+            make_sheet(pdf)
+            out = Path(td) / 'out'
+            run(str(TOOLS / 'pdf/sheet_text.py'), str(pdf), '--out', str(out), '--find', 'pitch')
+            words = json.loads((out / 'words.json').read_text())
+            self.assertEqual(words['scales'], [50])
+            self.assertEqual(sorted(a['m2'] for a in words['areas']), [12.4, 24.5])
+            self.assertEqual([w['deg'] for w in words['found']['pitch']], [40.0])
+            run(str(TOOLS / 'pdf/door_arcs.py'), str(pdf), '--out', str(out), '--scale', '50')
+            arcs = json.loads((out / 'arcs.json').read_text())['arcs']
+            self.assertEqual(len(arcs), 1)
+            self.assertAlmostEqual(arcs[0]['leaf_m'], 0.8, delta=0.01)
+            run(str(TOOLS / 'pdf/sheet_svg.py'), str(pdf), '--out', str(out))
+            self.assertEqual(len(json.loads((out / 'paths.json').read_text())['paths']), 8)
+            self.assertIn('842 × 595 px', run(str(TOOLS / 'pdf/render.py'), str(pdf), '--out', str(out / 'p.png'), '--dpi', '72'))
+            intake = json.loads(run(str(TOOLS / 'intake.py'), str(pdf), '--json'))
+            self.assertEqual((intake[0]['pages'], intake[0]['words_page1']), (1, 12))
 
 
 if __name__ == '__main__':

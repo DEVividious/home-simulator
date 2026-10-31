@@ -1,0 +1,7 @@
+{
+ "preview.plan.planTitle": "{name} · {level} ({id}) · 1 grid = 1 m · +X right, +Y up",
+ "preview.plan.roofTitle": "{name} · roof plan · top {top} m · red: ridges and hips, blue: valleys · 1 grid = 1 m",
+ "preview.plan.printed": "plan {area}",
+ "preview.plan.up": "up",
+ "preview.plan.down": "down"
+}

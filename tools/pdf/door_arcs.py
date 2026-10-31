@@ -6,18 +6,17 @@
 A door is drawn as a quarter circle around the hinge: one end of the arc meets the wall (closed leaf), the other is the open
 leaf. Writes DIR/arcs.json with every arc in points and — with a scale — in metres in project coordinates (x right, y up,
 origin at --origin-pt, default: the page's bottom-left corner). Which end is the closed leaf depends on the wall; plan.json
-only needs the hinge side and the room the door opens into, which the agent reads from these arcs."""
+only needs the hinge side and the room the door opens into, which the agent reads from these arcs. Reads the PDF with pymupdf or
+poppler (hstools.pdfdoc)."""
 from __future__ import annotations
 
 import argparse
-import subprocess
 import sys
-import tempfile
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from hstools import parse_pt, r3, write_json  # noqa: E402
-from hstools.arcs import load_svg_paths, swing_arcs  # noqa: E402
+from hstools import parse_pt, pdfdoc, r3, write_json  # noqa: E402
+from hstools.arcs import swing_arcs  # noqa: E402
 
 
 def main(argv=None):
@@ -27,14 +26,9 @@ def main(argv=None):
     ap.add_argument('--origin-pt', help='page point of the project origin (default: bottom-left corner of the page)')
     a = ap.parse_args(argv)
     s = a.pt_per_m or (72 / 0.0254 / a.scale if a.scale else None)
-    with tempfile.TemporaryDirectory() as td:
-        svg = Path(td) / 's.svg'
-        subprocess.run(['pdftocairo', '-svg', '-f', str(a.page), '-l', str(a.page), a.pdf, str(svg)], check=True)
-        paths = load_svg_paths(svg)
-        txt = svg.read_text()
-    import re
-    m = re.search(r'height="([\d.]+)(pt)?"', txt)
-    page_h = float(m.group(1)) if m else 0.0
+    paths = pdfdoc.paths(a.pdf, a.page)
+    size, _ = pdfdoc.words(a.pdf, a.page)
+    page_h = size[1] if size else 0.0
     # door leaves 0.6–1.3 m; without a scale assume 1:50 for the search window
     k = s or 72 / 0.0254 / 50
     arcs = swing_arcs(paths, 0.55 * k, 1.35 * k, 0.012 * k)

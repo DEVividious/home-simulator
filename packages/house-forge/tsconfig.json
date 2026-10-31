@@ -1,0 +1,22 @@
+{
+  // The plugin CLI runs in Node: from source in this repository (type stripping) and as one esbuild bundle in the plugin
+  // (scripts/plugin/build.mjs). Erasable syntax only, explicit type imports, .ts extensions on relative imports.
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022"],
+    "types": ["node"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "skipLibCheck": true,
+    "isolatedModules": true,
+    "verbatimModuleSyntax": true,
+    "erasableSyntaxOnly": true,
+    "allowImportingTsExtensions": true,
+    "resolveJsonModule": true,
+    "noEmit": true
+  },
+  "include": ["src", "tests"]
+}

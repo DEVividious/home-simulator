@@ -1,0 +1,14 @@
+{
+  "name": "house-forge",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "displayName": "House Forge",
+  "description": "Turn floor plans, PDF sheets or CAD drawings into a 3D-printable scale model of a house or flat: plan reading, roof, printer fit, preview approval and STL parts.",
+  "keywords": ["3d-printing", "stl", "floor-plan", "architecture", "scale-model", "house"],
+  "bin": { "house-forge": "./src/cli.ts" },
+  "dependencies": {
+    "@home-sim/core": "0.1.0"
+  }
+}
