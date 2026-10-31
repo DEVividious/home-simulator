@@ -646,6 +646,7 @@
         "enum": [
          "hinged-single",
          "hinged-double",
+         "folding",
          "sliding",
          "pocket"
         ]

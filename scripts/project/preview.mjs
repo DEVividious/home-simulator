@@ -13,6 +13,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { launch, ROOT, sleep, startServer, waitForApp } from '../verify/browser.mjs';
 import { building } from '@home-sim/core/model/building';
+import { doorLeaves, swingArcs } from '@home-sim/core/model/doors';
 import { stairDrawing } from '@home-sim/core/model/stairs';
 import { contourOf, planeZ, regionBox, regionPolygon, surfaceAt, surfaceFacets } from '@home-sim/core/model/roof';
 
@@ -113,10 +114,11 @@ function planSvg(levelId) {
   // doors: leaves and swing arcs
   for (const d of pkg.building.doors.filter((x) => x.level === levelId)) {
     if (d.hinge && d.closedDir && d.openDir) {
-      const L = d.leafWidth, h = d.hinge, c = [h[0] + d.closedDir[0] * L, h[1] + d.closedDir[1] * L], o = [h[0] + d.openDir[0] * L, h[1] + d.openDir[1] * L];
-      const sweep = (d.closedDir[0] * d.openDir[1] - d.closedDir[1] * d.openDir[0]) > 0 ? 0 : 1;
-      g += `<line x1="${X(h[0])}" y1="${Y(h[1])}" x2="${X(o[0])}" y2="${Y(o[1])}" stroke="#dc2626" stroke-width="2"/><path d="M ${X(c[0])} ${Y(c[1])} A ${(L * S).toFixed(1)} ${(L * S).toFixed(1)} 0 0 ${sweep} ${X(o[0])} ${Y(o[1])}" fill="none" stroke="#dc2626" stroke-dasharray="4 3"/>`;
-      g += `<text x="${X(o[0])}" y="${Y(o[1])}" font-size="11" fill="#b91c1c" dx="4">${esc(d.id)}</text>`;
+      // every leaf open (a double door: both, a bifold: folded) and the swing arcs (core model/doors.ts)
+      const leaves = doorLeaves(d, 1);
+      for (const l of leaves) g += `<line x1="${X(l.a[0])}" y1="${Y(l.a[1])}" x2="${X(l.b[0])}" y2="${Y(l.b[1])}" stroke="#dc2626" stroke-width="2"/>`;
+      for (const arc of swingArcs(d, 16)) g += `<polyline points="${pts(arc)}" fill="none" stroke="#dc2626" stroke-dasharray="4 3"/>`;
+      g += `<text x="${X(leaves[0].b[0])}" y="${Y(leaves[0].b[1])}" font-size="11" fill="#b91c1c" dx="4">${esc(d.id)}</text>`;
     } else if (d.slide) {
       const o = d.slide.origin, e = [o[0] + d.slide.dir[0] * d.leafWidth, o[1] + d.slide.dir[1] * d.leafWidth];
       g += `<line x1="${X(o[0])}" y1="${Y(o[1])}" x2="${X(e[0])}" y2="${Y(e[1])}" stroke="#dc2626" stroke-width="3"/><text x="${X(e[0])}" y="${Y(e[1])}" font-size="11" fill="#b91c1c" dx="4">${esc(d.id)} ↔</text>`;

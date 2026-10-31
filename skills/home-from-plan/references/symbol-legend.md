@@ -4,8 +4,8 @@
 |---|---|---|
 | Wall | thick black / hatched band; exterior ~0.25–0.45 m, interior ~0.08–0.15 m | room outlines on the inner faces; thickness = gap between neighbouring rooms |
 | Door (hinged) | a gap in the wall + a straight leaf line + a quarter arc | `doors[]`: arc centre = hinge, the arc lies in the room the door opens into (`swingInto`; an arc outside the building = `"exterior"`); arc radius ≈ leaf width (interior 0.7–0.9 m, entrance 0.9–1.0) |
-| Double door | two arcs meeting in the middle | one door of the full width (`hinged-single` is used by the engine; note it in the README) |
-| Folding / bifold door | a zig-zag of short leaf lines, sometimes two small arcs | not supported — the nearest is one `hinged-single` (or `sliding` when it folds along the wall); note it in the README |
+| Double door | two arcs meeting in the middle | one door of the full width, `"type": "hinged-double"`, `swingInto` = the side of the arcs (two equal leaves; unequal leaves: still `hinged-double`, note it in the README) |
+| Folding / bifold door | a zig-zag of short leaf lines, sometimes two small arcs | `"type": "folding"`, `swingInto` = the side the zig-zag stands out to, `hinge` = the jamb it folds to (left / right seen from that room); four panels: the nearest is `hinged-double`, note it in the README |
 | Sliding door | leaf drawn parallel to the wall, often with an arrow | `"type": "sliding"`, `slideTo` = direction of the arrow |
 | Pocket door | leaf drawn inside the wall thickness | `"type": "pocket"` |
 | Opening without door | a gap without a leaf | `passages[]` |

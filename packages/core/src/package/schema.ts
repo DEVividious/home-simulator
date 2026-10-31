@@ -49,7 +49,7 @@ export const RoomSchema = z.looseObject({
 export const DoorSchema = z.looseObject({
   id, level: id, rooms: z.tuple([id, id]), floorZ: num,
   opening: z.looseObject({ along: z.enum(['X', 'Y']), from: num, to: num, faces: z.array(num).length(2), width: num, height: num }),
-  leafWidth: num, height: num, type: z.enum(['hinged-single', 'hinged-double', 'sliding', 'pocket']),
+  leafWidth: num, height: num, type: z.enum(['hinged-single', 'hinged-double', 'folding', 'sliding', 'pocket']),
   hinge: vec2.nullable(), closedDir: vec2.nullable(), openDir: vec2.nullable(),
   hingeSide: z.enum(['left', 'right']).nullable(), swingInto: z.string().nullable(), openAngle: num.nullable(),
   slide: z.looseObject({ origin: vec2, dir: vec2, travel: num }).nullable(),

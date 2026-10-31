@@ -5,7 +5,7 @@ import { itemById } from '../catalog/providers';
 import { obbCorners } from '@home-sim/core/model/geom2d';
 import { roomsOfLevel, type HomeRoom } from '../model/rooms';
 import type { Arrangement, LevelId } from '../model/types';
-import { doorsOfLevel, doorsOfRoom, isInteractive, leafSegment, openOf, swingArc, type DoorDef } from '../model/doors';
+import { doorLeaves, doorsOfLevel, doorsOfRoom, isInteractive, openOf, swingArcs, type DoorDef } from '../model/doors';
 import { useDoors } from '../store/doors';
 import { ui, useUi } from '../store/ui';
 import { fmtNum, t } from '../../i18n';
@@ -21,14 +21,15 @@ export function DoorSymbols({ list }: { list: DoorDef[] }) {
     <g className={`hm-plan-doors${st.show ? '' : ' off'}`} data-testid="plan-doors">
       {list.map((d) => {
         // entrance doors (exterior joinery): symbol as on the plan — leaf open, no action
-        const act = isInteractive(d), op = act ? openOf(st, d.id) : 1, leaf = leafSegment(d, d.hinge ? Math.max(op, 0.0001) : op), arc = swingArc(d);
-        if (!leaf) return null;
+        const act = isInteractive(d), op = act ? openOf(st, d.id) : 1, leaves = doorLeaves(d, d.hinge ? Math.max(op, 0.0001) : op), arcs = swingArcs(d);
+        if (!leaves.length) return null;
+        const hinges = d.hinge ? doorLeaves(d, 0).map((l) => l.a) : [];
         return (
           <g key={d.id} className={`hm-plan-door${sel === d.id ? ' on' : ''}${op >= 0.5 ? ' open' : ''}${act ? '' : ' fixed'}`} data-door={d.id} data-open={act && op >= 0.5 ? '1' : '0'}
             onClick={act ? (e) => { e.stopPropagation(); ui.set({ selection: sel === d.id ? null : { kind: 'door', id: d.id } }); } : undefined}>
-            <polyline points={pts(arc)} className="arc" />
-            {(st.show || !act) && <line x1={leaf.a[0]} y1={-leaf.a[1]} x2={leaf.b[0]} y2={-leaf.b[1]} className="leaf" />}
-            {act && <polyline points={pts(d.hinge ? [...arc, d.hinge] : arc)} className="hit" />}
+            {arcs.map((arc, i) => <polyline key={`a${i}`} points={pts(arc)} className="arc" />)}
+            {(st.show || !act) && leaves.map((l, i) => <line key={`l${i}`} x1={l.a[0]} y1={-l.a[1]} x2={l.b[0]} y2={-l.b[1]} className="leaf" />)}
+            {act && arcs.map((arc, i) => <polyline key={`h${i}`} points={pts(hinges[i] ? [...arc, hinges[i]] : arc)} className="hit" />)}
           </g>
         );
       })}

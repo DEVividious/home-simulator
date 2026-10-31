@@ -1,6 +1,7 @@
 {
  "doors.type.hinged-single": "hinged, single leaf",
  "doors.type.hinged-double": "hinged, double leaf",
+ "doors.type.folding": "folding (bifold)",
  "doors.type.sliding": "sliding",
  "doors.type.pocket": "pocket (slides into the wall)",
  "wording.apartment.noun": "apartment",

@@ -83,9 +83,10 @@ the behaviour is named in brackets. When a limit is lifted, remove it here in th
 - **Model files are not made by the tools.** `plan.json` can name a building, terrain or surroundings GLB (`assets`), camera
   views and catalog files; the compiler copies them into `project.json` as given. Producing the GLB is up to the author, and
   only `npm run project:validate` checks that the files exist.
-- **No double or folding doors.** Doors are `hinged-single`, `sliding` or `pocket`. The package format reserves
-  `hinged-double`, but the engine draws and animates a single leaf only, and `plan.json` cannot express it. A bifold door is
-  modelled as one hinged or sliding leaf.
+- **Door types are fixed.** Doors are `hinged-single`, `hinged-double` (two equal leaves opening together into one room),
+  `folding` (a bifold of two equal panels folding to one jamb), `sliding` or `pocket`. Unequal double leaves, a double door with
+  one fixed leaf, bifolds of four or more panels, double-swing (café) doors and sectional garage doors are not supported; a
+  door is one opening in one wall (`packages/core/src/model/doors.ts`).
 - **Raster calibration is a heuristic.** `tools/image/calibrate.py` estimates the scale from a scale bar, printed areas, the
   total area or typical symbol sizes. Two estimates within 5 % are required, but the result still needs a human check against
   one real dimension and the preview. Typical accuracy:

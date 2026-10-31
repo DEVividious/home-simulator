@@ -4,7 +4,7 @@ import { fmtCm, t } from '../../i18n';
 import { stairArrivesAt, stairOpeningRects } from './stairs';
 import { mayOverlap, type CatalogItem } from '../catalog/furniture';
 import { convexInsidePolygon, convexOverlap, obbCorners, obbOverlap, type OBB } from '@home-sim/core/model/geom2d';
-import { doorById, leafSegment } from './doors';
+import { doorById, doorLeaves, swingDepth } from './doors';
 import type { HomeRoom } from './rooms';
 import type { Dims, FurniturePlacement, Vec2 } from './types';
 
@@ -39,13 +39,14 @@ export function furnitureWarnings(room: HomeRoom, item: CatalogItem, p: Furnitur
       const wall = room.walls.find((w) => w.id === d.wallId), wl = wall?.length ?? Infinity;
       // doors from the door model (hinge and direction from the plan) — the swing zone only on the side the leaf
       // opens into (leaf width); on the other side and for sliding doors a clear passage width is enough
-      const def = doorById(d.id), leaf = def && wall ? leafSegment(def, 0) : null;
-      if (def && leaf && wall) {
-        const tAt = (q: Vec2) => (q[0] - wall.a[0]) * wall.dir[0] + (q[1] - wall.a[1]) * wall.dir[1];
-        const t0 = Math.max(0, Math.min(tAt(leaf.a), tAt(leaf.b))), t1 = Math.min(wl, Math.max(tAt(leaf.a), tAt(leaf.b))), into = def.swingInto === room.id;
-        // side without the leaf: 3 cm tolerance at the reveals (an item next to the door does not "block" the passage)
+      const def = doorById(d.id), leaves = def && wall ? doorLeaves(def, 0) : [];
+      if (def && leaves.length && wall) {
+        const tAt = (q: Vec2) => (q[0] - wall.a[0]) * wall.dir[0] + (q[1] - wall.a[1]) * wall.dir[1], ts = leaves.flatMap((l) => [tAt(l.a), tAt(l.b)]);
+        const t0 = Math.max(0, Math.min(...ts)), t1 = Math.min(wl, Math.max(...ts)), into = def.swingInto === room.id;
+        // side without the leaf: 3 cm tolerance at the reveals (an item next to the door does not "block" the passage); the side it
+        // opens into: as deep as the leaves reach (a double door's half leaves, a bifold's folded panels)
         const m = into ? 0 : 0.03;
-        if (convexOverlap(corners, wallZone(room, d.wallId, t0 + m, t1 - m, into ? def.leafWidth : 0.6), 0.01)) { out.push({ kind: 'door', level: 'warn', text: into ? t('collision.doorSwing') : t('collision.doorBlocked') }); break; }
+        if (convexOverlap(corners, wallZone(room, d.wallId, t0 + m, t1 - m, into ? swingDepth(def) : 0.6), 0.01)) { out.push({ kind: 'door', level: 'warn', text: into ? t('collision.doorSwing') : t('collision.doorBlocked') }); break; }
         continue;
       }
       const zone = wallZone(room, d.wallId, Math.max(0, d.t0 - 0.05), Math.min(wl, d.t1 + 0.05), d.passage ? 0.6 : Math.max(0.7, d.leaf));

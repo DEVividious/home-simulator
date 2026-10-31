@@ -1,0 +1,25 @@
+{
+ "schema": "home-simulator/plan",
+ "version": 1,
+ "project": { "id": "doors", "name": "Door types", "buildingType": "house" },
+ "units": "m",
+ "source": "synthetic test fixture: a one-storey house with a double entrance door, a double door between the hall and the living room, a bifold wardrobe door and a sliding door",
+ "levels": [ { "id": "G", "name": "Ground", "floorZ": 0, "ceiling": 2.6 } ],
+ "rooms": [
+  { "id": "L", "name": "Living", "level": "G", "kind": "living", "rect": [0.3, 0.3, 6.3, 4.3] },
+  { "id": "K", "name": "Hall", "level": "G", "kind": "hall", "rect": [0.3, 4.42, 3.3, 6.3] },
+  { "id": "W", "name": "Wardrobe", "level": "G", "kind": "storage", "rect": [3.42, 4.42, 6.3, 6.3] }
+ ],
+ "doors": [
+  { "id": "D0", "between": ["K", "exterior"], "at": [0.15, 5.36], "width": 1.4, "type": "hinged-double", "swingInto": "K" },
+  { "id": "D1", "between": ["K", "L"], "at": [1.8, 4.36], "width": 1.5, "type": "hinged-double", "swingInto": "L" },
+  { "id": "D2", "between": ["L", "W"], "at": [4.6, 4.36], "width": 1.2, "type": "folding", "swingInto": "L", "hinge": "right" },
+  { "id": "D3", "between": ["K", "W"], "at": [3.36, 5.4], "width": 0.9, "type": "sliding", "slideTo": "start" }
+ ],
+ "windows": [
+  { "id": "W1", "room": "L", "at": [3.3, 0.3], "width": 2.0 },
+  { "id": "W2", "room": "L", "at": [6.3, 2.3], "width": 1.6, "sill": 0, "passable": true }
+ ],
+ "roof": { "parts": [{ "id": "main", "level": "G", "type": "hip", "pitch": 30 }] },
+ "site": { "margin": 4 }
+}

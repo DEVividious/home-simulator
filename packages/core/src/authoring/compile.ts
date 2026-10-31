@@ -5,6 +5,7 @@
 // axis and face, stairs from risers and level heights, furniture against a wall, provenance on every fact.
 // Problems are returned as issues (error / warning); the CLI refuses to write a package with errors.
 import { flatCeiling, roofCeiling, type CeilingProfile } from '../model/ceiling.ts';
+import { leafSectors, type LeafSector } from '../model/doors.ts';
 import { outerOutline } from '../model/outline.ts';
 import { areaBelow, atticPlanes, surfaceFacets, type RoofPiece } from '../model/roof.ts';
 import type { ArchitectItem, DoorDef, ElectricalDefaults, ProjectModule, ProjectPackage, Rect, RoomJson, StairDef, Vec2, Viewpoint } from '../package/types.ts';
@@ -16,6 +17,8 @@ export interface CatalogItemInfo { id: string; dimensions: { w: number; d: numbe
 export interface CompileResult { project: ProjectPackage | null; issues: Issue[]; adjustments: string[] }
 
 const EPS = 1e-6;
+/** full opening of a bifold door [°]: its panels fold into a narrow V, not flat against each other */
+const FOLD_ANGLE = 80;
 const r3 = (x: number) => Math.round(x * 1000) / 1000;
 const r2 = (x: number) => Math.round(x * 100) / 100;
 const snap5 = (x: number) => Math.round(x * 200) / 200;
@@ -212,7 +215,7 @@ export function compilePlan(input: PlanInput | unknown, opts: CompileOptions): C
       type: d.type, source: [d.source ?? source], confidence: d.confidence ?? D.confidence };
     // the wall line runs along `axis`; unit vector along it and the across direction
     const u: Vec2 = wall.axis === 'X' ? [1, 0] : [0, 1];
-    if (d.type === 'hinged-single') {
+    if (d.type === 'hinged-single' || d.type === 'hinged-double' || d.type === 'folding') {
       const into = d.swingInto ?? (b === 'exterior' ? a : b);
       if (into !== a && into !== b) { err('door.swing', `${what}: swingInto "${into}" is not one of ${a} / ${b}`); continue; }
       // face of the room the door opens into and the normal into that room (outwards: the outer face of the exterior wall)
@@ -227,7 +230,7 @@ export function compilePlan(input: PlanInput | unknown, opts: CompileOptions): C
       const face = intoEdge.c;
       const hinge: Vec2 = wall.axis === 'X' ? [r3(t), face] : [face, r3(t)];
       const closedDir: Vec2 = hingeAtEnd ? [-u[0], -u[1]] : [u[0], u[1]];
-      doors.push({ ...base, hinge, closedDir: closedDir.map(cleanZero) as Vec2, openDir: n.map(cleanZero) as Vec2, hingeSide: side, swingInto: into, openAngle: 90, slide: null });
+      doors.push({ ...base, hinge, closedDir: closedDir.map(cleanZero) as Vec2, openDir: n.map(cleanZero) as Vec2, hingeSide: d.type === 'hinged-double' ? null : side, swingInto: into, openAngle: d.type === 'folding' ? FOLD_ANGLE : 90, slide: null });
     } else {
       const toEnd = (d.slideTo ?? 'end') === 'end', mid = r3((wall.faces[0] + wall.faces[1]) / 2);
       const originT = toEnd ? wall.from : wall.to, dir: Vec2 = toEnd ? u : [-u[0], -u[1]];
@@ -236,18 +239,21 @@ export function compilePlan(input: PlanInput | unknown, opts: CompileOptions): C
     }
   }
   // two leaves sweeping the same floor usually mean a misread swing (or a real clash worth a note)
-  const inSweep = (d: DoorDef, p: Vec2) => {
-    const dx = p[0] - d.hinge![0], dy = p[1] - d.hinge![1];
-    return dx * d.closedDir![0] + dy * d.closedDir![1] >= 0 && dx * d.openDir![0] + dy * d.openDir![1] >= 0 && Math.hypot(dx, dy) <= d.leafWidth;
+  const inSweep = (q: LeafSector, p: Vec2) => {
+    const dx = p[0] - q.hinge[0], dy = p[1] - q.hinge[1];
+    return dx * q.closedDir[0] + dy * q.closedDir[1] >= 0 && dx * q.openDir[0] + dy * q.openDir[1] >= 0 && Math.hypot(dx, dy) <= q.radius;
   };
   const hinged = doors.filter((d) => d.hinge && d.closedDir && d.openDir && d.swingInto !== 'exterior');
   for (let i = 0; i < hinged.length; i++) for (let j = i + 1; j < hinged.length; j++) {
     const a = hinged[i], b = hinged[j];
-    if (a.level !== b.level || a.swingInto !== b.swingInto || Math.hypot(a.hinge![0] - b.hinge![0], a.hinge![1] - b.hinge![1]) > a.leafWidth + b.leafWidth) continue;
-    let hits = 0;   // samples of a's quarter disc (10 cm grid) that b's leaf also sweeps
-    for (let u = 0.05; u < a.leafWidth; u += 0.1) for (let v = 0.05; v < a.leafWidth; v += 0.1) {
-      const p: Vec2 = [a.hinge![0] + a.closedDir![0] * u + a.openDir![0] * v, a.hinge![1] + a.closedDir![1] * u + a.openDir![1] * v];
-      if (inSweep(a, p) && inSweep(b, p)) hits++;
+    if (a.level !== b.level || a.swingInto !== b.swingInto) continue;
+    let hits = 0;   // samples of a's quarter discs (10 cm grid) that a leaf of b also sweeps
+    for (const sa of leafSectors(a)) for (const sb of leafSectors(b)) {
+      if (Math.hypot(sa.hinge[0] - sb.hinge[0], sa.hinge[1] - sb.hinge[1]) > sa.radius + sb.radius) continue;
+      for (let u = 0.05; u < sa.radius; u += 0.1) for (let v = 0.05; v < sa.radius; v += 0.1) {
+        const p: Vec2 = [sa.hinge[0] + sa.closedDir[0] * u + sa.openDir[0] * v, sa.hinge[1] + sa.closedDir[1] * u + sa.openDir[1] * v];
+        if (inSweep(sa, p) && inSweep(sb, p)) hits++;
+      }
     }
     if (hits >= 2) warn('door.swingOverlap', `doors "${a.id}" and "${b.id}" sweep the same floor in "${a.swingInto}" — check the swing sides on the drawing (an entrance door may open outwards: swingInto "exterior")`);
   }

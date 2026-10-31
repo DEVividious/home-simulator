@@ -15,9 +15,9 @@ A door is stated once, as a fact about the plan (`packages/core/src/authoring/pl
 | `between` | the two rooms on either side; `"exterior"` for an outside door |
 | `at` | any point in the middle of the opening (on or inside the wall between the rooms) |
 | `width` | clear opening in the masonry [m] |
-| `type` | `hinged-single` (default), `sliding`, `pocket` |
-| `swingInto` | hinged: the room the leaf opens into (default: the second room; for an exterior door — the room) |
-| `hinge` | hinged: `left` / `right`, as seen from the room the door opens into, looking at the wall |
+| `type` | `hinged-single` (default), `hinged-double` (two leaves hinged at both jambs), `folding` (a bifold: two panels folding to the hinge side), `sliding`, `pocket` |
+| `swingInto` | hinged, double, folding: the room the leaves open into (default: the second room; for an exterior door — the room) |
+| `hinge` | hinged: `left` / `right`, as seen from the room the door opens into, looking at the wall; folding: the side the panels fold to; double: not used |
 | `slideTo` | sliding / pocket: the leaf moves towards the `start` (smaller coordinate) or `end` of the opening |
 | `height`, `leafHeight` | opening and leaf height (defaults from `defaults.doorHeight` = 2.05 m, `defaults.leafHeight` = 2.00 m) |
 | `confidence`, `source` | provenance |
@@ -37,13 +37,13 @@ not guessed by the engine: the authoring skill decides (from a swing arc on a dr
 | `id`, `level`, `floorZ` | identifier, level, floor height |
 | `rooms: [A, B]` | rooms on both sides; B = `exterior` for an outside door |
 | `opening` | `along` (wall axis `X` / `Y`), `from`, `to`, `faces` (wall faces, cross coordinate), `width`, `height` — the masonry opening |
-| `leafWidth`, `height` | the leaf |
-| `type` | `hinged-single` · `hinged-double` · `sliding` · `pocket` |
-| `hinge` | hinge axis in plan (LCS); `null` for sliding leaves |
+| `leafWidth`, `height` | the leaf — of all the leaves together (a double door: two halves, a bifold: two panels) |
+| `type` | `hinged-single` · `hinged-double` · `folding` · `sliding` · `pocket` |
+| `hinge` | hinge axis in plan (LCS) — of the first leaf (a double door's second leaf hinges at `hinge + closedDir · leafWidth`); `null` for sliding leaves |
 | `closedDir`, `openDir` | unit vectors: closed leaf (hinge → lock) and leaf opened by 90° |
-| `hingeSide` | `left` / `right`, as seen from the room the door opens into |
+| `hingeSide` | `left` / `right`, as seen from the room the door opens into (`null` for a double door) |
 | `swingInto` | room the leaf opens into |
-| `openAngle` | full opening angle (90°) |
+| `openAngle` | full opening angle (90°; a bifold 80° — its panels fold into a narrow V) |
 | `slide` | sliding leaf: `{ origin, dir, travel }` — start on the wall axis, sliding direction, travel |
 | `source`, `confidence`, `notes` | provenance and confidence |
 | `flush` | door flush with the wall: concealed frame in the leaf colour, flat pull instead of a handle on the opening side |
@@ -56,8 +56,13 @@ building onto the plot.
 like interior doors and, when open, let the walk pass out onto the plot (in a project with the `site` module).
 
 A door is interactive when it has a hinge or a sliding track (`isInteractive`). Leaf geometry follows from
-`leafSegment(d, t)`: hinged — rotation about the hinge point (the hinge point is fixed for every `t`), sliding — a shift along
-the wall by `travel · t`. `swingArc` gives the plan arc, `inDoorway` tells whether a point stands in the clear opening.
+`doorLeaves(d, t)` (`packages/core/src/model/doors.ts`) — every leaf as a segment from its hinge edge: hinged — rotation about
+the hinge point (the hinge point is fixed for every `t`); double — two half leaves turning about the hinges at both jambs
+into the same room; folding — the first panel turns about the hinge, the second is hinged to its free edge and its far edge
+runs along the wall line back towards the hinge; sliding — a shift along the wall by `travel · t`. `swingArcs` gives the plan
+arcs (one per hinged leaf; the bifold: the path of its fold), `swingDepth` how far the leaves reach into the room (furniture
+warnings), `leafSectors` the floor they sweep (the compiler's `door.swingOverlap`); `inDoorway` tells whether a point stands in
+the clear opening.
 
 ## 3. Door state (view state, not part of the document)
 
@@ -77,6 +82,8 @@ Diagnostics and tests: `?doors=open | closed | hidden`.
   flush doors have a separate frame mesh in the leaf colour.
 - Leaves belong to the architecture group: the level section and the cutaway of occluding walls apply to them as to walls.
 - Sliding and pocket leaves move along the wall by their travel.
+- A double door is two leaf meshes, each about its own hinge, with a handle on both; a bifold two panels, the second turning
+  about the fold, with the handle on its free edge (`leafGeometries(d, i)`, `leafMatrix(d, t, out, i)`).
 - An invisible hit box thicker than the leaf (22 cm) makes a tap at a grazing angle easier.
 - Animation: 0.55 s (`DOOR_ANIM_S`) with ease-in / ease-out; leaf thickness 4 cm (`LEAF_T`).
 
@@ -129,7 +136,9 @@ through open doors.
 
 `src/home/tests/doors.test.ts` — fields, types, directions, pivot on the hinge, angle, leaf matrix, sliding leaves,
 serialisation, "Show doors", walk collision. `src/home/tests/pantryDoor.test.ts` — a door hidden in a line of cabinet fronts.
-`src/authoring/tests/compile.test.ts` — compiling doors from `plan.json`.
+`src/authoring/tests/compile.test.ts` — compiling doors from `plan.json`. `packages/core/tests/doors.test.ts` and
+`src/home/tests/doorTypes.test.ts` — double and folding doors on the fixture `packages/core/tests/fixtures/doors.plan.json`
+(leaves, arcs, swept floor, meshes, walk); the browser test `scripts/verify/verify_features.mjs` opens them in the walk.
 
 ## 10. Limitations
 
@@ -137,3 +146,4 @@ serialisation, "Show doors", walk collision. `src/home/tests/pantryDoor.test.ts`
 - An open leaf blocks neither movement nor furniture.
 - One leaf colour for the whole project; a flush leaf does not follow the wall colour of the room.
 - Garage doors, gates and other exterior joinery are not part of the engine.
+- Both leaves of a double door, and both panels of a bifold, are equal and open together.

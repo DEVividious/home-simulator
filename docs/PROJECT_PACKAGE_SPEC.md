@@ -58,9 +58,11 @@ Walls (`<room>-w<n>`, n = edge index of the outline in counter-clockwise order),
 
 ## building.doors
 `{ id, level, rooms: [a, b | "exterior"], floorZ, opening: { along, from, to, faces, width, height }, leafWidth, height, type
-(hinged-single | hinged-double | sliding | pocket), hinge, closedDir, openDir, hingeSide, swingInto, openAngle, slide
+(hinged-single | hinged-double | folding | sliding | pocket), hinge, closedDir, openDir, hingeSide, swingInto, openAngle, slide
 ({ origin, dir, travel } | null), source[], confidence, notes?, flush? }`. Hinged doors rotate around `hinge` from `closedDir` to
-`openDir`; sliding doors move along `slide.dir`. Doors to the exterior are drawn, opened and walked through like any other.
+`openDir`; sliding doors move along `slide.dir`. `leafWidth` is all the leaves together: a `hinged-double` door has two half
+leaves hinged at both jambs (the second at `hinge + closedDir · leafWidth`, turning into the same room, `hingeSide` null), a
+`folding` door two panels folding towards its hinge (`openAngle` 80). Doors to the exterior are drawn, opened and walked through like any other.
 
 `building.doorFacts` (optional): `overrides` (`{ <doorId>: { flush?, source } }`), `passableOpenings` (window ids of floor-level
 glazed doors one can walk through onto the site). `building.stairs`: stairs between two levels, one of three kinds — every

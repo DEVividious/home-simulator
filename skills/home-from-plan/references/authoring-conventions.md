@@ -32,6 +32,9 @@ These rules make a package correct for the engine and stable for the user's save
 - Hinged doors: `swingInto` = the room the leaf opens into (on drawings: the side the arc is drawn), `hinge` = left / right as
   seen standing in that room looking at the wall (the arc's centre is the hinge). Exterior doors open into the building unless
   the arc is drawn outside: then `"swingInto": "exterior"`.
+- Double door (two arcs meeting in the middle): `"type": "hinged-double"`, `swingInto` as above; `hinge` is not needed.
+- Bifold (a zig-zag of two short leaves): `"type": "folding"`, `swingInto` = the room the panels stand out into, `hinge` = the
+  jamb they fold to, as seen from that room.
 - Sliding / pocket: `"type": "sliding"`, `slideTo: "start" | "end"` (towards the smaller / larger coordinate along the wall).
 - An opening without a door leaf → `passages` (no door id).
 - Garage door (sectional, up-and-over, roller): no such door type — a `"type": "sliding"` door of the full width in the garage's

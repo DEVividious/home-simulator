@@ -22,7 +22,8 @@ Worked examples: `projects/demo-apartment/source/plan.json` (flat, metres, expli
   "doors": [
     { "id": "D1", "between": ["R3", "exterior"], "at": [210, 690], "width": 1.0, "swingInto": "R3", "hinge": "right" },
     { "id": "D2", "between": ["R3", "R1"], "at": [690, 580], "width": 0.8, "swingInto": "R1", "hinge": "left" },
-    { "id": "D3", "between": ["R4", "R2"], "at": [900, 640], "width": 0.9, "type": "sliding", "slideTo": "end" }
+    { "id": "D3", "between": ["R4", "R2"], "at": [900, 640], "width": 0.9, "type": "sliding", "slideTo": "end" },
+    { "id": "D4", "between": ["R2", "R5"], "at": [1300, 640], "width": 1.4, "type": "hinged-double", "swingInto": "R2" }    // or "folding" + "hinge"
   ],
   "passages": [ { "between": ["R3", "R2"], "at": [1100, 700], "width": 1.2 } ],
   "windows": [

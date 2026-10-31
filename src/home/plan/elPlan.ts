@@ -4,7 +4,7 @@
 // millimetres of the printout and converted with the scale denominator `den`: 1 mm of paper = den / 1000 m.
 // Symbols: a readable custom legend modelled on installation symbols (shape = layer, letter code = type). Pure TS.
 import { hasGeneratedShell, levelShell } from '../model/shell';
-import { allDoors, leafSegment, swingArc } from '../model/doors';
+import { allDoors, doorLeaves, swingArcs } from '../model/doors';
 import {
   EL_LAYERS, EL_TYPES, elRooms, EXT, hasSite, houseFootprint, layerOf, measure, plotBoundary, siteLevelId, wallRuns, type ElectricalPlan, type ElLayer, type ElPoint, type ElRoom, type ElType,
 } from '../model/electrical';
@@ -164,9 +164,8 @@ export function buildPlan(o: PlanOptions): PlanDrawing {
     }
     // ---- interior doors: open leaf and swing arc
     for (const d of allDoors().filter((x) => x.level === level)) {
-      const arc = swingArc(d, 12), leaf = leafSegment(d, 1);
-      if (arc.length > 1) prims.push({ k: 'poly', pts: arc, stroke: LIGHT, lw: mm(0.12) });
-      if (leaf) prims.push({ k: 'poly', pts: [leaf.a, leaf.b], stroke: '#8a9099', lw: mm(0.22) });
+      for (const arc of swingArcs(d, 12)) if (arc.length > 1) prims.push({ k: 'poly', pts: arc, stroke: LIGHT, lw: mm(0.12) });
+      for (const leaf of doorLeaves(d, 1)) prims.push({ k: 'poly', pts: [leaf.a, leaf.b], stroke: '#8a9099', lw: mm(0.22) });
     }
     // ---- stairs
     for (const st of stairs().filter((x) => x.fromLevel === level || x.toLevel === level)) {

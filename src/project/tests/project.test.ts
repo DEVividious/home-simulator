@@ -53,7 +53,7 @@ describe('package validation', () => {
       'manifest.name: Invalid input: expected string, received undefined',
       'manifest.units: Invalid input: expected "m"',
       'building.rooms.rooms.0.polygon: Too small: expected array to have >=3 items',
-      'building.doors.0.type: Invalid option: expected one of "hinged-single"|"hinged-double"|"sliding"|"pocket"',
+      'building.doors.0.type: Invalid option: expected one of "hinged-single"|"hinged-double"|"folding"|"sliding"|"pocket"',
       '(root): Unrecognized key: "extra"',
     ]);
     expect(errorsOf('not a package')).toEqual(['(root): Invalid input: expected object, received string']);

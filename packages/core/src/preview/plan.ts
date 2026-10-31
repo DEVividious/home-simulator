@@ -6,6 +6,7 @@
 // the size and averaged down; texts are drawn afterwards at the final size (5×7 font, capitals). Deterministic.
 import { building, type BuildingData } from '../model/building.ts';
 import { contourOf, planeZ, regionBox, regionPolygon, surfaceAt, surfaceFacets, type Plane, type Surface } from '../model/roof.ts';
+import { doorLeaves, swingArcs } from '../model/doors.ts';
 import { stairDrawing } from '../model/stairs.ts';
 import type { LevelId, Vec2 } from '../package/types.ts';
 import { fillPolygon, fillRect, image, line, polyline, shrink, text, textWidth, type Image, type RGB } from '../print/raster.ts';
@@ -181,19 +182,13 @@ export function planImage(data: BuildingData, levelId: LevelId, o: { name: strin
       sh.label([(a + cx) / 2, (b + d) / 2], w.id, 1, BLUE_TEXT, 'middle', 0, -5);
     }
   }
-  // doors: leaves and swing arcs; sliding leaves
+  // doors: leaves (open) and swing arcs, every leaf of a double door, a bifold folded; sliding leaves
   for (const d of B.doors.filter((x) => x.level === levelId)) {
-    if (d.hinge && d.closedDir && d.openDir) {
-      const Lw = d.leafWidth, h = d.hinge, op: Vec2 = [h[0] + d.openDir[0] * Lw, h[1] + d.openDir[1] * Lw];
-      sh.seg(h, op, DOOR, 2);
-      const a0 = Math.atan2(d.closedDir[1], d.closedDir[0]), a1 = Math.atan2(d.openDir[1], d.openDir[0]);
-      let da = a1 - a0;
-      while (da > Math.PI) da -= 2 * Math.PI;
-      while (da < -Math.PI) da += 2 * Math.PI;
-      const arc: Vec2[] = [];
-      for (let i = 0; i <= 16; i++) { const a = a0 + (da * i) / 16; arc.push([h[0] + Math.cos(a) * Lw, h[1] + Math.sin(a) * Lw]); }
-      for (let i = 0; i < 16; i += 2) sh.seg(arc[i], arc[i + 1], DOOR);
-      sh.label(op, d.id, 1, DOOR_TEXT, 'start', 4, -5);
+    const leaves = doorLeaves(d, 1);
+    if (d.hinge && leaves.length) {
+      for (const l of leaves) sh.seg(l.a, l.b, DOOR, 2);
+      for (const arc of swingArcs(d, 16)) for (let i = 0; i < arc.length - 1; i += 2) sh.seg(arc[i], arc[i + 1], DOOR);
+      sh.label(leaves[0].b, d.id, 1, DOOR_TEXT, 'start', 4, -5);
     } else if (d.slide) {
       const s = d.slide.origin, e: Vec2 = [s[0] + d.slide.dir[0] * d.leafWidth, s[1] + d.slide.dir[1] * d.leafWidth];
       sh.seg(s, e, DOOR, 3);

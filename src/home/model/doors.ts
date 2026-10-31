@@ -5,6 +5,7 @@
 // User state (open / closed, "Show doors") is separate (DoorState) — it neither changes nor removes door definitions.
 import { derived } from '../../project/active';
 import type { LevelId, Vec2 } from './types';
+import { doorLeaves, type LeafSegment } from '@home-sim/core/model/doors';
 import type { DoorDef, DoorType } from '@home-sim/core/package/types';
 export type { DoorDef, DoorType } from '@home-sim/core/package/types';
 
@@ -41,35 +42,12 @@ export const animSeconds = (_id: string) => DOOR_ANIM_S;
 /** longest door animation of the project [s] (how long rendering continues after a state change) */
 export const maxAnimSeconds = () => DOOR_ANIM_S;
 
-const clamp01 = (t: number) => Math.min(1, Math.max(0, Number.isFinite(t) ? t : 0));
+const clamp01 = (t: number): number => Math.min(1, Math.max(0, Number.isFinite(t) ? t : 0));
 
-/** leaf angle [°] at opening t (0 — closed, 1 — fully open) */
-export const leafAngle = (d: DoorDef, t: number) => (d.openAngle ?? 0) * clamp01(t);
+export { doorLeaves, leafAngle, leafCount, leafWidthOf, swingArcs, swingDepth, type LeafSegment } from '@home-sim/core/model/doors';
 
-/**
- * Leaf in plan at opening t: leaf axis segment a → b (a — the hinge edge / leaf start).
- * Hinged: rotation about the hinge axis (point a is fixed for every t — pivot at the hinge, not at the leaf centre).
- * Sliding: shift along the wall by travel · t.
- */
-export function leafSegment(d: DoorDef, t: number): { a: Vec2; b: Vec2; dir: Vec2 } | null {
-  if (d.hinge && d.closedDir && d.openDir) {
-    const th = (leafAngle(d, t) * Math.PI) / 180, c = Math.cos(th), s = Math.sin(th);
-    const dir: Vec2 = [d.closedDir[0] * c + d.openDir[0] * s, d.closedDir[1] * c + d.openDir[1] * s];
-    return { a: d.hinge, b: [d.hinge[0] + dir[0] * d.leafWidth, d.hinge[1] + dir[1] * d.leafWidth], dir };
-  }
-  if (d.slide) {
-    const k = (d.opening.width - d.leafWidth) / 2 + d.slide.travel * clamp01(t);
-    const a: Vec2 = [d.slide.origin[0] + d.slide.dir[0] * k, d.slide.origin[1] + d.slide.dir[1] * k];
-    return { a, b: [a[0] + d.slide.dir[0] * d.leafWidth, a[1] + d.slide.dir[1] * d.leafWidth], dir: d.slide.dir };
-  }
-  return null;
-}
-
-/** swing arc for the 2D plan: path of the leaf edge from closed to open (polyline); sliding — segment of the leaf track */
-export function swingArc(d: DoorDef, steps = 16): Vec2[] {
-  if (!d.hinge) { const s0 = leafSegment(d, 0), s1 = leafSegment(d, 1); return s0 && s1 ? [s0.a, s1.b] : []; }
-  return Array.from({ length: steps + 1 }, (_, i) => leafSegment(d, i / steps)!.b);
-}
+/** the first leaf in plan at opening t (a → b: from the hinge edge / the start of a sliding leaf) — every leaf: doorLeaves */
+export const leafSegment = (d: DoorDef, t: number): LeafSegment | null => doorLeaves(d, t)[0] ?? null;
 
 /** opening centre in plan (on the wall axis) */
 export function doorCenter(d: DoorDef): Vec2 {

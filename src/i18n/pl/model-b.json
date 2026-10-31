@@ -1,6 +1,7 @@
 {
  "doors.type.hinged-single": "rozwierne jednoskrzydłowe",
  "doors.type.hinged-double": "rozwierne dwuskrzydłowe",
+ "doors.type.folding": "składane (harmonijkowe)",
  "doors.type.sliding": "przesuwne",
  "doors.type.pocket": "przesuwne chowane w ścianie",
  "wording.apartment.noun": "mieszkanie",

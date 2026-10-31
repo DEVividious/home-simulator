@@ -35,9 +35,10 @@ const DoorSchema = z.strictObject({
   id, between: z.tuple([id, id]).describe('the two rooms on either side; use "exterior" for an outside door'),
   at: pt.describe('any point in the middle of the door opening (on or inside the wall between the rooms)'),
   width: num.positive().describe('clear opening in the masonry [m]'),
-  type: z.enum(['hinged-single', 'sliding', 'pocket']).default('hinged-single'),
-  swingInto: id.optional().describe('hinged: the room the leaf opens into, or "exterior" for an outward-opening outside door (default: the second room, or the room for an exterior door)'),
-  hinge: z.enum(['left', 'right']).optional().describe('hinged: hinge side as seen from the room the door opens into, looking at the wall'),
+  type: z.enum(['hinged-single', 'hinged-double', 'folding', 'sliding', 'pocket']).default('hinged-single')
+    .describe('hinged-double: two leaves hinged at both jambs; folding: a bifold — two panels folding to the hinge side'),
+  swingInto: id.optional().describe('hinged, double, folding: the room the leaves open into, or "exterior" for an outward-opening outside door (default: the second room, or the room for an exterior door)'),
+  hinge: z.enum(['left', 'right']).optional().describe('hinged: hinge side as seen from the room the door opens into, looking at the wall; folding: the side the panels fold to'),
   slideTo: z.enum(['start', 'end']).optional().describe('sliding / pocket: the leaf moves towards the start (smaller coordinate) or end of the opening'),
   height: num.positive().optional(), leafHeight: num.positive().optional(),
   confidence: z.enum(['confirmed', 'probable', 'unknown']).optional(), source: z.string().optional(),

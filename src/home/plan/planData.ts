@@ -3,7 +3,7 @@
 import { displayName, elevationOf, resolveDims } from '../catalog/furniture';
 import { itemById } from '../catalog/providers';
 import { obbOf } from '../model/collision';
-import { allDoors, leafSegment } from '../model/doors';
+import { allDoors, doorLeaves } from '../model/doors';
 import type { CoordContext } from '../model/electrical';
 import { obbCorners } from '@home-sim/core/model/geom2d';
 import { allRooms } from '../model/rooms';
@@ -27,6 +27,6 @@ function furnitureOf(s: DesignState, level?: LevelId): CoordContext['furniture']
 export const furnitureOutlines = (level: LevelId, s: DesignState = design.get()): Vec2[][] => furnitureOf(s, level).map((f) => f.corners);
 /** context for coordination warnings: door leaves in the open position and room furnishings */
 export function coordContext(s: DesignState = design.get()): CoordContext {
-  const doorLeaves = allDoors().filter((d) => d.hinge).map((d) => { const l = leafSegment(d, 1); return l ? { roomIds: d.rooms as string[], a: l.a, b: l.b, name: d.id } : null; }).filter((x): x is NonNullable<typeof x> => !!x);
-  return { doorLeaves, furniture: furnitureOf(s) };
+  const leaves = allDoors().filter((d) => d.hinge).flatMap((d) => doorLeaves(d, 1).map((l) => ({ roomIds: d.rooms as string[], a: l.a, b: l.b, name: d.id })));
+  return { doorLeaves: leaves, furniture: furnitureOf(s) };
 }

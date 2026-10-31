@@ -537,20 +537,23 @@
      },
      "type": {
       "default": "hinged-single",
+      "description": "hinged-double: two leaves hinged at both jambs; folding: a bifold — two panels folding to the hinge side",
       "type": "string",
       "enum": [
        "hinged-single",
+       "hinged-double",
+       "folding",
        "sliding",
        "pocket"
       ]
      },
      "swingInto": {
-      "description": "hinged: the room the leaf opens into, or \"exterior\" for an outward-opening outside door (default: the second room, or the room for an exterior door)",
+      "description": "hinged, double, folding: the room the leaves open into, or \"exterior\" for an outward-opening outside door (default: the second room, or the room for an exterior door)",
       "type": "string",
       "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
      },
      "hinge": {
-      "description": "hinged: hinge side as seen from the room the door opens into, looking at the wall",
+      "description": "hinged: hinge side as seen from the room the door opens into, looking at the wall; folding: the side the panels fold to",
       "type": "string",
       "enum": [
        "left",

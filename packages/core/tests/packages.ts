@@ -19,6 +19,8 @@ export const ROOF_FIXTURES = ['roof-gable-x', 'roof-gable-y', 'roof-hip', 'roof-
 /** plan fixtures with the other stair kinds: a straight flight (up east, with a short top landing), L-shaped stairs (up north,
  *  turning left — turned and mirrored) */
 export const STAIR_FIXTURES = ['stairs-straight', 'stairs-l'];
+/** plan fixtures with the other door types: double doors (an entrance and an inner one), a bifold, a sliding door */
+export const DOOR_FIXTURES = ['doors'];
 export const planOf = (id: string) => read(`packages/core/tests/fixtures/${id}.plan.json`);
 
 /** a fresh copy of the building block on every call (the derived building is cached by its identity) */
@@ -27,5 +29,5 @@ export const PACKAGES: Record<string, () => BuildingData> = {
   'sample-house': () => (read('projects/sample-house/project.json') as ProjectPackage).building,
   ...Object.fromEntries(['sloped-ceiling', 'placement-lab', 'mount-lab', 'catalog-ext'].map((id) => [id, () => (read(`src/test/fixtures/${id}/project.json`) as ProjectPackage).building])),
   'two-storey-l': () => compiled('packages/core/tests/fixtures/two-storey-l.plan.json'),
-  ...Object.fromEntries([...ROOF_FIXTURES, ...STAIR_FIXTURES].map((id) => [id, () => compiled(`packages/core/tests/fixtures/${id}.plan.json`)])),
+  ...Object.fromEntries([...ROOF_FIXTURES, ...STAIR_FIXTURES, ...DOOR_FIXTURES].map((id) => [id, () => compiled(`packages/core/tests/fixtures/${id}.plan.json`)])),
 };

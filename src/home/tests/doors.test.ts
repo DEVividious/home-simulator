@@ -9,7 +9,7 @@ import { activateProject, project } from '../../project/active';
 import { readProjectDir } from '../../project/node';
 import {
   allDoors, defaultDoorState, doorById, doorCenter, doorPassable, doorsOfLevel, doorsOfRoom, inDoorway, interactiveDoors, isInteractive, isOperable,
-  LEAF_T, leafAngle, leafSegment, openOf, parseDoorState, PASS_OPEN, serializeDoorState, setAllDoors, setDoorOpen, swingArc, toggleDoor,
+  LEAF_T, leafAngle, leafSegment, openOf, parseDoorState, PASS_OPEN, serializeDoorState, setAllDoors, setDoorOpen, swingArcs, toggleDoor,
   type DoorState,
 } from '../model/doors';
 import { pointInPolygon } from '@home-sim/core/model/geom2d';
@@ -141,7 +141,7 @@ describe('sample house doors', () => {
       // the leaf centre is NOT fixed (a rotation about the centre would keep it)
       const m = (t: number) => { const s = leafSegment(d, t)!; return [(s.a[0] + s.b[0]) / 2, (s.a[1] + s.b[1]) / 2] as Vec2; };
       expect(dist(m(0), m(1))).toBeGreaterThan(0.4);
-      const arc = swingArc(d, 8);
+      const arc = swingArcs(d, 8)[0];
       expect(arc).toHaveLength(9);
       for (const p of arc) expect(dist(p, d.hinge!)).toBeCloseTo(d.leafWidth, 6);
       // the same hinge point for closed and open leaves in the scene (pivot)
@@ -154,7 +154,7 @@ describe('sample house doors', () => {
       expect(o.a[0] - c.a[0]).toBeCloseTo(d.slide!.travel, 6); expect(o.a[1]).toBe(c.a[1]);
       expect(c.a[0]).toBeGreaterThan(d.opening.from); expect(c.b[0]).toBeLessThan(d.opening.to); // closed: within the opening
       expect(o.a[0]).toBeGreaterThan(d.opening.to - 0.12); // open: the leaf is almost entirely beside the opening
-      expect(swingArc(d)).toEqual([c.a, o.b]);
+      expect(swingArcs(d)[0]).toEqual([c.a, o.b]);
     });
     it('geometry: leaf with handle in one mesh, frame within the masonry opening (stays when leaves are hidden)', () => {
       for (const id of ['D1', 'D6']) {

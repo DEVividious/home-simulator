@@ -2,7 +2,9 @@
 // (packages/core/tests/fixtures/<id>.plan.json, compiled into temporary projects projects/e2e-<id>/, removed in `finally`):
 //   • straight and L-shaped stairs: the stairs are in the scene, the walk goes up them from the ground floor to the upper
 //     level (the level follows), and Download › Print model gives the STL of `npm run project:print` with the stairs in it;
-//   • exits in the walk (usability issue B8): a sign over the front door, a click on it opens the door and walks out.
+//   • exits in the walk (usability issue B8): a sign over the front door, a click on it opens the door and walks out;
+//   • double and folding doors: a click on the double door in the walk opens both leaves about their own hinges, the bifold
+//     folds, the double entrance door lets the walk out, and the print download works.
 // Usage: node scripts/verify/verify_features.mjs [--no-build] [--only stairs-straight,stairs-l]
 //        HOME_SIM_BROWSER=auto|gpu|swiftshader. Output: reports/e2e/features/ (screenshots, features.json).
 import { execSync } from 'node:child_process';
@@ -26,7 +28,7 @@ const results = [];
 const check = (name, ok, detail = '') => { results.push({ name, status: ok ? 'PASS' : 'FAIL', detail: String(detail) }); console.log(`  ${ok ? 'PASS' : 'FAIL'} | ${name} | ${String(detail).replace(/\s+/g, ' ').slice(0, 400)}`); };
 
 // ------------------------------------------------------------------ temporary projects from the fixtures
-const FIXTURES = ['stairs-straight', 'stairs-l'].filter((f) => !ONLY.length || ONLY.includes(f));
+const FIXTURES = ['stairs-straight', 'stairs-l', 'doors'].filter((f) => !ONLY.length || ONLY.includes(f));
 const installed = [];
 function install(fixture) {
   const id = `e2e-${fixture}`, dir = resolve(ROOT, 'projects', id);
@@ -85,18 +87,18 @@ function climbOf(s) {
 
 try {
   for (const fixture of FIXTURES) {
-    const F = install(fixture), tag = fixture, s = F.p.building.stairs[0], [lo, hi] = F.p.manifest.levels.map((l) => l.id);
+    const F = install(fixture), tag = fixture, s = F.p.building.stairs?.[0], [lo, hi] = F.p.manifest.levels.map((l) => l.id);
     // ---------------------------------------------------------------- load
     await stage(`[${tag}] load`, async () => {
       await page.goto(`${BASE}/?onboarding=off&lang=en&project=${F.id}`, { waitUntil: 'load' });
       await ready(); await sleep(1200);
       const pr = await page.evaluate(() => window.__home.project()), sh = await s3('shell'), stairs = await obj('HOME_STAIRS');
       await shot(`${tag}_01_start`);
-      check(`[${tag}] the package loads, the generated shell is built and the ${s.kind} stairs are in the scene`, pr.id === F.id && sh.status === 'ready' && sh.kind !== 'grid' && (stairs?.tris ?? 0) > 50, `shell ${sh.status} (${sh.kind}); stairs ${stairs?.tris} triangles`);
+      check(`[${tag}] the package loads, the generated shell is built${s ? ` and the ${s.kind} stairs are in the scene` : ''}`, pr.id === F.id && sh.status === 'ready' && sh.kind !== 'grid' && (!s || (stairs?.tris ?? 0) > 50), `shell ${sh.status} (${sh.kind}); stairs ${stairs?.tris} triangles`);
     });
 
     // ---------------------------------------------------------------- walk up the stairs
-    await stage(`[${tag}] walk up`, async () => {
+    if (s) await stage(`[${tag}] walk up`, async () => {
       await click(S.view('walk'), 2500);
       await waitFor(async () => { const w = await s3('walk'); return w.on && w.place ? w : null; }, 20000);
       const c = climbOf(s), w0 = await goTo(c.start, 0, c.yaw);
@@ -116,11 +118,49 @@ try {
       check(`[${tag}] and back down to the ${lo} floor`, downOk.every(Boolean) && w2.z < 0.01 && (await st()).level === lo, `z ${w2.z} "${w2.place}"`);
     });
 
+    // ---------------------------------------------------------------- double and folding doors
+    if (F.p.building.doors.some((d) => d.type === 'hinged-double')) await stage(`[${tag}] door types`, async () => {
+      if (!(await s3('walk')).on) { await click(S.view('walk'), 2500); await waitFor(async () => { const w = await s3('walk'); return w.on && w.place ? w : null; }, 20000); }
+      const dbl = F.p.building.doors.find((d) => d.type === 'hinged-double' && !d.rooms.includes('exterior')), fold = F.p.building.doors.find((d) => d.type === 'folding');
+      const mid = [(dbl.opening.from + dbl.opening.to) / 2, (dbl.opening.faces[0] + dbl.opening.faces[1]) / 2];
+      // stand in the room the double door opens into, 2.4 m from it, facing it
+      const stand = [mid[0] + dbl.openDir[0] * 2.4, mid[1] + dbl.openDir[1] * 2.4];
+      await goTo(stand, 0, Math.atan2(-(mid[0] - stand[0]), mid[1] - stand[1]), -0.1);
+      await sleep(700);
+      const leaves = () => page.evaluate((id) => [`DOOR_LEAF_${id}`, `DOOR_LEAF_${id}_1`].map((n) => { const o = window.__homeScene.getObjectByName(n); if (!o) return null; o.updateMatrixWorld(true); const e = o.matrixWorld.elements; return { x: e[12], y: -e[14], ax: e[0], ay: -e[2] }; }), dbl.id);
+      const before = await leaves();
+      await shot(`${tag}_06_double_closed`);
+      let q = null;
+      for (const [h, al] of [[1.2, 0.5], [1.5, 0.4], [0.9, 0.6]]) { q = await s3('screenOfDoor', dbl.id, 0, h, al); if (await onCanvas(q)) break; q = null; }
+      if (q) await clickAt(q, 200);
+      const opened = await page.waitForFunction((id) => (window.__home3d.doors().motion[id] ?? 0) > 0.99, { timeout: 15000, polling: 100 }, dbl.id).then(() => true).catch(() => false);
+      await sleep(300);
+      const after = await leaves();
+      await shot(`${tag}_07_double_open`);
+      // both leaves: their origin (hinge) stays, their direction turns from along the wall to the opening direction
+      const ok = before.every(Boolean) && after.every(Boolean) && before.every((b, i) => Math.hypot(b.x - after[i].x, b.y - after[i].y) < 1e-3 && Math.abs(b.ax * after[i].ax + b.ay * after[i].ay) < 0.05)
+        && Math.hypot(before[0].x - before[1].x, before[0].y - before[1].y) > dbl.leafWidth - 0.05;
+      check(`[${tag}] walk: a click on the double door ${dbl.id} opens both leaves, each about its own hinge at a jamb`, !!q && opened && ok, JSON.stringify({ before, after }));
+      // the bifold: opened from its card state, its second panel ends near the hinge, folded into a V
+      await page.evaluate((id) => window.__home.doors.open(id, 1), fold.id);
+      await page.waitForFunction((id) => (window.__home3d.doors().motion[id] ?? 0) > 0.99, { timeout: 15000, polling: 100 }, fold.id).catch(() => {});
+      await sleep(300);
+      const panels = await page.evaluate((id) => [`DOOR_LEAF_${id}`, `DOOR_LEAF_${id}_1`].map((n) => { const o = window.__homeScene.getObjectByName(n); if (!o) return null; o.updateMatrixWorld(true); const e = o.matrixWorld.elements; return { x: e[12], y: -e[14], ax: e[0], ay: -e[2] }; }), fold.id);
+      const w = fold.leafWidth / 2, h = fold.hinge, end = panels[1] ? [panels[1].x + panels[1].ax * w, panels[1].y + panels[1].ay * w] : null;
+      const fmid = [(fold.opening.from + fold.opening.to) / 2, (fold.opening.faces[0] + fold.opening.faces[1]) / 2], f2 = [fmid[0] + fold.openDir[0] * 2.4, fmid[1] + fold.openDir[1] * 2.4];
+      await goTo(f2, 0, Math.atan2(-(fmid[0] - f2[0]), fmid[1] - f2[1]), -0.1); await sleep(700);
+      await shot(`${tag}_08_bifold_open`);
+      check(`[${tag}] the bifold ${fold.id} opened: two panels, the first about the hinge, the second from the fold back to the wall by the hinge`,
+        panels.every(Boolean) && Math.hypot(panels[0].x - h[0], panels[0].y - h[1]) < 0.05 && !!end && Math.hypot(end[0] - h[0], end[1] - h[1]) < 0.3, JSON.stringify(panels));
+      await page.evaluate((id) => window.__home.doors.open(id, 0), fold.id);
+    });
+
     // ---------------------------------------------------------------- exits (usability issue B8)
     await stage(`[${tag}] exit sign`, async () => {
       const D = F.p.building.doors.find((d) => d.rooms.includes('exterior')), mid = [(D.opening.faces[0] + D.opening.faces[1]) / 2, (D.opening.from + D.opening.to) / 2];
-      // the front door (closed) is in the west wall: stand 3.6 m inside it, facing it (−X), looking a little down
-      await goTo([mid[0] + 3.6, mid[1]], 0, Math.PI / 2, -0.3);
+      // the front door (closed) is in the west wall: stand up to 3.6 m inside it (in its room), facing it (−X), looking a little down
+      const inRoom = F.p.building.rooms.rooms.find((r) => r.id === D.rooms[0]), far = Math.min(3.6, inRoom.bbox[2] - mid[0] - 0.4);
+      await goTo([mid[0] + far, mid[1]], 0, Math.PI / 2, far < 3 ? -0.2 : -0.3);
       await sleep(800);
       const ex = await s3('exits'), sign = ex.find((e) => e.id === D.id);
       await shot(`${tag}_04_exit_sign`);
@@ -149,8 +189,9 @@ try {
         const same = stl.length > 0 && stl.slice().sort().join() === cliStl.join() && stl.every((n) => zipFile(buf, n).equals(readFileSync(join(cli, n))));
         const report = names.includes('print-report.json') ? JSON.parse(zipFile(buf, 'print-report.json').toString('utf8')) : null;
         const notes = (report?.notes ?? []).map((n) => n.code);
-        check(`[${tag}] Download › Print model: the STL parts are the bytes of npm run project:print, the stairs are printed (the steps in the upper slab go with ${hi}'s part)`,
-          same && stl.length === 3 && notes.includes('stairs.split'), `${zip}: ${stl.join(', ')}; same bytes ${same}; notes ${notes.join(', ')}`);
+        const parts = F.p.manifest.levels.length + 1;
+        check(`[${tag}] Download › Print model: the STL parts are the bytes of npm run project:print${s ? `, the stairs are printed (the steps in the upper slab go with ${hi}'s part)` : ''}`,
+          same && stl.length === parts && (!s || notes.includes('stairs.split')), `${zip}: ${stl.join(', ')}; same bytes ${same}; notes ${notes.join(', ')}`);
       } finally { rmSync(dl, { recursive: true, force: true }); rmSync(cli, { recursive: true, force: true }); }
     });
   }

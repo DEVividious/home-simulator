@@ -65,7 +65,9 @@ export interface RoomJson {
 }
 
 // ------------------------------------------------------------------ doors
-export type DoorType = 'hinged-single' | 'hinged-double' | 'sliding' | 'pocket';
+/** hinged-double: two leaves hinged at both jambs; folding: two panels folding to the hinge jamb (a bifold) — `leafWidth` is all the
+ *  leaves together, `hinge` / `closedDir` belong to the first leaf (packages/core/src/model/doors.ts) */
+export type DoorType = 'hinged-single' | 'hinged-double' | 'folding' | 'sliding' | 'pocket';
 
 export interface DoorDef {
   id: string;
@@ -75,7 +77,7 @@ export interface DoorDef {
   floorZ: number;
   /** wall opening: wall axis, range along the axis, wall faces (cross coordinate), clear width and height of the masonry opening */
   opening: { along: 'X' | 'Y'; from: number; to: number; faces: number[]; width: number; height: number };
-  /** leaf width [m] */
+  /** leaf width [m] — of all the leaves together (a double door, a bifold) */
   leafWidth: number;
   /** leaf height [m] */
   height: number;

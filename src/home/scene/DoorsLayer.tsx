@@ -9,7 +9,7 @@ import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { frameGeometry, leafGeometries, leafMatrix } from '../three/doorGeometry';
 import { toggleDoorInWalk } from '../actions';
-import { DOOR_ANIM_S, interactiveDoors, openOf, swingArc, type DoorDef } from '../model/doors';
+import { DOOR_ANIM_S, doorLeaves, interactiveDoors, leafCount, openOf, swingArcs, type DoorDef } from '../model/doors';
 import { doors, useDoors } from '../store/doors';
 import { ui, useUi } from '../store/ui';
 import { doorMotion } from './doorRuntime';
@@ -28,28 +28,30 @@ const ARC_MAT = new THREE.LineBasicMaterial({ color: '#2f6fed', transparent: tru
 
 function Door({ d, selected, walking, top }: { d: DoorDef; selected: boolean; walking: boolean; top: boolean }) {
   const show = useDoors((s) => s.show);
-  const group = useRef<THREE.Group>(null);
+  const groups = useRef<(THREE.Group | null)[]>([]);
   const cur = useRef(openOf(doors.get(), d.id));
-  const geo = useMemo(() => leafGeometries(d), [d]);
-  // swing arc (top view — as in an architectural plan): path of the leaf edge + the open leaf
-  const arc = useMemo(() => {
-    const pts = swingArc(d, 24).map((p) => new THREE.Vector3(p[0], d.floorZ + 0.02, -p[1]));
-    if (d.hinge) pts.push(new THREE.Vector3(d.hinge[0], d.floorZ + 0.02, -d.hinge[1]));
+  const n = leafCount(d), geo = useMemo(() => Array.from({ length: n }, (_, i) => leafGeometries(d, i)), [d, n]);
+  // swing arcs (top view — as in an architectural plan): path of each leaf edge + the hinge
+  const arcs = useMemo(() => swingArcs(d, 24).map((path, i) => {
+    const pts = path.map((p) => new THREE.Vector3(p[0], d.floorZ + 0.02, -p[1]));
+    const h = d.hinge ? doorLeaves(d, 0)[i].a : null;
+    if (h) pts.push(new THREE.Vector3(h[0], d.floorZ + 0.02, -h[1]));
     const l = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), ARC_MAT);
-    l.raycast = () => {}; l.renderOrder = 5; l.name = `DOOR_ARC_${d.id}`;
+    l.raycast = () => {}; l.renderOrder = 5; l.name = `DOOR_ARC_${d.id}${i ? `_${i}` : ''}`;
     return l;
-  }, [d]);
-  useEffect(() => () => { geo.leaf.dispose(); geo.hit.dispose(); arc.geometry.dispose(); }, [geo, arc]);
+  }), [d]);
+  useEffect(() => () => { for (const g of geo) { g.leaf.dispose(); g.hit.dispose(); } for (const a of arcs) a.geometry.dispose(); }, [geo, arcs]);
+  /** every leaf to the opening amount t (eased) */
+  const place = (t: number) => groups.current.forEach((g, i) => { if (g) { leafMatrix(d, ease(t), g.matrix, i); g.matrixWorldNeedsUpdate = true; } });
   // door state change → frames for the duration of the animation (the scene renders on demand)
   useEffect(() => doors.subscribe(() => { if (Math.abs(openOf(doors.get(), d.id) - cur.current) > 1e-4) wake(DOOR_ANIM_S * 1000 + 150); }), [d]);
-  useEffect(() => { doorMotion.angle[d.id] = cur.current; if (group.current) { leafMatrix(d, ease(cur.current), group.current.matrix); group.current.matrixWorldNeedsUpdate = true; } }, [d]);
+  useEffect(() => { doorMotion.angle[d.id] = cur.current; place(cur.current); }, [d]);
   useFrame((_, dt) => {
-    const g = group.current, target = openOf(doors.get(), d.id);
-    if (!g || cur.current === target) return;
+    const target = openOf(doors.get(), d.id);
+    if (!groups.current.length || cur.current === target) return;
     const step = Math.min(dt, 0.1) / DOOR_ANIM_S, diff = target - cur.current;
     cur.current = Math.abs(diff) <= step ? target : cur.current + Math.sign(diff) * step;
-    leafMatrix(d, ease(cur.current), g.matrix);
-    g.matrixWorldNeedsUpdate = true;
+    place(cur.current);
     doorMotion.angle[d.id] = cur.current;
     if (cur.current !== target) wake(120);
   });
@@ -65,13 +67,15 @@ function Door({ d, selected, walking, top }: { d: DoorDef; selected: boolean; wa
   };
   return (
     <group name={`DOOR_${d.id}`} userData={{ door: d.id }}>
-      <group ref={group} matrixAutoUpdate={false} visible={show} name={`DOOR_LEAF_${d.id}`}>
-        <mesh geometry={geo.leaf} material={selected ? LEAF_SEL : LEAF_MAT} castShadow receiveShadow raycast={() => {}} />
-        {show && <mesh geometry={geo.hit} material={HIT_MAT} onClick={click} name={`DOOR_HIT_${d.id}`}
-          onPointerDown={(e) => { if (walking && isNearest(e)) { e.stopPropagation(); pressStart(e.nativeEvent, select); } }}
-          onPointerOver={() => { document.body.style.cursor = 'pointer'; }} onPointerOut={() => { document.body.style.cursor = ''; }} />}
-      </group>
-      {top && show && <primitive object={arc} />}
+      {geo.map((g, i) => (
+        <group key={i} ref={(el) => { groups.current[i] = el; }} matrixAutoUpdate={false} visible={show} name={`DOOR_LEAF_${d.id}${i ? `_${i}` : ''}`}>
+          <mesh geometry={g.leaf} material={selected ? LEAF_SEL : LEAF_MAT} castShadow receiveShadow raycast={() => {}} />
+          {show && <mesh geometry={g.hit} material={HIT_MAT} onClick={click} name={`DOOR_HIT_${d.id}${i ? `_${i}` : ''}`}
+            onPointerDown={(e) => { if (walking && isNearest(e)) { e.stopPropagation(); pressStart(e.nativeEvent, select); } }}
+            onPointerOver={() => { document.body.style.cursor = 'pointer'; }} onPointerOut={() => { document.body.style.cursor = ''; }} />}
+        </group>
+      ))}
+      {top && show && arcs.map((a, i) => <primitive key={i} object={a} />)}
     </group>
   );
 }

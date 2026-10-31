@@ -2,7 +2,7 @@
 // A hinged leaf rotates about the HINGE AXIS: the origin of the leaf's local frame lies on the hinge, not in the leaf centre.
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
-import { LEAF_T, leafSegment, type DoorDef } from '../model/doors';
+import { doorLeaves, LEAF_T, leafCount, leafWidthOf, type DoorDef } from '../model/doors';
 
 const LEAF_COLOR = new THREE.Color('#f2f0ea'), HANDLE_COLOR = new THREE.Color('#33363b');
 function tint(g: THREE.BufferGeometry, c: THREE.Color) {
@@ -37,15 +37,17 @@ export function frameGeometry(d: DoorDef): THREE.BufferGeometry | null {
   return g;
 }
 
-/** leaf in its local frame: x — from the hinge to the lock (0…width), y — up, z — thickness; handles on both sides */
-export function leafGeometries(d: DoorDef) {
-  const w = d.leafWidth - 0.006, h = d.height - 0.012;
+/** whether leaf i carries the handle: every leaf of a single or double door; of a bifold only the second panel (its free edge) */
+const hasHandle = (d: DoorDef, i: number) => d.type !== 'folding' || i === leafCount(d) - 1;
+/** leaf i in its local frame: x — from the hinge to the lock (0…width), y — up, z — thickness; handles on both sides */
+export function leafGeometries(d: DoorDef, i = 0) {
+  const w = leafWidthOf(d) - 0.006, h = d.height - 0.012;
   const body = tint(new THREE.BoxGeometry(w, h, LEAF_T), LEAF_COLOR); body.translate(w / 2 + 0.003, h / 2 + 0.008, 0);
   const parts: THREE.BufferGeometry[] = [body];
   // flush doors: on the opening side (face in the wall plane) only a flat pull, the handle stays on the other side.
   // Leaf z axis = closedDir × vertical → in plan (dy, −dx); the opening side is the one openDir points to
   const swing = d.closedDir && d.openDir ? Math.sign(d.closedDir[1] * d.openDir[0] - d.closedDir[0] * d.openDir[1]) || -1 : -1;
-  for (const s of [-1, 1]) {
+  if (hasHandle(d, i)) for (const s of [-1, 1]) {
     if (d.flush && s === swing) { const pull = tint(new THREE.BoxGeometry(0.02, 0.16, 0.006), HANDLE_COLOR); pull.translate(w - 0.05, 1.05, s * (LEAF_T / 2 + 0.003)); parts.push(pull); continue; }
     const stem = tint(new THREE.BoxGeometry(0.02, 0.02, 0.05), HANDLE_COLOR); stem.translate(w - 0.07, 1.05, s * (LEAF_T / 2 + 0.025));
     const grip = tint(new THREE.BoxGeometry(0.12, 0.018, 0.018), HANDLE_COLOR); grip.translate(w - 0.12, 1.05, s * (LEAF_T / 2 + 0.05));
@@ -58,9 +60,10 @@ export function leafGeometries(d: DoorDef) {
 }
 
 const _x = new THREE.Vector3(), _y = new THREE.Vector3(0, 1, 0), _z = new THREE.Vector3(), _p = new THREE.Vector3();
-/** leaf matrix at opening t: origin on the hinge axis (hinged) / at the start of the leaf (sliding) */
-export function leafMatrix(d: DoorDef, t: number, out = new THREE.Matrix4()): THREE.Matrix4 {
-  const s = leafSegment(d, t)!;
+/** matrix of leaf i at opening t: origin on its hinge axis (hinged; a bifold's second panel: on the fold) / at the start of the
+ *  leaf (sliding) */
+export function leafMatrix(d: DoorDef, t: number, out = new THREE.Matrix4(), i = 0): THREE.Matrix4 {
+  const s = doorLeaves(d, t)[i];
   _x.set(s.dir[0], 0, -s.dir[1]);
   _z.crossVectors(_x, _y);
   // hinged: the closed leaf face is flush with the wall face on the opening side (leaf axis set back by half the thickness into the opening)
