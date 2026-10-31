@@ -289,7 +289,7 @@ export function exitRoom() {
   ui.set((s) => ({ roomId: null, selection: null, houseView: 'interior', roomView: '3d', camera: { preset: 'interior', n: s.camera.n + 1 } }));
 }
 
-/** walk through the home and site: start at a viewpoint (by default — in front of the entrance) or at a given spot */
+/** walk through the home and site: start at a viewpoint, at a given spot, or by default just inside the entrance */
 export function startWalk(go: Omit<WalkGo, 'n'> = {}) {
   ui.set((s) => ({ roomId: null, houseView: 'walk', selection: null, hoverRoom: null, walkGo: { ...go, n: s.walkGo.n + 1 } }));
 }

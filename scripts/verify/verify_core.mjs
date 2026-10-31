@@ -346,6 +346,9 @@ async function runProject(F) {
     await page.keyboard.up('KeyW'); await sleep(400);
     const w1 = await s3('walk');
     await shot(`${tag}_06_walk`);
+    // usability issue B6: "Walk" starts just inside the entrance, facing into the home (not outside a closed front door)
+    const inside = F.front?.rooms.find((r) => r !== 'exterior');
+    check(`[${tag}] walk: "${EN['steps.walk']}" starts just inside the entrance (${inside}), not outside the front door`, !!w0 && w0.kind === 'room' && w0.roomId === inside, `${w0?.place} (${w0?.kind}, ${w0?.roomId})`);
     check(`[${tag}] walk: "${EN['steps.walk']}" in the scene bar → eye-level walk mode, the place is shown; W walks forward`, (await st()).houseView === 'walk' && !!w0 && Math.hypot(w1.p[0] - p0[0], w1.p[1] - p0[1]) > 0.3 && !!(await text(T('walk-place'))),
       `start ${w0?.place} (${p0}) → ${w1.place} (${w1.p}); viewpoints ${vps.join(',')}`);
     // usability issue B4: a mouse drag of 200 px turns about 29° (it used to turn about 52°)
@@ -376,16 +379,14 @@ async function runProject(F) {
       const D = F.front, room = F.p.building.rooms.rooms.find((r) => r.id === D.rooms.find((x) => x !== 'exterior'));
       const dy = (D.opening.from + D.opening.to) / 2, inX = room.bbox[0] + 0.7, out = D.opening.faces[0] < room.bbox[0];
       await page.evaluate((id) => window.__home.doors.open(id, 0), D.id); await sleep(300);
+      await page.waitForFunction((id) => (window.__home3d.doors().motion[id] ?? 1) < 0.01, { timeout: 15000 }, D.id).catch(() => {});
       await goTo([inX, dy], 0, out ? Math.PI / 2 : -Math.PI / 2);
-      const blocked = !(await hold('KeyW', `window.__home3d.walk().p[0] < -0.5`, 3500));
-      const wb = await s3('walk');
-      await page.evaluate((id) => window.__home.doors.open(id, 1), D.id);
-      await page.waitForFunction((id) => (window.__home3d.doors().motion[id] ?? 0) > 0.99, { timeout: 15000 }, D.id).catch(() => {});
+      // walking into the closed door opens it (usability issue B6: stopped at a closed leaf, people saw a blank screen)
       const outside = await hold('KeyW', `(() => { const w = window.__home3d.walk(); return w.kind === 'site' && w.p[0] < -1.5; })()`);
-      const wo = await s3('walk');
+      const wo = await s3('walk'), opened = (await s3('doors')).open[D.id] ?? 0;
       await shot(`${tag}_08_site`);
-      check(`[${tag}] front door ${D.id}: closed — the walk stops at the door; open — out of the door onto the site (ground level ${F.p.site.groundLevel})`,
-        blocked && wb.p[0] > 0.2 && outside && wo.kind === 'site' && near(wo.z, F.p.site.groundLevel, 0.02), `closed: stopped at x ${wb.p[0].toFixed(2)}; open: ${wo.place} (${wo.p.map((v) => v.toFixed(2))}) z ${wo.z}`);
+      check(`[${tag}] front door ${D.id}: walking into it closed opens it, and the walk goes out onto the site (ground level ${F.p.site.groundLevel})`,
+        opened > 0.99 && outside && wo.kind === 'site' && near(wo.z, F.p.site.groundLevel, 0.02), `door open ${opened}; ${wo.place} (${wo.p.map((v) => v.toFixed(2))}) z ${wo.z}`);
       await page.evaluate((id) => window.__home.doors.open(id, 0), D.id);
       await page.waitForFunction((id) => (window.__home3d.doors().motion[id] ?? 1) < 0.01, { timeout: 15000 }, D.id).catch(() => {});
       // usability issue A4: a short key tap walks a short step; a door clicked from too far away is walked up to and opened

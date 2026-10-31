@@ -15,6 +15,7 @@ import { DEFAULT_VIEW_DIR, exteriorViews, homeViewId, INTERIOR_VIEW_ID, viewById
 import type { SceneBounds, SceneData } from './sceneData';
 import { clampToPolygon, pointInPolygon } from '@home-sim/core/model/geom2d';
 import { walkInputVector, walkNearestAllowed, walkRoomAt, walkStep } from '../model/walk';
+import { openDoorAhead } from '../actions';
 import { inStairBox } from '../model/stairs';
 import { nearExteriorDoor } from '../model/walkWorld';
 import { WALK_SPEED } from './WalkLayer';
@@ -369,8 +370,10 @@ export function CameraController({ data, mode }: { data: SceneData; mode: SceneM
         // movement over the whole level: walls block (sliding along the wall), doors and passages lead to adjacent rooms
         const p = walkStep(room.level, here, mx, my, eye);
         persp.position.set(p[0], persp.position.y, -p[1]);
-        // a walk to a door that does not get closer (a wall, furniture): given up
-        if (to && walkInput.to === to && Math.hypot(p[0] - here[0], p[1] - here[1]) < Math.hypot(mx, my) * 0.3) { walkInput.to = null; to.fail(); }
+        const blocked = Math.hypot(p[0] - here[0], p[1] - here[1]) < Math.hypot(mx, my) * 0.3;
+        // a walk to a door that does not get closer (a wall, furniture): given up; walking into a closed door opens it
+        if (to && walkInput.to === to && blocked) { walkInput.to = null; to.fail(); }
+        else if (blocked && !to) { const l = Math.hypot(mx, my); openDoorAhead(room.level, here, [mx / l, my / l]); }
         // The room walk knows only one level. At the stairs and at exits to the outside it turns smoothly into the building walk
         // (same place and view direction) — stairs, exterior doors and the site then work as in the walk from the Home section.
         if (inStairBox(p, 0.25) || nearExteriorDoor(p, room.level)) {

@@ -31,7 +31,8 @@ export function MobileSheet({ children }: { children: ReactNode }) {
     body.current?.scrollTo({ top: 0 });
   }, [selKind, section]);
   const step = (d: number) => { const i = SHEET_ORDER.indexOf(ui.get().sheet); ui.set({ sheet: SHEET_ORDER[Math.max(0, Math.min(2, i + d))] }); };
-  const label = hasSel ? t('mobile.selectedElement') : (sections().find((s) => s.id === section)?.label ?? '');
+  // walking in Look: the collapsed sheet says what it holds — the places to go to (people looked for them: usability issue B6)
+  const label = hasSel ? t('mobile.selectedElement') : walk && section === 'look' ? t('steps.places') : (sections().find((s) => s.id === section)?.label ?? '');
   return (
     <section className="hm-sheet" data-state={sheet} data-testid="mobile-sheet">
       <header className="hm-sheet-grip" data-testid="sheet-grip"

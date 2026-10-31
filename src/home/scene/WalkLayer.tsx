@@ -16,9 +16,10 @@ import type { SceneData } from './sceneData';
 import { finishLook, resolveStairs, type DeepPartial, type StairFinish, type StairsConfig } from '../model/stairsConfig';
 import { buildStairs, type StairPart } from '../three/stairGeometry';
 import { stairs, type StairDef } from '../model/stairs';
-import { levelById } from '../model/rooms';
+import { levelAtZ, levelById } from '../model/rooms';
+import { openDoorAhead } from '../actions';
 import { isNearest, longPressFired, pressStart } from './press';
-import { lookAngles, viewpointById, viewpoints } from '../model/viewpoints';
+import { entranceStart, lookAngles, viewpointById, viewpoints } from '../model/viewpoints';
 import { walkInputVector } from '../model/walk';
 import { WalkWorld, type WalkPose } from '../model/walkWorld';
 import { isWalking, ui, useUi } from '../store/ui';
@@ -200,7 +201,9 @@ export function WalkController({ data, mode }: { data: SceneData; mode: SceneMod
     const w = st.current, dt = Math.min(dtRaw, 0.25);
     if (w.pending) {
       // settle the start (the terrain must be loaded — the probe returns a height)
-      const g = ui.get().walkGo, vp = viewpointById(g.viewpointId) ?? (g.pose ? null : w.pose ? null : viewpoints()[0]);
+      // nothing asked for and no walk to resume: just inside the entrance (else the project's first viewpoint)
+      const g = ui.get().walkGo, start = !g.viewpointId && !g.pose && !w.pose ? entranceStart() : null;
+      const vp = viewpointById(g.viewpointId) ?? (g.pose || w.pose || start ? null : viewpoints()[0]);
       let pose: WalkPose | null = null;
       if (vp) {
         const zHint = vp.level === 'SITE' ? sceneApi.ground(vp.p[0], vp.p[1]) : levelById(vp.level)?.floorZ ?? 0;
@@ -213,6 +216,10 @@ export function WalkController({ data, mode }: { data: SceneData; mode: SceneMod
         pose = world.settle(g.pose.p, g.pose.z, eye);
         w.yaw = g.pose.yaw; w.pitch = g.pose.pitch;
         w.fov = g.fov ?? WALK_FOV;
+      } else if (start) {
+        pose = world.settle(start.p, start.z, eye);
+        w.yaw = start.yaw; w.pitch = -0.05;
+        w.fov = WALK_FOV;
       } else pose = w.pose;
       w.pending = false;
       if (pose) { w.pose = pose; w.eyeZ = pose.z + eye; }
@@ -240,8 +247,11 @@ export function WalkController({ data, mode }: { data: SceneData; mode: SceneMod
     if (mx || my) {
       const from = w.pose.p;
       w.pose = world.step(w.pose, mx, my, eye);
+      const blocked = Math.hypot(w.pose.p[0] - from[0], w.pose.p[1] - from[1]) < Math.hypot(mx, my) * 0.3;
       // a walk to a door that does not get closer (a wall, furniture): given up
-      if (to && walkInput.to === to && Math.hypot(w.pose.p[0] - from[0], w.pose.p[1] - from[1]) < Math.hypot(mx, my) * 0.3) { walkInput.to = null; to.fail(); }
+      if (to && walkInput.to === to && blocked) { walkInput.to = null; to.fail(); }
+      // walking into a closed door opens it
+      else if (blocked && !to) { const l = Math.hypot(mx, my); openDoorAhead(levelAtZ(w.pose.z), from, [mx / l, my / l]); }
     }
     // the eyes follow the feet smoothly (steps, terrace kerb)
     const target = w.pose.z + eye;

@@ -252,6 +252,9 @@ export async function runWalkPad(ctx, K, n, EN) {
   await K.touch('touchStart', [[pad.x, pad.y + pad.w * 0.3]]); await sleep(40); await K.touch('touchEnd', []); await sleep(900);
   const p3 = await pos(), step = Math.hypot(p3.p[0] - p2.p[0], p3.p[1] - p2.p[1]);
   const help = await page.evaluate(() => document.querySelector('[data-testid="walk-help"]')?.textContent ?? '');
+  // usability issue B6: walking in Look, the collapsed sheet is titled "Places" — the places to go to are in it
+  const title = await page.evaluate(() => document.querySelector('[data-testid="sheet-grip"] b')?.textContent.trim() ?? '');
+  check(`${n}c. walking on a phone: the collapsed sheet says "${EN['steps.places']}"`, title === EN['steps.places'], `"${title}"`);
   check(`${n}b. walk: a short tap on the joystick walks a short step; the walk bar says how to walk in one sentence`, step > 0.3 && help === EN['steps.hint.walkTouch'], `${step.toFixed(2)} m; "${help}"`);
   await K.tap(S.view('around'), { wait: 1200 });
   check(`${n}a. "Around" in the scene bar ends the walk: the house from outside`, (await K.st()).houseView === 'exterior' && !(await page.evaluate(() => window.__home3d.walk().on)), (await K.st()).houseView);

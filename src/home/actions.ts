@@ -29,7 +29,7 @@ import { cancelPlace, forgetPlace } from './store/elPlace';
 import { EYE_LEVEL_FOV, eyeLevelPitch, heightRange } from './model/elPlacement';
 import { sceneApi } from './scene/sceneApi';
 import { walkInput } from './scene/walkInput';
-import { doorById, doorCenter, inDoorway, isOperable, openOf } from './model/doors';
+import { doorById, doorCenter, doorsOfLevel, inDoorway, isOperable, openOf } from './model/doors';
 import { doors, openDoor, toggleDoorOpen } from './store/doors';
 import type { Vec2 } from './model/types';
 import { addPoint, EL_TYPES, elRoom, elWall, removePoint, resolvePlan, siteLevelId, updatePoint, type ElectricalPlan, type ElPoint, type ElType, type Placement } from './model/electrical';
@@ -548,6 +548,21 @@ export function toggleDoorInWalk(id: string): boolean {
   }
   if (openOf(doors.get(), id) >= 0.5) return setDoor(id, 0);
   toggleDoorOpen(id);
+  return true;
+}
+
+/** how far ahead of the walker a closed door opens by itself [m] */
+export const DOOR_AUTO_AHEAD = 0.55;
+/**
+ * Walking into a closed door opens it (as in walkthroughs and games): stopped with the nose in the leaf, people saw a blank
+ * screen and did not know a door was there (usability issue B6). p — where the walker stands, dir — the direction of the
+ * blocked step (unit). Returns whether a door was opened.
+ */
+export function openDoorAhead(level: LevelId, p: Vec2, dir: Vec2): boolean {
+  const ahead: Vec2 = [p[0] + dir[0] * DOOR_AUTO_AHEAD, p[1] + dir[1] * DOOR_AUTO_AHEAD];
+  const d = doorsOfLevel(level).find((x) => isOperable(x.id) && openOf(doors.get(), x.id) < 0.5 && inDoorway(x, ahead, 0.45));
+  if (!d) return false;
+  openDoor(d.id, 1);
   return true;
 }
 
