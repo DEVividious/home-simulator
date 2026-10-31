@@ -29,6 +29,10 @@ export interface Variant {
   updatedAt?: string | null;
 }
 
+/** whether two versions hold the same design (furniture, finishes, stairs, electrical) — e.g. a fresh copy before any change */
+export const sameDesign = (a: Variant, b: Variant): boolean =>
+  JSON.stringify([a.interiors, a.stairs ?? null, a.electrical ?? null]) === JSON.stringify([b.interiors, b.stairs ?? null, b.electrical ?? null]);
+
 /** @deprecated identity kept while the port settles — a Variant carries all fields */
 export type FullVariant = Variant;
 /** @deprecated identity kept while the port settles */

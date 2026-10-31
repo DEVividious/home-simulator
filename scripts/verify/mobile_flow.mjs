@@ -125,6 +125,15 @@ export async function runAcceptance(ctx, EN) {
   let s = await st(); u = await ui();
   step(2, `"${F.room.name}" entered from the rooms in the sheet (the sheet stays half open on the furniture)`, sheetOpen && s.roomId === F.room.id && u.sheet === 'medium' && !!(await page.$(S.arrangeTab('furniture'))), `room ${s.roomId}, sheet ${u.sheet}`);
 
+  // the half-open sheet shows furniture cards without scrolling: the kinds of furniture are one sideways row (usability: a
+  // person on a phone had to scroll the sheet before any card showed)
+  const fold = await page.evaluate(() => {
+    const body = document.querySelector('[data-testid="sheet-body"]')?.getBoundingClientRect(), chips = document.querySelector('[data-testid="cat-chips"]')?.getBoundingClientRect();
+    const card = document.querySelector('[data-testid^="cat-add-"]')?.getBoundingClientRect();
+    return body && chips && card ? { chipsH: Math.round(chips.height), cardTop: Math.round(card.top), cardMid: Math.round(card.top + card.height / 2), bodyBottom: Math.round(body.bottom) } : null;
+  });
+  step('2a', 'a room on a phone: the furniture kinds are one row, the first cards show (≥ 40 px, tappable) in the half-open sheet', !!fold && fold.chipsH < 60 && fold.cardTop + 40 < fold.bodyBottom, JSON.stringify(fold));
+
   // ---- 3. from above (the scene bar: Around / From above / Walk)
   const modes = await page.evaluate(() => [...document.querySelectorAll('[data-testid="view"] button')].map((b) => { const r = b.getBoundingClientRect(); return [b.dataset.value, Math.round(r.width), Math.round(r.height)]; }));
   await tap(S.view('above'), { wait: 1500 });
@@ -212,11 +221,11 @@ export async function runAcceptance(ctx, EN) {
   step(9, 'leaving the room (← level · room) and the Look step', afterExit === null && s.roomId === null && s.houseView === 'exterior' && s.section === 'look', `view ${s.houseView}, section ${s.section}`);
 
   // ---- 10. walk: joystick (left thumb) + looking around with a second finger
-  await runWalkPad(ctx, K, 10);
+  await runWalkPad(ctx, K, 10, EN);
 }
 
 /** walk with the virtual joystick: forward with the left thumb, look around with a second finger */
-export async function runWalkPad(ctx, K, n) {
+export async function runWalkPad(ctx, K, n, EN) {
   const { page, check, shot } = ctx;
   if ((await K.ui()).sheet !== 'collapsed') await K.tap(T('sheet-toggle'));
   await K.tap(S.view('walk'), { wait: 2500 });
@@ -237,6 +246,13 @@ export async function runWalkPad(ctx, K, n) {
   const geo = await page.evaluate(() => ({ hud: document.querySelector('[data-testid="walk-hud"]')?.textContent ?? '', inner: innerWidth }));
   check(`${n}. walk: touch joystick walks (left part of the screen), a second finger looks around; no key instructions`, s.houseView === 'walk' && u.sheet === 'collapsed' && !!pad && pad.hit && dist > 0.4 && Math.abs(p1.yaw - p0.yaw) > 0.05 && pad.x < geo.inner * 0.42 && !/WASD|Esc|Shift/.test(geo.hud),
     `walked ${dist.toFixed(2)} m (${p0.place} → ${p1.place}); yaw ${p0.yaw.toFixed(2)} → ${p1.yaw.toFixed(2)}; joystick ${Math.round(pad.w)} px at (${Math.round(pad.x)}, ${Math.round(pad.y)})`);
+  // a short tap on the pad still walks a short step (usability issue A4: the pad felt slow, a tap did nothing)
+  const p2 = await pos();
+  // back: the way it came is free
+  await K.touch('touchStart', [[pad.x, pad.y + pad.w * 0.3]]); await sleep(40); await K.touch('touchEnd', []); await sleep(900);
+  const p3 = await pos(), step = Math.hypot(p3.p[0] - p2.p[0], p3.p[1] - p2.p[1]);
+  const help = await page.evaluate(() => document.querySelector('[data-testid="walk-help"]')?.textContent ?? '');
+  check(`${n}b. walk: a short tap on the joystick walks a short step; the walk bar says how to walk in one sentence`, step > 0.3 && help === EN['steps.hint.walkTouch'], `${step.toFixed(2)} m; "${help}"`);
   await K.tap(S.view('around'), { wait: 1200 });
   check(`${n}a. "Around" in the scene bar ends the walk: the house from outside`, (await K.st()).houseView === 'exterior' && !(await page.evaluate(() => window.__home3d.walk().on)), (await K.st()).houseView);
 }

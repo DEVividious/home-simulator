@@ -2,6 +2,7 @@
 // components were clamped separately and summed — a vector of length √2). The input is clamped to the unit circle.
 import { describe, expect, it } from 'vitest';
 import { walkInputVector } from '../model/walk';
+import { approach, keyClear, keyDown, keyInput, keyUp, PAD, padInput, TAP_MS, walkKeys } from '../scene/walkInput';
 
 const len = (v: [number, number]) => Math.hypot(v[0], v[1]);
 
@@ -28,5 +29,64 @@ describe('walk: input vector (keys + joystick) clamped to the unit circle', () =
   });
   it('non-numeric values do not break the step (no motion)', () => {
     expect(walkInputVector(NaN, 1)).toEqual([0, 0]); expect(walkInputVector(Infinity, 0)).toEqual([0, 0]);
+  });
+});
+
+describe('walk: a short key tap walks a short step (usability issue A4)', () => {
+  it('a tapped key counts as held for TAP_MS after the press, a held key until it is released', () => {
+    const k = walkKeys();
+    keyDown(k, 'KeyW', 1000); keyUp(k, 'KeyW');
+    expect(keyInput(k, 1010).f).toBe(1);
+    expect(keyInput(k, 1000 + TAP_MS - 1).f).toBe(1);
+    expect(keyInput(k, 1000 + TAP_MS + 1).f).toBe(0);
+    keyDown(k, 'KeyA', 2000);
+    expect(keyInput(k, 9000).s).toBe(-1);                       // held: no time limit
+    keyUp(k, 'KeyA');
+    expect(keyInput(k, 9001).s).toBe(0);
+  });
+  it('auto-repeat does not extend the tap; Shift runs only while held; clear forgets taps', () => {
+    const k = walkKeys();
+    keyDown(k, 'KeyS', 0); keyDown(k, 'KeyS', 300, true); keyUp(k, 'KeyS');
+    expect(keyInput(k, TAP_MS + 1).f).toBe(0);
+    keyDown(k, 'ShiftLeft', 0);
+    expect(keyInput(k, 5000).run).toBe(true);
+    keyUp(k, 'ShiftLeft');
+    expect(keyInput(k, 100).run).toBe(false);
+    keyDown(k, 'ArrowUp', 0); keyClear(k);
+    expect(keyInput(k, 10).f).toBe(0);
+  });
+});
+
+describe('walk: joystick response (usability issue A4 — the pad was slow)', () => {
+  it('inside the dead zone nothing; just past it 40 % of the walking speed, not a crawl', () => {
+    expect(padInput(0.05, -0.05)).toEqual({ f: 0, s: 0, run: false });
+    const p = padInput(0, -(PAD.dead + 0.01));
+    expect(p.f).toBeGreaterThan(PAD.start - 0.01); expect(p.f).toBeLessThan(PAD.start + 0.05); expect(p.run).toBe(false);
+  });
+  it('full speed and running at the outer ring; direction kept (up the screen = forward, right = right)', () => {
+    const p = padInput(0, -1);
+    expect(p.f).toBeCloseTo(1, 12); expect(p.s).toBeCloseTo(0, 12); expect(p.run).toBe(true);
+    const d = padInput(0.5, 0.5);                                   // down-right: back and right, equal parts
+    expect(d.f).toBeCloseTo(-d.s, 12); expect(d.s).toBeGreaterThan(0); expect(len([d.f, d.s])).toBeLessThanOrEqual(1);
+    expect(padInput(NaN, 0)).toEqual({ f: 0, s: 0, run: false });
+  });
+});
+
+describe('walk: a door clicked from far away is walked up to (usability issue A4)', () => {
+  it('steps straight towards the target, never past the reach, then arrives', () => {
+    let p: [number, number] = [0, 0], yaw = 0, arrived = false, n = 0;
+    const to = { p: [0, 5] as [number, number], reach: 1.4 };
+    while (!arrived && n++ < 200) {
+      const a = approach(p, yaw, to, 0.1, 1 / 30);
+      p = [p[0] + a.mx, p[1] + a.my]; yaw = a.yaw; arrived = a.arrived;
+    }
+    expect(arrived).toBe(true);
+    expect(Math.hypot(to.p[0] - p[0], to.p[1] - p[1])).toBeCloseTo(1.4, 9);
+    expect(p[0]).toBeCloseTo(0, 12);
+  });
+  it('the view turns towards the target (forward = (−sin yaw, cos yaw))', () => {
+    let yaw = 0;
+    for (let i = 0; i < 60; i++) yaw = approach([0, 0], yaw, { p: [-3, 0], reach: 1 }, 0, 1 / 30).yaw;
+    expect(-Math.sin(yaw)).toBeCloseTo(-1, 3); expect(Math.cos(yaw)).toBeCloseTo(0, 3);
   });
 });

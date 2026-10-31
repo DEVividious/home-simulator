@@ -100,6 +100,20 @@ async function act({ cmd, args = [], say = null, deadEnd = false, tooMuch = fals
     for (const k of keys.slice(0, -1)) await page.keyboard.down(k);
     await page.keyboard.press(keys.at(-1));
     for (const k of keys.slice(0, -1).reverse()) await page.keyboard.up(k);
+  } else if (cmd === 'hold') {
+    // press and hold: a key (hold W 2) or a finger / the mouse button at a point (hold X Y 2), at most 10 s
+    const pointer = args.length >= 3, s = Math.min(10, Math.max(0.1, num(pointer ? 2 : 1)));
+    if (pointer) {
+      const x = jit(num(0)), y = jit(num(1));
+      rec.at = [x, y]; rec.hit = await hitTest(page, x, y);
+      if (persona.touch) { await page.touchscreen.touchStart(x, y); await sleep(s * 1000); await page.touchscreen.touchEnd(); }
+      else { await page.mouse.move(x, y); await page.mouse.down(); await sleep(s * 1000); await page.mouse.up(); }
+    } else {
+      const keys = String(args[0] ?? '').split('+');
+      for (const k of keys) await page.keyboard.down(k);
+      await sleep(s * 1000);
+      for (const k of keys.reverse()) await page.keyboard.up(k);
+    }
   } else if (cmd !== 'wait') throw new Error(`unknown command "${cmd}"`);
   if (cmd !== 'wait') S.actions++;
   await settle(page, cmd === 'wait' ? 1500 : 700);

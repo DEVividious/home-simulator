@@ -4,7 +4,7 @@
 // Files (export / import of a version, the whole project) live in Settings › Files in advanced mode.
 import { useEffect, useState } from 'react';
 import { compareWith, deleteProjectVariant, liveThumbnail, renameVersion, resetVersion, switchVariant } from '../actions';
-import { extrasOf } from '../model/variantData';
+import { extrasOf, sameDesign } from '../model/variantData';
 import { useDoc } from '../store/design';
 import { ui, useUi } from '../store/ui';
 import { t } from '../../i18n';
@@ -47,10 +47,14 @@ export function SectionVariants() {
   const [live, setLive] = useState<string | null>(null);
   useEffect(() => { const h = window.setTimeout(() => setLive(liveThumbnail()), 300); return () => window.clearTimeout(h); }, [doc.activeVariantId]);
   useEffect(() => () => ui.set({ comparePick: false }), []);
+  // a new version starts as an exact copy: say that it needs a change before a comparison shows anything
+  const active = doc.variants.find((v) => v.id === doc.activeVariantId);
+  const copy = !!active && doc.variants.some((v) => v.id !== active.id && sameDesign(v, active));
   return (
     <div className="hm-section" data-testid="section-variants">
       <Block title={t('steps.versionsTitle')} testid="versions">
         {picking && <p className="hm-tip" data-testid="compare-pick">{t('steps.comparePick')}</p>}
+        {!picking && copy && <p className="hm-tip" data-testid="versions-same">{t('steps.versionsSame')}</p>}
         <div className="hm-version-grid" data-testid="version-list">
           {doc.variants.map((v) => <VersionCard key={v.id} id={v.id} name={v.name} active={v.id === doc.activeVariantId} only={doc.variants.length === 1} picking={picking}
             thumb={(v.id === doc.activeVariantId ? live : null) ?? extrasOf(v).thumbnail ?? null} />)}

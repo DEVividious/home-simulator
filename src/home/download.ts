@@ -36,7 +36,8 @@ export async function downloadPrint(): Promise<boolean> {
     const file = `${name}-print-${r.scale}.zip`;
     save(zipStore(r.files) as Uint8Array<ArrayBuffer>, file, 'application/zip');
     (window as unknown as { __lastPrint?: unknown }).__lastPrint = { file, files: r.files.map((f) => ({ name: f.name, bytes: f.bytes.length })) };
-    toast(t('steps.printReady', { file }));
+    // where the file is and what the scale in its name means; it stays long enough to be read
+    toast(t('steps.printReady', { file, n: (r.scale ?? '').replace(/^1to/, '') }), 'info', 9000);
     return true;
   } catch (e) {
     toast(t('steps.printFailed', { why: (e as Error).message }), 'error');

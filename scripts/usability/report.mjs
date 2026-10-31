@@ -36,13 +36,14 @@ for (const s of meta.sessions) {
   for (const rec of log) {
     if (rec.kind === 'note') notes.push({ persona: s.persona, run: s.run, task: rec.task, step: rec.step, text: rec.text, deadEnd: rec.deadEnd, tooMuch: rec.tooMuch, shot: rec.task ? relative(root, join(dir, `${rec.task}-step-${rec.step}.png`)) : null });
     if (rec.say) quotes.push({ persona: s.persona, task: rec.task, say: rec.say });
-    if (rec.text && rec.state?.mode !== 'advanced') for (const w of jargon(rec.text, P.lang)) (jargonSeen[w] ??= new Set()).add(`${s.persona}:${rec.task}`);
+    // the screen's text only (actions and task starts) — a persona's own note is not something the app showed
+    if (rec.kind !== 'note' && rec.text && rec.state?.mode !== 'advanced') for (const w of jargon(rec.text, P.lang)) (jargonSeen[w] ??= new Set()).add(`${s.persona}:${rec.task}`);
   }
   for (const id of s.tasks) {
     const task = TASKS.find((t) => t.id === id), r = results[id];
-    const acts = log.filter((x) => x.task === id && x.kind === 'action' && x.cmd !== 'wait');
-    // closing the welcome screen at the start of a session is not the task's first click
-    const firstAct = acts.find((a) => !String(a.hit?.testid ?? '').startsWith('onboarding'));
+    // closing the welcome screen at the start of a session is not part of the task: neither its first click nor its count
+    const acts = log.filter((x) => x.task === id && x.kind === 'action' && x.cmd !== 'wait' && !String(x.hit?.testid ?? '').startsWith('onboarding'));
+    const firstAct = acts[0];
     const first = firstAct?.hit?.testid ?? (firstAct?.hit?.canvas ? '(scene)' : firstAct ? '(nothing)' : null);
     const firstOk = !!first && (task.firstOk ?? []).some((p) => first.startsWith(p));
     const limit = task.limit ?? task.best + 2;
@@ -76,7 +77,7 @@ for (const s of meta.sessions) { const S = readJson(join(ROOT, s.dir, 'session.j
 
 const md = [
   `# Usability report — ${relative(join(ROOT, 'reports/usability'), root)}`, '',
-  `Engine ${sha ?? '?'} · persona model ${meta.model} · project ${meta.project} · renderer ${renderer ?? '?'}`, '',
+  `Engine ${sha ?? '?'} · persona model ${meta.model} (${meta.executor === 'api' ? 'Claude API computer use' : 'Claude Code subagent'}) · project ${meta.project} · renderer ${renderer ?? '?'}`, '',
   '## Thresholds', '', '| criterion | result | met |', '|---|---|---|',
   ...thresholds.map(([k, v, ok]) => `| ${k} | ${esc(v)} | ${ok ? 'yes' : '**no**'} |`), '',
   '## Tasks', '', '| persona | run | task | success | actions / best / limit | first click | no effect | KLM s |', '|---|---|---|---|---|---|---|---|',

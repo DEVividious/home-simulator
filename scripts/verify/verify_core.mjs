@@ -369,6 +369,27 @@ async function runProject(F) {
       check(`[${tag}] front door ${D.id}: closed — the walk stops at the door; open — out of the door onto the site (ground level ${F.p.site.groundLevel})`,
         blocked && wb.p[0] > 0.2 && outside && wo.kind === 'site' && near(wo.z, F.p.site.groundLevel, 0.02), `closed: stopped at x ${wb.p[0].toFixed(2)}; open: ${wo.place} (${wo.p.map((v) => v.toFixed(2))}) z ${wo.z}`);
       await page.evaluate((id) => window.__home.doors.open(id, 0), D.id);
+      await page.waitForFunction((id) => (window.__home3d.doors().motion[id] ?? 1) < 0.01, { timeout: 15000 }, D.id).catch(() => {});
+      // usability issue A4: a short key tap walks a short step; a door clicked from too far away is walked up to and opened
+      const mid = [(D.opening.faces[0] + D.opening.faces[1]) / 2, dy], side = out ? -1 : 1, g = F.p.site.groundLevel;
+      const t0 = await goTo([mid[0] + side * 4.8, dy], g, out ? -Math.PI / 2 : Math.PI / 2);
+      await page.keyboard.press('KeyW'); await sleep(900);
+      const t1 = await s3('walk'), tap = t0 ? Math.hypot(t1.p[0] - t0.p[0], t1.p[1] - t0.p[1]) : 0;
+      check(`[${tag}] walk: one short tap of W walks a short step (about 0.7 m), not a few centimetres`, tap > 0.4 && tap < 1.2, `${tap.toFixed(2)} m`);
+      const far = Math.hypot(t1.p[0] - mid[0], t1.p[1] - mid[1]);
+      let q = null;
+      for (const [h, al] of [[1.2, 0.5], [1.5, 0.4], [0.9, 0.6]]) { q = await s3('screenOfDoor', D.id, 0, h, al); if (await onCanvas(q)) break; q = null; }
+      if (q) await clickAt(q, 200);
+      const reached = await page.waitForFunction((id, m) => { const w = window.__home3d.walk(), d = window.__home3d.doors(); return (d.motion[id] ?? 0) > 0.99 && Math.hypot(w.p[0] - m[0], w.p[1] - m[1]) < 1.7; }, { timeout: 15000, polling: 100 }, D.id, mid).then(() => true).catch(() => false);
+      const t2 = await s3('walk');
+      await shot(`${tag}_08b_door_walked_to`);
+      check(`[${tag}] walk: a click on the front door ${far.toFixed(1)} m away walks up to it and opens it (no "come closer")`, !!q && far > 3.2 && reached,
+        `${q ? `click at ${q.map(Math.round)}` : 'door not on screen'}; now ${Math.hypot(t2.p[0] - mid[0], t2.p[1] - mid[1]).toFixed(2)} m from the door, ${JSON.stringify((await s3('doors')).motion[D.id])}`);
+      // usability issue A6: in simple mode the walk bar carries the place and the one walk sentence; no separate hint over it
+      const help = await text(T('walk-help')), hud = await text(T('walk-hud'));
+      check(`[${tag}] walk bar (simple mode): the place and "${EN['steps.hint.walk']}" — no feet level, no key list, no second hint over the scene`,
+        help === EN['steps.hint.walk'] && !/feet level|Shift/.test(hud ?? '') && !(await exists(T('hint'))), `"${hud}"`);
+      await page.evaluate((id) => window.__home.doors.open(id, 0), D.id);
     } else {
       // a project without a site: the walk stays inside — the exterior door does not lead out
       const D = F.front;
@@ -403,6 +424,13 @@ async function runProject(F) {
     const nb = v1.list.find((v) => !v0.list.some((x) => x.id === v.id));
     check(`[${tag}] "${EN['steps.newVersion']}" makes a copy named "${EN['actions.versionName'].replace('{n}', '2')}" and makes it active; the version left keeps its picture`,
       v1.list.length === 2 && nb?.name === EN['actions.versionName'].replace('{n}', '2') && v1.active === nb.id && v1.list[0].thumb > 0, v1.list.map((v) => `${v.name} thumb ${v.thumb}`).join(' / '));
+    // usability issue A5: the copy is the same house — one sentence says to change something before comparing; Compare says it too
+    const tip = await text(T('versions-same'));
+    await click(S.compare, 1500);
+    const same = await text(T('compare-same'));
+    await click(S.compareExit, 800);
+    check(`[${tag}] a fresh copy: "${EN['steps.versionsSame']}" under the versions; Compare of two equal versions says "${EN['compareUi.same']}"`,
+      tip === EN['steps.versionsSame'] && same === EN['compareUi.same'], `tip "${tip}"; compare "${same}"`);
     await click(S.versionMore(nb.name), 400);
     await click(S.versionRename, 400);
     await page.click(S.versionName, { count: 3 }); await page.keyboard.type('Version B2'); await page.keyboard.press('Enter'); await sleep(800);
@@ -439,6 +467,10 @@ async function runProject(F) {
       check(`[${tag}] Download menu (Picture, Print model; no project file in simple mode); "${EN['steps.downloadPrint']}" saves <project>-print-1to<N>.zip whose STL parts are the bytes of npm run project:print (220 × 220 × 250 mm)`,
         menu.join() === 'download-picture,download-print' && !!zip && /-print-1to\d+\.zip$/.test(zip) && names.includes('print-report.json') && same,
         `menu ${menu.join(',')}; ${zip}: ${names.join(', ')}; CLI ${cliStl.join(', ')}; same bytes ${same}`);
+      // the message says where the file went and what the scale in its name means (usability: "1to75" meant nothing)
+      const msg = await text(T('toast')), n = zip?.match(/1to(\d+)/)?.[1];
+      check(`[${tag}] after "${EN['steps.downloadPrint']}" the message names the Downloads folder, the file and the scale in words`,
+        !!zip && msg === EN['steps.printReady'].replace('{file}', zip).replace('{n}', n), `"${msg}"`);
     } finally { rmSync(dl, { recursive: true, force: true }); rmSync(cli, { recursive: true, force: true }); }
   });
 

@@ -14,6 +14,11 @@ export const TASKS = JSON.parse(readFileSync(join(HERE, 'tasks.json'), 'utf8')).
 export const FIXED = { date: '2026-06-21', time: '14:00', quality: 'medium' };
 /** after this many actions on one task the persona has run out of patience — the task ends as not done */
 export const MAX_ACTIONS = 15;
+/** the ten System Usability Scale statements, answered in role at the end (1 = strongly disagree … 5 = strongly agree) */
+export const SUS_TEXT = `1 I would like to use this app often. 2 The app was unnecessarily complex. 3 The app was easy to use. 4 I would need help
+from a technical person to use it. 5 The functions were well integrated. 6 There was too much inconsistency. 7 Most people
+would learn to use it very quickly. 8 It was very cumbersome to use. 9 I felt very confident using it. 10 I needed to learn a
+lot before I could get going.`;
 
 export const readJson = (f, d = null) => (existsSync(f) ? JSON.parse(readFileSync(f, 'utf8')) : d);
 export const writeJson = (f, v) => writeFileSync(f, JSON.stringify(v, null, 2) + '\n');
@@ -151,3 +156,30 @@ export async function screenshot(page, S) {
   await page.screenshot({ path: f });
   return f;
 }
+
+/**
+ * A binary STL as the checker of the skill dialog sees it (ADR 0046): triangles, whether the surface is closed (every edge used
+ * twice, in opposite directions), degenerate triangles, the size of the part in the file's units (mm).
+ */
+export function stlCheck(buf) {
+  if (buf.length < 84) return { ok: false, why: 'too short for a binary STL' };
+  const n = buf.readUInt32LE(80);
+  if (buf.length !== 84 + n * 50) return { ok: false, why: `not a binary STL (${n} triangles, ${buf.length} bytes)` };
+  const min = [Infinity, Infinity, Infinity], max = [-Infinity, -Infinity, -Infinity], edges = new Map();
+  let degenerate = 0;
+  for (let i = 0; i < n; i++) {
+    const o = 84 + i * 50 + 12, v = [0, 1, 2].map((k) => [0, 1, 2].map((c) => buf.readFloatLE(o + k * 12 + c * 4)));
+    for (const p of v) for (let c = 0; c < 3; c++) { min[c] = Math.min(min[c], p[c]); max[c] = Math.max(max[c], p[c]); }
+    const a = v[1].map((x, c) => x - v[0][c]), b = v[2].map((x, c) => x - v[0][c]);
+    if (Math.hypot(a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]) < 1e-12) degenerate++;
+    const key = v.map((p) => p.join(','));
+    for (let k = 0; k < 3; k++) { const e = `${key[k]}|${key[(k + 1) % 3]}`; edges.set(e, (edges.get(e) ?? 0) + 1); }
+  }
+  let open = 0;
+  for (const [e, c] of edges) { const [p, q] = e.split('|'); if (edges.get(`${q}|${p}`) !== c) open++; }
+  const size = max.map((x, c) => Math.round((x - min[c]) * 100) / 100);
+  return { ok: n > 0 && open === 0 && degenerate === 0, triangles: n, closed: open === 0, openEdges: open, degenerate, size };
+}
+
+/** whether a part of the given size [mm] fits the bed (turned by 90° when that helps) */
+export const fitsBed = (size, bed) => size[2] <= bed[2] && ((size[0] <= bed[0] && size[1] <= bed[1]) || (size[1] <= bed[0] && size[0] <= bed[1]));

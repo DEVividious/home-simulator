@@ -28,6 +28,7 @@ import { cameraTo, enterRoom, exitRoom, exitWalk, isEditWalk, isWalking, startWa
 import { cancelPlace, forgetPlace } from './store/elPlace';
 import { EYE_LEVEL_FOV, eyeLevelPitch, heightRange } from './model/elPlacement';
 import { sceneApi } from './scene/sceneApi';
+import { walkInput } from './scene/walkInput';
 import { doorById, doorCenter, inDoorway, isOperable, openOf } from './model/doors';
 import { doors, openDoor, toggleDoorOpen } from './store/doors';
 import type { Vec2 } from './model/types';
@@ -535,11 +536,16 @@ function standsIn(id: string, p: Vec2): boolean {
   const d = doorById(id);
   return !!d && inDoorway(d, p);
 }
-/** walk: clicking / tapping a door — open or close it (from close by) */
+/** a door clicked from further away is walked up to: the walk stops this far from the opening [m] */
+export const DOOR_WALK_TO = 1.4;
+/** walk: clicking / tapping a door — open or close it; from further than arm's reach the walk first goes up to the door */
 export function toggleDoorInWalk(id: string): boolean {
   const p = cameraXY(), c = doorMid(id);
   if (!isOperable(id)) return false;
-  if (p && c && Math.hypot(p[0] - c[0], p[1] - c[1]) > DOOR_REACH) { toast(t('actions.comeCloserToDoor')); return false; }
+  if (p && c && Math.hypot(p[0] - c[0], p[1] - c[1]) > DOOR_REACH) {
+    walkInput.to = { p: c, reach: DOOR_WALK_TO, done: () => { toggleDoorInWalk(id); }, fail: () => toast(t('actions.comeCloserToDoor')) };
+    return true;
+  }
   if (openOf(doors.get(), id) >= 0.5) return setDoor(id, 0);
   toggleDoorOpen(id);
   return true;

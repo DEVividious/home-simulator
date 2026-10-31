@@ -6,7 +6,7 @@
 import { useEffect, useRef, type ReactNode } from 'react';
 import { backStep } from '../backNav';
 import { wake } from '../scene/renderLoop';
-import { resetWalkInput, walkInput } from '../scene/walkInput';
+import { padInput, resetWalkInput, TAP_MS, walkInput } from '../scene/walkInput';
 import { isWalking, sections, ui, useUi, type UiState } from '../store/ui';
 import { Icon } from './icons';
 import { t } from '../../i18n';
@@ -60,22 +60,29 @@ export function MobileSheet({ children }: { children: ReactNode }) {
 /** virtual walk joystick (bottom-left corner); look around by dragging over the rest of the scene */
 export function WalkPad() {
   const on = useUi(isWalking);
-  const knob = useRef<HTMLSpanElement>(null), st = useRef<{ id: number; cx: number; cy: number; r: number } | null>(null);
-  useEffect(() => { if (!on) resetWalkInput(); return resetWalkInput; }, [on]);
+  const knob = useRef<HTMLSpanElement>(null), st = useRef<{ id: number; cx: number; cy: number; r: number; t0: number } | null>(null);
+  const later = useRef(0);
+  useEffect(() => { if (!on) resetWalkInput(); return () => { window.clearTimeout(later.current); resetWalkInput(); }; }, [on]);
   if (!on) return null;
   const set = (x: number, y: number) => {
     const s = st.current!;
     let dx = (x - s.cx) / s.r, dy = (y - s.cy) / s.r;
     const m = Math.hypot(dx, dy); if (m > 1) { dx /= m; dy /= m; }
-    const dz = (v: number) => (Math.abs(v) < 0.12 ? 0 : v);                         // dead zone
-    walkInput.s = dz(dx); walkInput.f = dz(-dy);
+    Object.assign(walkInput, padInput(dx, dy));                                   // dead zone, quick start, the outer ring runs
     if (knob.current) knob.current.style.transform = `translate(${dx * s.r * 0.6}px, ${dy * s.r * 0.6}px)`;
     wake();
   };
-  const end = () => { st.current = null; resetWalkInput(); if (knob.current) knob.current.style.transform = ''; };
+  const release = () => { resetWalkInput(); if (knob.current) knob.current.style.transform = ''; };
+  // a short tap on the pad still walks a step at walking speed in its direction (like a short key press)
+  const end = () => {
+    const t0 = st.current?.t0 ?? 0, left = t0 + TAP_MS - performance.now(), m = Math.hypot(walkInput.f, walkInput.s);
+    st.current = null; walkInput.run = false; window.clearTimeout(later.current);
+    if (left > 0 && m > 0) { walkInput.f /= m; walkInput.s /= m; }
+    later.current = window.setTimeout(release, Math.max(0, left));
+  };
   return (
     <div className="hm-walkpad" data-testid="walk-pad" aria-label={t('mobile.walking')}
-      onPointerDown={(e) => { const b = e.currentTarget.getBoundingClientRect(); st.current = { id: e.pointerId, cx: b.left + b.width / 2, cy: b.top + b.height / 2, r: b.width / 2 }; e.currentTarget.setPointerCapture(e.pointerId); set(e.clientX, e.clientY); }}
+      onPointerDown={(e) => { const b = e.currentTarget.getBoundingClientRect(); window.clearTimeout(later.current); st.current = { id: e.pointerId, cx: b.left + b.width / 2, cy: b.top + b.height / 2, r: b.width / 2, t0: performance.now() }; e.currentTarget.setPointerCapture(e.pointerId); set(e.clientX, e.clientY); }}
       onPointerMove={(e) => { if (st.current?.id === e.pointerId) set(e.clientX, e.clientY); }}
       onPointerUp={(e) => { if (st.current?.id === e.pointerId) end(); }} onPointerCancel={end}>
       <span ref={knob} />

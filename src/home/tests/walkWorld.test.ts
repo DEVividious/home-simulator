@@ -96,7 +96,7 @@ describe('sample house', () => {
       expect(p.z).toBeCloseTo(GROUND, 6);
       expect(world.placeAt(p, EYE).kind).toBe('site');
       // in the door opening (wall thickness): the passage to the site
-      expect(world.placeAt({ p: [0.15, 4.2], z: 0 }, EYE)).toMatchObject({ kind: 'door', id: 'D0', label: 'Passage: Hall ↔ site' });
+      expect(world.placeAt({ p: [0.15, 4.2], z: 0 }, EYE)).toMatchObject({ kind: 'door', id: 'D0', label: 'Doorway: Hall ↔ outside' });
       p = walk(world, p, 1, 0, 3);
       expect(p.z).toBe(0);
       expect(world.placeAt(p, EYE).label).toBe('Ground floor — Hall');

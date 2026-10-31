@@ -489,6 +489,10 @@ kbd { font: 11px ui-monospace, monospace; border: 1px solid var(--hm-line); bord
 .hm[data-pointer='coarse'] .hm-seg button { min-height: 40px; padding: 6px 12px; }
 .hm[data-pointer='coarse'] .hm-btn { min-height: 44px; }
 .hm[data-pointer='coarse'] .hm-chips button { min-height: 40px; padding: 6px 13px; }
+/* phone: a row of chips (furniture kinds, finish kinds) scrolls sideways in one line — the cards and the palette stay in the
+   half-open sheet without scrolling it */
+.hm[data-layout='mobile'] .hm-chips.row { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin: 0 -2px; padding: 0 2px 2px; }
+.hm[data-layout='mobile'] .hm-chips.row button { flex: none; white-space: nowrap; }
 .hm[data-pointer='coarse'] .hm-row-main { min-height: 48px; }
 .hm[data-pointer='coarse'] .hm-toggle { min-height: 48px; }
 .hm[data-pointer='coarse'] .hm-hintchip button { padding: 13px; }
@@ -549,6 +553,8 @@ kbd { font: 11px ui-monospace, monospace; border: 1px solid var(--hm-line); bord
 .hm[data-layout='mobile'][data-orient='landscape'] .hm-hintchip { max-width: calc(100% - 190px); }
 .hm[data-layout='mobile'][data-orient='portrait'] .hm-hintchip { top: 58px; }
 /* walking in landscape: place name in the bottom-right corner (controls hint at top left, joystick at bottom left) */
+/* touch: the place over the one-sentence walk hint (wraps instead of being cut) */
+.hm-walk-hud.touch { flex-direction: column; align-items: flex-start; gap: 2px; white-space: normal; }
 .hm[data-layout='mobile'][data-orient='landscape'] .hm-walk-hud.touch { top: auto; left: auto; bottom: 10px; right: 10px; max-width: calc(50% - 90px); overflow: hidden; text-overflow: ellipsis; }
 
 /* door card, "Show doors" switch, project furnishings */

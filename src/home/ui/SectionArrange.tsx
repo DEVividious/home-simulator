@@ -106,7 +106,7 @@ function Catalogue({ room }: { room: HomeRoom }) {
   return (
     <Block testid="catalogue">
       <label className="hm-search"><Icon name="search" size={16} /><input value={q} onChange={(e) => setQ(e.target.value)} placeholder={t('steps.search')} onKeyDown={(e) => e.stopPropagation()} data-testid="cat-search" /></label>
-      <div className="hm-chips" data-testid="cat-chips">
+      <div className="hm-chips row" data-testid="cat-chips">
         <button type="button" className={cat === 'all' ? 'on' : ''} onClick={() => setCat('all')} data-testid="chip-all">{t('furnitureUi.all')}</button>
         {chips.map((c) => <button key={c.id} type="button" className={cat === c.id ? 'on' : ''} onClick={() => setCat(c.id)} data-testid={`chip-${c.id}`}><Icon name={CAT_ICON[c.id] ?? 'box'} size={14} /> {c.name}</button>)}
       </div>

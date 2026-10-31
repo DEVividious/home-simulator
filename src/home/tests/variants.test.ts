@@ -7,7 +7,7 @@ import { initHistory } from '../../history/history';
 import { duplicateProjectVariant, deleteProjectVariant, newVariant, projectDefaultVariant, renameProjectVariant, resetVariantToProject, uniqueVariantName } from '../actions';
 import { resolvePlan } from '../model/electrical';
 import { defaultInterior } from '../model/interiors';
-import { exportVariant, importVariant, VARIANT_SCHEMA, variantExtrasErrors } from '../model/variantData';
+import { exportVariant, importVariant, sameDesign, VARIANT_SCHEMA, variantExtrasErrors } from '../model/variantData';
 import { pngText, pngWithText } from '../screenshot';
 import { design, docOf, undo, variantOf } from '../store/design';
 import { sidesOf } from '../store/sides';
@@ -188,6 +188,18 @@ describe('variant export / import (JSON)', () => {
     const furn = JSON.parse(JSON.stringify(good));
     furn.variant.interiors.R2.arrangements[0].furniture = [{ id: 'x', catalogId: 'grand-piano-x', x: 6, y: 5, rot: 0 }];
     expect(bad(furn)).toMatch(/unknown furniture grand-piano-x/);
+  });
+});
+
+describe('a copy that is still the same design (usability issue A5: "Change something in this copy, then compare.")', () => {
+  it('a fresh copy is the same design whatever its name, view, picture or time; a change of furniture, finish or stairs is not', () => {
+    const a: Variant = { ...createVariant('A', 'v-a'), interiors: { R1: defaultInterior('R1') } };
+    const b: Variant = { ...JSON.parse(JSON.stringify(a)), id: 'v-b', name: 'B', ...B_EXTRAS };
+    expect(sameDesign(a, b)).toBe(true);
+    const moved: Variant = JSON.parse(JSON.stringify(b));
+    moved.interiors.R1 = { ...moved.interiors.R1, finishes: { ...(moved.interiors.R1 as { finishes?: object }).finishes, walls: { all: 'paint-white' } } } as never;
+    expect(sameDesign(a, moved)).toBe(false);
+    expect(sameDesign(a, { ...b, stairs: { handrail: { kind: 'wood' } } as never })).toBe(false);
   });
 });
 

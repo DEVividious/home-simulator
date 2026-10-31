@@ -21,12 +21,12 @@ export function Hint() {
   const k = (key: string) => t(`steps.hint.${key}${touch ? 'Touch' : ''}`);
   let text: string | null;
   if (section === 'electrical' || section === 'expert') text = null;
+  else if (houseView === 'walk' && !roomId) text = null;              // the walk bar carries the sentence, next to the place
   else if (sel === 'furniture') text = k('selected');
   else if (roomId && view === 'walk') text = k('walk');
   else if (roomId && section === 'arrange' && tab === 'colours') text = k('colours');
   else if (roomId && empty) text = k('empty');
   else if (roomId) text = k('room');
-  else if (houseView === 'walk') text = k('walk');
   else if (houseView === 'interior') text = k('level');
   else text = k('outside');
   const shown = text && !hidden.includes(text) ? text : null;
@@ -46,7 +46,7 @@ export function Toasts() {
   useEffect(() => {
     if (!toast) return;
     setShown(toast.n);
-    const h = window.setTimeout(() => setShown((n) => (n === toast.n ? null : n)), toast.level === 'error' ? 6000 : 3200);
+    const h = window.setTimeout(() => setShown((n) => (n === toast.n ? null : n)), toast.ms ?? (toast.level === 'error' ? 6000 : 3200));
     return () => window.clearTimeout(h);
   }, [toast]);
   if (!toast || shown !== toast.n) return null;

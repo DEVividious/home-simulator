@@ -5,7 +5,7 @@
 // (or Shift + left, middle) — pan, wheel — zoom towards the cursor, double-click — new orbit centre;
 // left button on furniture — move the furniture (camera control suspended: sceneApi.lockControls).
 // Exterior presets avoid the surrounding trees (the camera does not land in tree crowns — direction and distance with a clear view).
-import { walkInput } from './walkInput';
+import { approach, keyClear, keyDown, keyInput, keyUp, walkInput, walkKeys } from './walkInput';
 import { useFrame, useThree } from '@react-three/fiber';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
@@ -21,7 +21,7 @@ import { WALK_SPEED } from './WalkLayer';
 import { roomById, roomsOfLevel, type HomeRoom } from '../model/rooms';
 import type { Vec3 } from '../model/types';
 import { design, docOf } from '../store/design';
-import { ui, useUi, type Selection } from '../store/ui';
+import { isWalking, ui, useUi, type Selection } from '../store/ui';
 import { floorHit, sceneApi } from './sceneApi';
 import { cameraNear, levelFloor, type SceneMode } from './sceneMode';
 
@@ -174,7 +174,7 @@ export function CameraController({ data, mode }: { data: SceneData; mode: SceneM
   const cmd = useUi((s) => s.camera);
   const eye = useUi((s) => s.eyeHeight);
   const anim = useRef<{ from: Goal; to: Goal; t0: number; dur: number } | null>(null);
-  const walk = useRef({ yaw: 0, pitch: -0.05, keys: new Set<string>(), push: 0 });
+  const walk = useRef({ yaw: 0, pitch: -0.05, keys: walkKeys(), push: 0 });
   const isWalk = mode.kind === 'room' && mode.roomView === 'walk';
   const isTop = mode.kind === 'room' && mode.roomView === 'top';
   // building and site walk / photo matching — the camera is driven by WalkController / PhotoMatchController (WalkLayer.tsx)
@@ -329,9 +329,9 @@ export function CameraController({ data, mode }: { data: SceneData; mode: SceneM
     };
     const up = (e: PointerEvent) => { if (look && e.pointerId === look.id) look = null; };
     const wheel = (e: WheelEvent) => { e.preventDefault(); w.push += -Math.sign(e.deltaY) * 0.4; };
-    const kd = (e: KeyboardEvent) => { if (!typing(e) && !e.ctrlKey && !e.metaKey) w.keys.add(e.code); };
-    const ku = (e: KeyboardEvent) => { w.keys.delete(e.code); };
-    const blur = () => w.keys.clear();
+    const kd = (e: KeyboardEvent) => { if (!typing(e) && !e.ctrlKey && !e.metaKey) keyDown(w.keys, e.code, performance.now(), e.repeat); };
+    const ku = (e: KeyboardEvent) => keyUp(w.keys, e.code);
+    const blur = () => keyClear(w.keys);
     dom.addEventListener('pointerdown', down);
     window.addEventListener('pointermove', move);
     window.addEventListener('pointerup', up);
@@ -343,7 +343,8 @@ export function CameraController({ data, mode }: { data: SceneData; mode: SceneM
     return () => {
       dom.removeEventListener('pointerdown', down); window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up); window.removeEventListener('pointercancel', up);
       dom.removeEventListener('wheel', wheel); window.removeEventListener('keydown', kd); window.removeEventListener('keyup', ku); window.removeEventListener('blur', blur);
-      w.keys.clear();
+      keyClear(w.keys);
+      if (!isWalking(ui.get())) walkInput.to = null;                  // the walk ended (not handed over to the building walk)
     };
   }, [isWalk, gl]);
 
@@ -351,17 +352,25 @@ export function CameraController({ data, mode }: { data: SceneData; mode: SceneM
     if (!isWalk || !room || !controls) return;
     const w = walk.current;
     if (!anim.current) {
-      const k = w.keys, sp = (k.has('ShiftLeft') || k.has('ShiftRight') ? WALK_SPEED.run : WALK_SPEED.walk) * Math.min(dt, 0.25);
+      const k = keyInput(w.keys, performance.now()), d = Math.min(dt, 0.25), sp = (k.run || walkInput.run ? WALK_SPEED.run : WALK_SPEED.walk) * d;
       // input vector clamped to the unit circle (as in the building walk — WalkLayer): the same speed diagonally as straight ahead
-      const [f, s] = walkInputVector((k.has('KeyW') || k.has('ArrowUp') ? 1 : 0) - (k.has('KeyS') || k.has('ArrowDown') ? 1 : 0) + walkInput.f,
-        (k.has('KeyD') || k.has('ArrowRight') ? 1 : 0) - (k.has('KeyA') || k.has('ArrowLeft') ? 1 : 0) + walkInput.s);
+      const [f, s] = walkInputVector(k.f + walkInput.f, k.s + walkInput.s);
       const push = w.push * Math.min(1, dt * 8); w.push -= push;
+      if (f || s || push) walkInput.to = null;                         // the user walks: a walk to a clicked door stops
       const fx = -Math.sin(w.yaw), fy = Math.cos(w.yaw); // view direction in LCS
-      const mx = (f * sp + push) * fx + s * sp * fy, my = (f * sp + push) * fy - s * sp * fx;
+      let mx = (f * sp + push) * fx + s * sp * fy, my = (f * sp + push) * fy - s * sp * fx;
+      const to = walkInput.to, here: [number, number] = [persp.position.x, -persp.position.z];
+      if (to) {
+        const a = approach(here, w.yaw, to, WALK_SPEED.walk * d, d);
+        w.yaw = a.yaw; mx = a.mx; my = a.my;
+        if (a.arrived) { walkInput.to = null; to.done(); }
+      }
       if (mx || my) {
         // movement over the whole level: walls block (sliding along the wall), doors and passages lead to adjacent rooms
-        const p = walkStep(room.level, [persp.position.x, -persp.position.z], mx, my, eye);
+        const p = walkStep(room.level, here, mx, my, eye);
         persp.position.set(p[0], persp.position.y, -p[1]);
+        // a walk to a door that does not get closer (a wall, furniture): given up
+        if (to && walkInput.to === to && Math.hypot(p[0] - here[0], p[1] - here[1]) < Math.hypot(mx, my) * 0.3) { walkInput.to = null; to.fail(); }
         // The room walk knows only one level. At the stairs and at exits to the outside it turns smoothly into the building walk
         // (same place and view direction) — stairs, exterior doors and the site then work as in the walk from the Home section.
         if (inStairBox(p, 0.25) || nearExteriorDoor(p, room.level)) {

@@ -8,6 +8,7 @@
 //   drag X1 Y1 X2 Y2           press, move, release (mouse or finger)
 //   scroll X Y DY              mouse wheel at a point (DY > 0 scrolls down)
 //   type "text" | key Enter    keyboard (key combinations as Control+z)
+//   hold KEY S | hold X Y S    press and hold a key, or a finger / the mouse button at a point, for S seconds (at most 10)
 //   wait                       look again after a moment
 //   done | giveup              finish the task (the next task starts by itself)
 //   note "text" [--dead-end] [--too-much-text]   something confusing, for the report

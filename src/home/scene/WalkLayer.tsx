@@ -4,7 +4,7 @@
 //   • StairsMesh — stairs from the building data with the variant finish (stairs.ts, stairsConfig.ts),
 //   • WalkController — walking (WASD / arrows, Shift — faster, mouse look, wheel — step; eye height above the floor /
 //     terrain, stairs, walking out through doors onto the site — WalkWorld).
-import { walkInput } from './walkInput';
+import { approach, keyClear, keyDown, keyInput, keyUp, walkInput, walkKeys } from './walkInput';
 import { useGLTF } from '@react-three/drei';
 import { useFrame, useThree } from '@react-three/fiber';
 import { useEffect, useMemo, useRef } from 'react';
@@ -21,7 +21,7 @@ import { isNearest, longPressFired, pressStart } from './press';
 import { lookAngles, viewpointById, viewpoints } from '../model/viewpoints';
 import { walkInputVector } from '../model/walk';
 import { WalkWorld, type WalkPose } from '../model/walkWorld';
-import { ui, useUi } from '../store/ui';
+import { isWalking, ui, useUi } from '../store/ui';
 import { walkHud } from '../store/walk';
 import { lastWasClick, sceneApi } from './sceneApi';
 import type { SceneMode } from './sceneMode';
@@ -154,13 +154,13 @@ export function WalkController({ data, mode }: { data: SceneData; mode: SceneMod
   }, [data]);
   // probe for E2E tests: height / reachability of a point in the walk model
   useEffect(() => { (window as unknown as { __walkProbe?: unknown }).__walkProbe = (x: number, y: number, z: number) => world.heightAt([x, y], z, eye); }, [world, eye]);
-  const st = useRef({ pose: null as WalkPose | null, yaw: 0, pitch: 0, eyeZ: 0, fov: WALK_FOV, keys: new Set<string>(), push: 0, hudAt: 0, pending: true });
+  const st = useRef({ pose: null as WalkPose | null, yaw: 0, pitch: 0, eyeZ: 0, fov: WALK_FOV, keys: walkKeys(), push: 0, hudAt: 0, pending: true });
 
   // start: viewpoint / pose from the request (settled in the walk model once the terrain has loaded)
   useEffect(() => { st.current.pending = true; }, [go.n, on]);
 
   useEffect(() => {
-    if (!on) { walkHud.set({ on: false, place: '', kind: '', roomId: null }); return; }
+    if (!on) { walkHud.set({ on: false, place: '', kind: '', roomId: null }); if (!isWalking(ui.get())) walkInput.to = null; return; }
     const dom = gl.domElement, w = st.current;
     // looking around tracks ONE pointer (pointerId) — a second finger on the joystick does not rotate the view
     let look: { id: number; x: number; y: number; yaw: number; pitch: number } | null = null;
@@ -174,9 +174,9 @@ export function WalkController({ data, mode }: { data: SceneData; mode: SceneMod
     };
     const up = (e: PointerEvent) => { if (look && e.pointerId === look.id) look = null; };
     const wheel = (e: WheelEvent) => { e.preventDefault(); w.push += -Math.sign(e.deltaY) * 0.5; };
-    const kd = (e: KeyboardEvent) => { if (!typing(e) && !e.ctrlKey && !e.metaKey) w.keys.add(e.code); };
-    const ku = (e: KeyboardEvent) => { w.keys.delete(e.code); };
-    const blur = () => w.keys.clear();
+    const kd = (e: KeyboardEvent) => { if (!typing(e) && !e.ctrlKey && !e.metaKey) keyDown(w.keys, e.code, performance.now(), e.repeat); };
+    const ku = (e: KeyboardEvent) => keyUp(w.keys, e.code);
+    const blur = () => keyClear(w.keys);
     const ctx = (e: MouseEvent) => e.preventDefault();
     dom.addEventListener('pointerdown', down);
     window.addEventListener('pointermove', move);
@@ -191,7 +191,7 @@ export function WalkController({ data, mode }: { data: SceneData; mode: SceneMod
       dom.removeEventListener('pointerdown', down); window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up); window.removeEventListener('pointercancel', up);
       dom.removeEventListener('wheel', wheel); dom.removeEventListener('contextmenu', ctx); window.removeEventListener('keydown', kd);
       window.removeEventListener('keyup', ku); window.removeEventListener('blur', blur);
-      w.keys.clear();
+      keyClear(w.keys);
     };
   }, [on, gl]);
 
@@ -223,14 +223,26 @@ export function WalkController({ data, mode }: { data: SceneData; mode: SceneMod
       sceneApi.target = null;
     }
     if (!w.pose) return;
-    const k = w.keys, sp = (k.has('ShiftLeft') || k.has('ShiftRight') ? WALK_SPEED.run : WALK_SPEED.walk) * dt;
+    const now = performance.now(), k = keyInput(w.keys, now);
+    const sp = (k.run || walkInput.run ? WALK_SPEED.run : WALK_SPEED.walk) * dt;
     // keys + touch joystick (analog, −1…1); vector clamped to the unit circle — the same speed diagonally as straight ahead
-    const [f, s] = walkInputVector((k.has('KeyW') || k.has('ArrowUp') ? 1 : 0) - (k.has('KeyS') || k.has('ArrowDown') ? 1 : 0) + walkInput.f,
-      (k.has('KeyD') || k.has('ArrowRight') ? 1 : 0) - (k.has('KeyA') || k.has('ArrowLeft') ? 1 : 0) + walkInput.s);
+    const [f, s] = walkInputVector(k.f + walkInput.f, k.s + walkInput.s);
     const push = w.push * Math.min(1, dt * 8); w.push -= push;
+    if (f || s || push) walkInput.to = null;                           // the user walks: a walk to a clicked door stops
     const fx = -Math.sin(w.yaw), fy = Math.cos(w.yaw);
-    const mx = (f * sp + push) * fx + s * sp * fy, my = (f * sp + push) * fy - s * sp * fx;
-    if (mx || my) w.pose = world.step(w.pose, mx, my, eye);
+    let mx = (f * sp + push) * fx + s * sp * fy, my = (f * sp + push) * fy - s * sp * fx;
+    const to = walkInput.to;
+    if (to) {
+      const a = approach(w.pose.p, w.yaw, to, WALK_SPEED.walk * dt, dt);
+      w.yaw = a.yaw; mx = a.mx; my = a.my;
+      if (a.arrived) { walkInput.to = null; to.done(); }
+    }
+    if (mx || my) {
+      const from = w.pose.p;
+      w.pose = world.step(w.pose, mx, my, eye);
+      // a walk to a door that does not get closer (a wall, furniture): given up
+      if (to && walkInput.to === to && Math.hypot(w.pose.p[0] - from[0], w.pose.p[1] - from[1]) < Math.hypot(mx, my) * 0.3) { walkInput.to = null; to.fail(); }
+    }
     // the eyes follow the feet smoothly (steps, terrace kerb)
     const target = w.pose.z + eye;
     w.eyeZ += (target - w.eyeZ) * Math.min(1, dt * 12);
@@ -238,7 +250,6 @@ export function WalkController({ data, mode }: { data: SceneData; mode: SceneMod
     camera.position.copy(L3(w.pose.p[0], w.pose.p[1], w.eyeZ));
     camera.rotation.set(w.pitch, w.yaw, 0, 'YXZ');
     camera.updateMatrixWorld();
-    const now = performance.now();
     if (now - w.hudAt > 150) {
       w.hudAt = now;
       const place = world.placeAt(w.pose, eye, sceneApi.surface(w.pose.p[0], w.pose.p[1]));

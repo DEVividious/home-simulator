@@ -416,22 +416,25 @@ function MeasureLayer({ room, view }: { room: HomeRoom; view: SceneMode['roomVie
 }
 
 
-/** walk bar: place, height, controls, exit */
+/** walk bar: the place and one sentence on how to walk (the hint of the walk, ADR 0043); advanced mode adds the feet level and
+ *  every key; on a desktop the exit */
 function WalkHudBar() {
   const place = useWalkHud((s) => s.place), z = useWalkHud((s) => s.z), on = useWalkHud((s) => s.on);
   const touch = useLayout((s) => s.coarse);
+  const advanced = useUi((s) => s.mode === 'advanced');
   const selFurniture = useUi((s) => s.selection?.kind === 'furniture');
   const ref = useRef<HTMLDivElement>(null);
-  useClearOfSceneButtons(ref, `${on}-${touch}`);
+  useClearOfSceneButtons(ref, `${on}-${touch}-${advanced}`);
   if (!on) return null;
-  // touch: only the place (no key instructions; the joystick and exit are under the thumbs at the bottom of the screen)
-  if (touch) return <div ref={ref} className="hm-walk-hud touch" data-testid="walk-hud"><b data-testid="walk-place">{place}</b></div>;
+  const hint = t(`steps.hint.${selFurniture ? 'selected' : 'walk'}${touch ? 'Touch' : ''}`);
+  // touch: the place and the sentence (the joystick and exit are under the thumbs at the bottom of the screen)
+  if (touch) return <div ref={ref} className="hm-walk-hud touch" data-testid="walk-hud"><b data-testid="walk-place">{place}</b><span className="hm-muted" data-testid="walk-help">{hint}</span></div>;
   return (
     <div ref={ref} className="hm-walk-hud" data-testid="walk-hud">
       <b data-testid="walk-place">{place}</b>
-      <span>{t('walkHud.feetLevel', { z: fmtM(Math.round(z * 100) / 100, 2) })}</span>
+      {advanced && <span>{t('walkHud.feetLevel', { z: fmtM(Math.round(z * 100) / 100, 2) })}</span>}
       {/* selected furniture: what can be done with it (in walk mode the selected furniture is moved) */}
-      <span className="hm-muted" data-testid="walk-help">{selFurniture ? t('walkHud.helpSelected') : t('walkHud.help')}</span>
+      <span className="hm-muted" data-testid="walk-help">{advanced ? (selFurniture ? t('walkHud.helpSelected') : t('walkHud.help')) : hint}</span>
       <button className="hm-btn" onClick={exitWalk} data-testid="walk-exit">{t('walkHud.exit')}</button>
     </div>
   );

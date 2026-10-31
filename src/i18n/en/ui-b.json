@@ -107,6 +107,7 @@
  "compareUi.arrangements": "Arrangement comparison",
  "compareUi.variants": "Version comparison",
  "compareUi.sameView": "same camera, light and surroundings",
+ "compareUi.same": "Both versions are still the same.",
  "compareUi.swapTitle": "Swap sides A and B",
  "compareUi.swap": "⇄ Swap",
  "mountTip.alignObject": "aligned to the adjacent object",

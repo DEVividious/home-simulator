@@ -114,7 +114,7 @@ export function ArrangeColours({ room }: { room: HomeRoom }) {
           {scope === 'house' && <p className="hm-muted">{t('inspector.wholeHomeRooms', { n: HOUSE_WALL_ROOMS().length })}</p>}
         </Block>
       )}
-      <div className="hm-chips" data-testid="mat-cats">
+      <div className="hm-chips row" data-testid="mat-cats">
         {cats.map((c) => <button key={c.id} type="button" className={c.id === cat ? 'on' : ''} onClick={() => setCat(c.id)} data-testid={`mcat-${c.id}`}>{categoryName(c.id)}</button>)}
       </div>
       {isPaint && (

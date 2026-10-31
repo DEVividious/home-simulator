@@ -87,7 +87,8 @@ export interface UiState {
   camera: { preset: CameraPresetId; n: number; bookmarkId?: string; pose?: CameraPose };
   selection: Selection;
   snap: { enabled: boolean; grid: number };
-  toast: { text: string; level: 'info' | 'warn' | 'error'; n: number } | null;
+  /** a short message over the scene; ms — how long it stays (by default 3.2 s, errors 6 s) */
+  toast: { text: string; level: 'info' | 'warn' | 'error'; n: number; ms?: number } | null;
   onboardingDone: boolean;
   environment: boolean;
   settingsOpen: boolean;
@@ -274,7 +275,7 @@ export function clickSurface(roomId: string, target: { kind: 'wall'; wallId: str
 }
 
 let toastN = 0;
-export const toast = (text: string, level: 'info' | 'warn' | 'error' = 'info') => ui.set({ toast: { text, level, n: ++toastN } });
+export const toast = (text: string, level: 'info' | 'warn' | 'error' = 'info', ms?: number) => ui.set({ toast: { text, level, n: ++toastN, ...(ms ? { ms } : {}) } });
 export const cameraTo = (preset: UiState['camera']['preset'], bookmarkId?: string) => ui.set((s) => ({ camera: { preset, n: s.camera.n + 1, bookmarkId } }));
 
 /** in a room the Arrange step is the one that works with it (Look and Versions lead there); Electrical and Expert stay */
