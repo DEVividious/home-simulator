@@ -8,6 +8,7 @@
 //   --min-wall <mm>               override the profile's smallest wall
 //   --margin <mm>                 kept free on every side of the bed — default 10
 //   --eaves keep | trim           trim: cut the eaves and verges at the outer faces of the walls — default keep
+//   --joints on | off             registration tabs on the walls and pockets in the part above — default on
 //   --scales                      list the standard scales with the size of every part, write nothing
 //   --dry-run                     build and check everything, write the report and the preview, no STL
 //   --out <dir>                   default projects/<id>/print/1to<N> (git-ignored)
@@ -28,10 +29,10 @@ import { parseScale, scaleLabel, scaleTag } from '@home-sim/core/print/scale';
 import { loadGeometry } from '@home-sim/core/solid/wasm';
 
 const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..', '..');
-const USAGE = 'usage: npm run project:print -- <projects/<id> | plan.json | project.json> --bed "<printer>"|WxD[xH] [--scale auto|1:N] [--nozzle 0.4|0.6|resin] [--min-wall mm] [--margin 10] [--eaves keep|trim] [--scales] [--dry-run] [--out DIR] [--lang en|pl]';
+const USAGE = 'usage: npm run project:print -- <projects/<id> | plan.json | project.json> --bed "<printer>"|WxD[xH] [--scale auto|1:N] [--nozzle 0.4|0.6|resin] [--min-wall mm] [--margin 10] [--eaves keep|trim] [--joints on|off] [--scales] [--dry-run] [--out DIR] [--lang en|pl]';
 const args = process.argv.slice(2).filter((a) => a !== '--');
 const fail = (msg) => { console.error(msg); process.exit(2); };
-const VALUED = new Set(['--bed', '--scale', '--nozzle', '--min-wall', '--margin', '--eaves', '--out', '--lang']);
+const VALUED = new Set(['--bed', '--scale', '--nozzle', '--min-wall', '--margin', '--eaves', '--joints', '--out', '--lang']);
 const opts = {}, positional = [];
 for (let i = 0; i < args.length; i++) {
   const a = args[i];
@@ -75,6 +76,8 @@ try {
 } catch (e) { fail(e.message); }
 const eaves = opts['--eaves'] ?? 'keep';
 if (eaves !== 'keep' && eaves !== 'trim') fail(`--eaves must be keep or trim, not ${eaves}`);
+const joints = (opts['--joints'] ?? 'on') === 'on';
+if (!['on', 'off'].includes(opts['--joints'] ?? 'on')) fail(`--joints must be on or off, not ${opts['--joints']}`);
 const lang = opts['--lang'] ?? 'en', dictFile = path.join(ROOT, 'src', 'i18n', lang, 'print.json');
 if (!fs.existsSync(dictFile)) fail(`--lang ${lang}: no dictionary src/i18n/${lang}/print.json`);
 const dict = JSON.parse(fs.readFileSync(dictFile, 'utf8'));
@@ -85,7 +88,7 @@ const mm = (s) => s.map((x) => (Math.round(x * 10) / 10).toString()).join(' × '
 const geo = await loadGeometry();
 if (opts['--scales']) {
   console.log(`${name}: part sizes on ${bedText} (margin ${margin} mm, ${profile.id})`);
-  for (const c of scaleTable(data, geo, { bed, profile, margin, eaves })) {
+  for (const c of scaleTable(data, geo, { bed, profile, margin, eaves, joints })) {
     console.log(`  ${scaleLabel(c.n).padEnd(6)} ${c.fits ? 'fits    ' : 'too big '} ${c.parts.map((p) => `${p.id} ${mm(p.sizeMm)}${p.fit.rotated ? ' (turned)' : ''}`).join(' · ')}`);
   }
   process.exit(0);
@@ -101,7 +104,7 @@ const meta = {
   inputFile: path.relative(process.cwd(), file),
 };
 const t0 = Date.now();
-const m = printModel(data, geo, { bed, profile, scale, margin, eaves, name, meta });
+const m = printModel(data, geo, { bed, profile, scale, margin, eaves, joints, name, meta });
 const out = path.resolve(opts['--out'] ?? path.join(projectDir, 'print', m.n ? scaleTag(m.n) : 'no-scale'));
 fs.mkdirSync(out, { recursive: true });
 // stale parts of an earlier run must not pass for this one
@@ -119,6 +122,7 @@ if (previewFile) fs.writeFileSync(path.join(out, previewFile), encodePng(printPr
 const rel = (p) => path.relative(process.cwd(), p) || '.';
 console.log(`${name}: ${m.n ? `${scaleLabel(m.n)} (${m.auto ? 'the largest standard scale that fits' : 'as given'})` : 'no scale fits'} on ${bedText}, margin ${margin} mm, ${profile.label} (${Date.now() - t0} ms)`);
 if (m.split) console.log(`  the roof comes off at ${m.split.z.toFixed(2)} m (${m.split.rule === 'eaves' ? 'the bottom of the eaves' : m.split.rule === 'floor' ? '0.3 m above the floor' : m.split.rule === 'wall-top' ? 'the top of the walls' : 'the lowest ceiling'})`);
+for (const j of m.joints) console.log(j.made ? `  joint ${j.between.join(' → ')}: ${j.tabs} tabs, ${j.heightMm} mm high, ${j.clearanceMm} mm clearance` : `  no joint ${j.between.join(' → ')}: ${j.reason}`);
 for (const p of m.parts) {
   const extra = [p.fit.rotated ? 'turned 90°' : '', p.flipped ? 'upside down' : '', p.overhangs.supports.length ? `${p.overhangs.supports.length} overhang(s) need supports` : '', p.thin.length ? `${p.thin.length} thin spot(s)` : ''].filter(Boolean).join(', ');
   console.log(`  ${p.ok ? 'OK ' : 'ERR'} ${p.id.padEnd(5)} ${mm(p.sizeMm).padEnd(24)} ${String(Math.max(...p.fit.usage)).padStart(5)} % of the bed  ${p.triangles} triangles${extra ? `  — ${extra}` : ''}`);

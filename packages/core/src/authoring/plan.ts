@@ -106,10 +106,12 @@ export const RoofSchema = z.strictObject({
 const PassageSchema = z.strictObject({ between: z.tuple([id, id]), at: pt, width: num.positive(), height: num.positive().optional() });
 
 const WindowSchema = z.strictObject({
-  id, room: id, at: pt.describe('a point on the window wall, in the middle of the window'), width: num.positive(),
+  id, room: id, at: pt.describe('a point on the window wall, in the middle of the window'), width: num.positive().optional().describe('width along the wall [m] (not with outline)'),
   sill: num.min(0).optional(), head: num.positive().optional(),
+  outline: z.array(z.tuple([num, num])).min(3).optional()
+    .describe('a glazing that is not a rectangle (a gable window under the roof): its corners as [coordinate along the wall (a point coordinate: x for a wall along X, y along Y; px in a px plan), height above the room floor (m)] — instead of width / sill / head; walls along the plan axes only'),
   passable: z.boolean().optional().describe('floor-level glazed door one can walk through onto the terrain'),
-});
+}).refine((w) => (w.width === undefined) !== (w.outline === undefined), 'give width (with sill / head) or outline');
 
 const StairSchema = z.strictObject({
   id, from: id, to: id,

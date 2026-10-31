@@ -71,8 +71,11 @@ the behaviour is named in brackets. When a limit is lifted, remove it here in th
 ## Print export
 
 - **Only the last level's roof comes off.** The print is one part per level and a removable roof over the last level; a roof
-  over a lower level (a wing beside a smaller upper floor) is printed with that level, and its rooms are closed under it
-  (`packages/core/src/print/parts.ts`). There are no connectors: the parts stand on flat faces and are not glued or keyed.
+  over a lower level (a wing beside a smaller upper floor) goes with the part of the level above, cut at the underside of its
+  slab — a pitched wing roof reaching lower than that loses its eaves (`packages/core/src/print/parts.ts`).
+- **Joints are registration tabs only.** The parts stack on flat faces and tabs on the exterior walls fit pockets in the part
+  above; they locate the parts, they do not clamp them (no snap fit, magnets or pins — chimneys do not guide the roof). At
+  small scales, where the walls or slabs are too thin, a joint is left out (`print/joints.ts`).
 - **The split is horizontal.** Over a cold roof space the roof part starts at the ceiling, so eaves reaching lower are cut
   flat at that height (`eaves.cut` says how much); under the slopes it starts at the bottom of the eaves, so the walls of the
   rooms there are mostly in the roof part. Rooms with a flat top under the slopes (collar ties) and shallow dormer roofs are
@@ -93,6 +96,10 @@ the behaviour is named in brackets. When a limit is lifted, remove it here in th
 - **Model files are not made by the tools.** `plan.json` can name a building, terrain or surroundings GLB (`assets`), camera
   views and catalog files; the compiler copies them into `project.json` as given. Producing the GLB is up to the author, and
   only `npm run project:validate` checks that the files exist.
+- **Windows are glazing or openings, not joinery.** A window is a pane in a frame; whether it opens is not shown (only a glazing
+  marked `passable` lets the walk through). A glazing with a polygonal outline (`outline` in `plan.json`) has a frame along
+  every side and one pane; no mullions, transoms or sashes. Garage doors are drawn as one sliding leaf (no sectional or
+  up-and-over door), and walls that stand without a room (a wing wall, a pergola wall, a screen of slats) are not built.
 - **Door types are fixed.** Doors are `hinged-single`, `hinged-double` (two equal leaves opening together into one room),
   `folding` (a bifold of two equal panels folding to one jamb), `sliding` or `pocket`. Unequal double leaves, a double door with
   one fixed leaf, bifolds of four or more panels, double-swing (café) doors and sectional garage doors are not supported; a

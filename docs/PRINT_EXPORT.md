@@ -43,7 +43,19 @@ The last level is split at a height `z` (`split` in the report):
 
 The level and the roof are one solid before the cut (the walls run 5 mm into the roof so the two unite without a seam); faces
 lying in the split plane are moved 5 mm off it in the inputs, so the cut never meets a face. A roof over a lower level (a
-wing beside a smaller upper floor) is printed with its level. Stairs are solid flights from the floor — stepped, or a ramp
+wing beside a smaller upper floor) goes with the part of the level above it: the lower level is built as a level under another
+one — its rooms open through the top at the underside of the next slab — and the roof above that height is joined to the next
+part (where it meets the upper level's walls a 5 mm strip in the slab makes them overlap, so no seam stays); what of it lies
+under the cut is not printed (note `roof.carried`). Every level's part is open from above, and the parts stack floor by floor.
+
+**Joints** (`print/joints.ts`, `--joints off` leaves them out). On the top of each part's exterior walls — on the inner part
+of the wall, 1.8 mm from the outer face, so the outside stays one plane when stacked — registration tabs 1.6 mm high stand in
+squares round every corner of the outline (an L at a corner holds both directions) and at most every 45 mm along the walls;
+the part above has a pocket for each with the profile's clearance per side and a 0.3 mm gap over the tab (it rests on the
+walls, not on the tabs), a mouth widened over its first 0.4 mm (the elephant's foot on the bed) and the tab top chamfered. A tab
+is made only where the part above has material over and around its pocket (a wall around it and a slab over it); fewer than
+three tabs, or tabs in one direction only, make no joint (note `joint.none`). The report lists every joint (`joints`).
+Stairs are solid flights from the floor — stepped, or a ramp
 when the steps are lower than the profile's smallest step. The steps in the thickness of the slab above (higher than the top
 of their level's part) are printed with the upper level's part: a block standing on the bed in the opening of its floor, run
 5 mm into the edge of the floor the stairs lead onto, right on top of the lower flight when the parts are stacked (note

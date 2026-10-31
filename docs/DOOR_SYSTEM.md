@@ -82,6 +82,8 @@ Diagnostics and tests: `?doors=open | closed | hidden`.
   flush doors have a separate frame mesh in the leaf colour.
 - Leaves belong to the architecture group: the level section and the cutaway of occluding walls apply to them as to walls.
 - Sliding and pocket leaves move along the wall by their travel.
+- In the exterior view only the doors to the outside are drawn (an entrance, a garage door); every door inside the building
+  appears in the level section, a room and the walk.
 - A double door is two leaf meshes, each about its own hinge, with a handle on both; a bifold two panels, the second turning
   about the fold, with the handle on its free edge (`leafGeometries(d, i)`, `leafMatrix(d, t, out, i)`).
 - An invisible hit box thicker than the leaf (22 cm) makes a tap at a grazing angle easier.

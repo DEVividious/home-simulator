@@ -11,6 +11,7 @@ import { scoped } from '../solid/scope.ts';
 import type { Geometry } from '../solid/wasm.ts';
 import { adjustForPrint, type Adjustment, type Minimums } from './adjust.ts';
 import { bedContact, components, overhangs, thinSpots, type Overhang, type Overhangs, type ThinSpot } from './checks.ts';
+import type { JointInfo } from './joints.ts';
 import { buildParts, type EavesMode, type PrintNote, type Split } from './parts.ts';
 import type { Bed } from './printers.ts';
 import type { PrintProfile } from './profiles.ts';
@@ -29,6 +30,8 @@ export interface PrintOptions {
   name: string;
   /** recorded in the report as given (versions, the input's hash) */
   meta?: Record<string, string>;
+  /** registration tabs between the stacked parts (default true) */
+  joints?: boolean;
 }
 
 export interface PlainMesh32 { positions: Float32Array; index: Uint32Array }
@@ -72,6 +75,8 @@ export interface PrintModel {
   candidates: ScaleCandidate[];
   parts: PrintPart[];
   split: Split | null;
+  /** the joints between the stacked parts (joints.ts) */
+  joints: JointInfo[];
   adjustments: Adjustment[];
   notes: PrintNote[];
   minimums: Minimums | null;
@@ -84,9 +89,9 @@ const r2 = (x: number) => Math.round(x * 100) / 100 + 0;
 const r1 = (x: number) => Math.round(x * 10) / 10 + 0;
 
 /** sizes of the parts at 1:n [mm] (built with that scale's adjustments, no checks) */
-export function partSizes(data: BuildingData, geo: Geometry, n: number, o: Pick<PrintOptions, 'profile' | 'eaves' | 'bed' | 'margin'>): ScaleCandidate {
+export function partSizes(data: BuildingData, geo: Geometry, n: number, o: Pick<PrintOptions, 'profile' | 'eaves' | 'bed' | 'margin' | 'joints'>): ScaleCandidate {
   const k = mmPerM(n), eaves = o.eaves ?? 'keep', margin = o.margin ?? 10;
-  const parts = scoped((keep) => buildParts(geo, keep, adjustForPrint(data, n, o.profile, eaves).data, n, o.profile, eaves).parts.map((p) => {
+  const parts = scoped((keep) => buildParts(geo, keep, adjustForPrint(data, n, o.profile, eaves).data, n, o.profile, eaves, o.joints ?? true).parts.map((p) => {
     const bb = p.solid.boundingBox(), sizeMm = [0, 1, 2].map((i) => r2((bb.max[i] - bb.min[i]) * k)) as [number, number, number];
     return { id: p.id, sizeMm, fit: fitOnBed(sizeMm, o.bed, margin) };
   }));
@@ -94,7 +99,7 @@ export function partSizes(data: BuildingData, geo: Geometry, n: number, o: Pick<
 }
 
 /** the sizes at every standard scale */
-export const scaleTable = (data: BuildingData, geo: Geometry, o: Pick<PrintOptions, 'profile' | 'eaves' | 'bed' | 'margin'>): ScaleCandidate[] => SCALES.map((n) => partSizes(data, geo, n, o));
+export const scaleTable = (data: BuildingData, geo: Geometry, o: Pick<PrintOptions, 'profile' | 'eaves' | 'bed' | 'margin' | 'joints'>): ScaleCandidate[] => SCALES.map((n) => partSizes(data, geo, n, o));
 
 /** mesh positions transformed: p ↦ M·p + t, as float32 */
 function transformed(P: Float64Array, f: (x: number, y: number, z: number) => Vec3): Float32Array {
@@ -125,13 +130,13 @@ export function printModel(data: BuildingData, geo: Geometry, o: PrintOptions): 
   if (auto) for (const s of SCALES) { const c = partSizes(data, geo, s, o); candidates.push(c); if (c.fits) { n = s; break; } }
   if (n === null) {
     const problems = [`no standard scale down to 1:${SCALES[SCALES.length - 1]} fits the bed ${o.bed.x} × ${o.bed.y}${o.bed.z ? ` × ${o.bed.z}` : ''} mm with a ${margin} mm margin`];
-    const res: Omit<PrintModel, 'report'> = { ok: false, n: null, auto, candidates, parts: [], split: null, adjustments: [], notes: [], minimums: null, problems };
+    const res: Omit<PrintModel, 'report'> = { ok: false, n: null, auto, candidates, parts: [], split: null, joints: [], adjustments: [], notes: [], minimums: null, problems };
     return { ...res, report: printReport(res, o) };
   }
   const scale = n, k = mmPerM(scale);
   const adj = adjustForPrint(data, scale, profile, eaves), adjusted = building(adj.data), titles = new Map(adjusted.levels.map((l) => [l.id, l.name]));
   const built = scoped((keep) => {
-    const b = buildParts(geo, keep, adj.data, scale, profile, eaves);
+    const b = buildParts(geo, keep, adj.data, scale, profile, eaves, o.joints ?? true);
     return {
       ...b,
       parts: b.parts.map((p) => {
@@ -192,7 +197,7 @@ export function printModel(data: BuildingData, geo: Geometry, o: PrintOptions): 
   });
   const problems = parts.length ? [] : ['the building has no rooms'];
   const res: Omit<PrintModel, 'report'> = {
-    ok: !problems.length && parts.every((p) => p.ok), n: scale, auto, candidates, parts, split: built.split, adjustments: adj.changes, notes: built.notes, minimums: adj.minimums, problems,
+    ok: !problems.length && parts.every((p) => p.ok), n: scale, auto, candidates, parts, split: built.split, joints: built.joints, adjustments: adj.changes, notes: built.notes, minimums: adj.minimums, problems,
   };
   return { ...res, report: printReport(res, o) };
 }
@@ -207,6 +212,8 @@ export interface PrintReport {
   profile: PrintProfile;
   scale: { n: number | null; label: string | null; mmPerM: number | null; chosen: 'auto' | 'given'; candidates: { scale: string; fits: boolean; parts: { id: string; sizeMm: [number, number, number]; rotated: boolean }[] }[] };
   split: Split | null;
+  /** the joints between the stacked parts (joints.ts) */
+  joints: JointInfo[];
   minimumsMm: Minimums | null;
   parts: {
     id: string; kind: 'level' | 'roof'; level: string; title: string; file: string | null; sizeMm: [number, number, number]; bedUsePct: [number, number]; rotated: boolean; upsideDown: boolean;
@@ -238,6 +245,7 @@ function printReport(m: Omit<PrintModel, 'report'>, o: PrintOptions): PrintRepor
       candidates: m.candidates.map((c) => ({ scale: scaleLabel(c.n), fits: c.fits, parts: c.parts.map((p) => ({ id: p.id, sizeMm: p.sizeMm, rotated: p.fit.rotated })) })),
     },
     split: m.split,
+    joints: m.joints,
     minimumsMm: m.minimums,
     parts: m.parts.map((p) => ({
       id: p.id, kind: p.kind, level: p.level, title: p.title, file: p.stl ? p.file : null, sizeMm: p.sizeMm, bedUsePct: p.fit.usage, rotated: p.fit.rotated, upsideDown: p.flipped,

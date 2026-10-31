@@ -9,6 +9,10 @@
 - Walls at 45° to the plan axes (chamfered corners, bays, slanted partitions) with doors and windows in them; a room may be a
   triangle. Other angles are an error (`room.angle`).
 - The approval card is written wholly in the user's language, the kind of stairs included.
+- The parts stack like bricks: registration tabs on the top of the exterior walls fit pockets in the part above (`--joints
+  off` leaves them out); the card says how many.
+- A flat roof over a single-storey wing prints with the storey above it, so every storey's part is open from above.
+- Gable windows that are not rectangles (`outline` in `plan.json`: a trapezoid or pentagon under the roof).
 - Fewer questions: the skill names the workspace itself and takes the largest scale that fits, offering a smaller one on the
   approval card.
 - A straight flight ending at a wall with a short landing printed with an open ground-floor part; the landing now runs into the

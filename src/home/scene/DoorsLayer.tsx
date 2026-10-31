@@ -83,13 +83,13 @@ function Door({ d, selected, walking, top }: { d: DoorDef; selected: boolean; wa
 /** smooth start and stop of the leaf (smoothstep over the opening amount) */
 const ease = (t: number) => t * t * (3 - 2 * t);
 
-/** doors in the scene: exterior view and photo matching — no interior doors (invisible from outside, needless draw calls);
- *  section / room — doors of the current level; building walk — all */
+/** doors in the scene: exterior view — only the doors to the outside (an entrance, a garage door; the interior ones are
+ *  invisible from outside, needless draw calls); section / room — doors of the current level; building walk — all */
 export function DoorsLayer({ mode }: { mode: SceneMode }) {
   const sel = useUi((s) => (s.selection?.kind === 'door' ? s.selection.id : null));
   const walking = mode.kind === 'walk' || (mode.kind === 'room' && mode.roomView === 'walk');
   const top = mode.kind === 'room' && mode.roomView === 'top';
-  const list = useMemo(() => (mode.kind === 'exterior' ? [] : interactiveDoors().filter((d) => mode.kind === 'walk' || d.level === mode.level)), [mode.kind, mode.level]);
+  const list = useMemo(() => (mode.kind === 'exterior' ? interactiveDoors().filter((d) => d.rooms.includes('exterior')) : interactiveDoors().filter((d) => mode.kind === 'walk' || d.level === mode.level)), [mode.kind, mode.level]);
   const frames = useMemo(() => {
     const merge = (ds: typeof list) => { const parts = ds.map(frameGeometry).filter((g): g is THREE.BufferGeometry => !!g); const g = parts.length ? mergeGeometries(parts) : null; parts.forEach((p) => p.dispose()); return g; };
     // flush doors: frame hidden in the wall face, in the leaf colour (separate mesh)

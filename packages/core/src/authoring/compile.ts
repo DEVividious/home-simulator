@@ -295,7 +295,7 @@ export function compilePlan(input: PlanInput | unknown, opts: CompileOptions): C
 
   // ---- windows (and the windows of dormer fronts that stand in a wall)
   const windows = new Map<string, RoomJson['openings']>();
-  const addWindow = (w: { id: string; room: string; width: number; sill?: number; head?: number; passable?: boolean }, p: Vec2) => {
+  const addWindow = (w: { id: string; room: string; width?: number; sill?: number; head?: number; passable?: boolean; outline?: [number, number][] }, p: Vec2) => {
     const es = edges.get(w.room);
     if (!es) { err('ref', `window "${w.id}": unknown room "${w.room}"`); return; }
     let best: Edge | null = null, bd = Infinity;
@@ -304,16 +304,20 @@ export function compilePlan(input: PlanInput | unknown, opts: CompileOptions): C
       if (dd < bd) { bd = dd; best = e; }
     }
     if (!best || bd > 0.6) { err('window.wall', `window "${w.id}": "at" is not on a wall of "${w.room}"`); return; }
-    const t = alongOf(best, p), from = r3(t - w.width / 2), to = r3(t + w.width / 2);
-    if (from < best.lo - 0.005 || to > best.hi + 0.005) err('window.span', `window "${w.id}": ${w.width} m does not fit the wall (${r3(best.lo)}…${r3(best.hi)})`);
+    // a polygonal glazing: its corners along the wall (point coordinates, converted like the wall's points) and heights
+    if (w.outline && best.axis === 'D') { err('window.outline', `window "${w.id}": an outline window is for walls along the plan axes`); return; }
+    const corners = w.outline?.map(([a, h]) => [best!.axis === 'X' ? P([a, 0], w.room)[0] : P([0, a], w.room)[1], h] as Vec2);
+    const t = alongOf(best, p), from = corners ? r3(Math.min(...corners.map((q) => q[0]))) : r3(t - w.width! / 2), to = corners ? r3(Math.max(...corners.map((q) => q[0]))) : r3(t + w.width! / 2);
+    if (from < best.lo - 0.005 || to > best.hi + 0.005) err('window.span', `window "${w.id}": ${r3(to - from)} m does not fit the wall (${r3(best.lo)}…${r3(best.hi)})`);
     const interior = plan.rooms.some((r) => r.id !== w.room && r.level === levelOfRoom(w.room) && edges.get(r.id)!.some((o) => { if (!parallel(o, best!) || o.out === best!.out) return false; const e = inFrameOf(best!, o); return (e.c - best!.c) * best!.out > 0 && (e.c - best!.c) * best!.out < 0.6 && Math.min(e.hi, to) - Math.max(e.lo, from) > 0; }));
     if (interior) warn('window.interior', `window "${w.id}" sits on an interior wall of "${w.room}"`);
-    const sill = w.sill ?? (w.passable ? 0 : D.sill), head = w.head ?? D.head;
+    const sill = corners ? Math.min(...corners.map((q) => q[1])) : w.sill ?? (w.passable ? 0 : D.sill), head = corners ? Math.max(...corners.map((q) => q[1])) : w.head ?? D.head;
     const list = windows.get(w.room) ?? [];
     // sill_z / head_z are absolute (project Z), like every height in rooms data — the engine subtracts the room floor
     const fz = levels.get(levelOfRoom(w.room)!)?.floorZ ?? 0;
     const plane = best.axis === 'D' ? { plane_axis: 'D' as const, dir: lineOf(best).dir! } : { plane_axis: best.axis === 'X' ? 'Y' as const : 'X' as const };
-    list.push({ id: w.id, kind: sill < 0.05 ? 'window (floor-to-lintel)' : 'window', ...plane, inner: best.axis === 'D' ? r6(best.c) : best.c, from_: from, to, sill_z: r3(fz + sill), head_z: r3(fz + head) });
+    list.push({ id: w.id, kind: corners ? 'glazing' : sill < 0.05 ? 'window (floor-to-lintel)' : 'window', ...plane, inner: best.axis === 'D' ? r6(best.c) : best.c, from_: from, to, sill_z: r3(fz + sill), head_z: r3(fz + head),
+      ...(corners ? { polygon_YZ: corners.map(([a, h]) => [r3(a), r3(fz + h)]) } : {}) });
     windows.set(w.room, list);
   };
   for (const w of plan.windows) { if (!edges.has(w.room)) { err('ref', `window "${w.id}": unknown room "${w.room}"`); continue; } addWindow(w, P(w.at, w.room)); }
@@ -417,7 +421,11 @@ export function compilePlan(input: PlanInput | unknown, opts: CompileOptions): C
     const onWall = (kind: LineAxis, dir: Vec2 | undefined, cs: number[], from: number, to: number) => es.find((x) => x.axis === kind && (kind !== 'D' || (!!dir && Math.abs(x.dir[0] * dir[1] - x.dir[1] * dir[0]) < 1e-6)) && cs.some((v) => Math.abs(v - x.c) < 1e-5) && from >= x.lo - 0.01 && to <= x.hi + 0.01);
     for (const o of windows.get(r.id) ?? []) {
       const e = onWall(o.plane_axis === 'D' ? 'D' : o.plane_axis === 'Y' ? 'X' : 'Y', o.dir, [o.inner], o.from_, o.to);
-      if (e && o.head_z! - fz > ceilingOver(e, o.from_, o.to) + 0.01) err('window.roof', `window "${o.id}": its head (${r3(o.head_z! - fz)} m) is above the roof plane at its wall (${r3(ceilingOver(e, o.from_, o.to))} m) — lower it, or put it in a dormer`);
+      // a polygonal glazing: every corner under the ceiling at its place
+      if (e && o.polygon_YZ) {
+        const d = inward(e), over = o.polygon_YZ.find(([a, z]) => { const q = linePt(e, a, e.c); return z - fz > c.heightAt(q[0] + d[0], q[1] + d[1]) + 0.01; });
+        if (over) err('window.roof', `window "${o.id}": its corner at ${r3(over[0])} is ${r3(over[1] - fz)} m high, above the ceiling under the roof there — follow the roof plane`);
+      } else if (e && o.head_z! - fz > ceilingOver(e, o.from_, o.to) + 0.01) err('window.roof', `window "${o.id}": its head (${r3(o.head_z! - fz)} m) is above the roof plane at its wall (${r3(ceilingOver(e, o.from_, o.to))} m) — lower it, or put it in a dormer`);
     }
     for (const g of gaps.get(r.id) ?? []) {
       const e = onWall(g.along, g.dir, g.across, g.from_, g.to), h = g.height ?? (g.door_id ? D.doorHeight : null);

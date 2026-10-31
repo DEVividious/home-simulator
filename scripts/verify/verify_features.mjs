@@ -96,6 +96,8 @@ try {
       await ready(); await sleep(1200);
       const pr = await page.evaluate(() => window.__home.project()), sh = await s3('shell'), stairs = await obj('HOME_STAIRS');
       await shot(`${tag}_01_start`);
+      const front = F.p.building.doors.find((d) => d.rooms.includes('exterior')), leaf = front ? await obj(`DOOR_LEAF_${front.id}`) : null;
+      check(`[${tag}] from outside the front door ${front?.id} is drawn (doors to the outside appear in the exterior view)`, !front || (leaf?.tris ?? 0) > 0, `${leaf?.tris} triangles`);
       check(`[${tag}] the package loads, the generated shell is built${s ? ` and the ${s.kind} stairs are in the scene` : ''}`, pr.id === F.id && sh.status === 'ready' && sh.kind !== 'grid' && (!s || (stairs?.tris ?? 0) > 50), `shell ${sh.status} (${sh.kind}); stairs ${stairs?.tris} triangles`);
     });
 

@@ -11,7 +11,9 @@ piers and openings smaller than these at the chosen scale are thickened or widen
 
 - One part per storey (its floor slab and its walls up to the slab above) and a removable roof. The last storey is cut where
   its ceiling or the bottom of the eaves is lowest; the roof part lies on the bed on a flat face (upside down when that needs
-  fewer supports). No connectors, bases or labels: the parts stack on their flat faces.
+  fewer supports). A roof over a lower wing goes with the storey above it, so every storey's part is open from above.
+- The parts stack like bricks: tabs on the top of the exterior walls fit pockets in the part above (`--joints off` leaves them
+  out). No bases or labels.
 - Windows and doors are openings; no glass, leaves or furniture. Stairs print as solid steps or a ramp.
 - `--eaves trim` cuts the overhangs of the roof at the outer faces of the walls (a compact model, fewer supports).
 

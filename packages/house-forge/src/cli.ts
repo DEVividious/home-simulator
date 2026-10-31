@@ -49,7 +49,7 @@ const COMMAND_HELP: Record<string, string> = {
 };
 
 const PY_TOOLS: Record<string, string[]> = { image: ['prepare', 'calibrate'], pdf: ['text', 'svg', 'arcs', 'render'], cad: ['inspect', 'walls', 'dwg2dxf'] };
-const VALUED = new Set(['--name', '--output-dir', '--bed', '--scale', '--nozzle', '--min-wall', '--margin', '--eaves', '--lang', '--from', '--level']);
+const VALUED = new Set(['--name', '--output-dir', '--bed', '--scale', '--nozzle', '--min-wall', '--margin', '--eaves', '--joints', '--lang', '--from', '--level']);
 const FLAGS = new Set(['--help', '-h', '--json', '--scales', '--dry-run', '--details', '--new-version']);
 
 function parse(args: string[]): { opts: Opts; positional: string[] } {

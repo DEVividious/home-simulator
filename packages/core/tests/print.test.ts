@@ -303,3 +303,38 @@ describe('STL and PNG', () => {
     expect(Buffer.from(encodePng(img)).equals(Buffer.from(png))).toBe(true);
   });
 });
+
+describe('stacked parts: a lower level open from above, registration joints', () => {
+  it('a flat roof over a ground-floor wing goes with the upper floor: the ground floor part ends under the upper slab, open', () => {
+    const b = PACKAGES['roof-wing-flat'](), m = printModel(b, geo, { bed: K1C, profile: FDM, scale: 75, name: 'wing', joints: false }), k = 1000 / 75;
+    expect(m.ok).toBe(true);
+    const [G, U] = m.parts, zc = (2.85 - 0.25) * k, top = (p: typeof G) => { let v = -Infinity; for (let i = 2; i < p.model.positions.length; i += 3) v = Math.max(v, p.model.positions[i]); return v; };
+    expect(top(G)).toBeCloseTo(zc, 3);                                          // no roof over the garage in the ground floor part
+    expect(m.notes.map((x) => x.code)).toContain('roof.carried');
+    expect(U.sizeMm[0]).toBeGreaterThan(8.0 * k);                              // the upper part reaches over the wing (the flat roof)
+  });
+  it('joints: tabs on the walls of every part, pockets in the part on it — they fit, with the clearance; the outer faces stay plain', () => {
+    for (const id of ['sample-house', 'roof-wing-flat']) {
+      const m = printModel(PACKAGES[id](), geo, { bed: K1C, profile: FDM, scale: 75, name: id }), off = printModel(PACKAGES[id](), geo, { bed: K1C, profile: FDM, scale: 75, name: id, joints: false });
+      expect(m.ok, id).toBe(true);
+      expect(m.joints.length).toBe(m.parts.length - 1);
+      for (const j of m.joints) { expect(j.made, `${id} ${j.between}`).toBe(true); expect(j.tabs).toBeGreaterThanOrEqual(3); expect(j.heightMm).toBe(1.6); }
+      // the plan size of every part is the same with and without joints (nothing on the outer faces), the parts below are taller
+      m.parts.forEach((p, i) => { expect(p.sizeMm[0]).toBeCloseTo(off.parts[i].sizeMm[0], 1); expect(p.sizeMm[1]).toBeCloseTo(off.parts[i].sizeMm[1], 1); });
+      expect(m.parts[0].sizeMm[2]).toBeCloseTo(off.parts[0].sizeMm[2] + 1.6, 1);
+      expect(m.report.joints).toEqual(m.joints);
+    }
+    // stacked in the building, a part's tabs (grown by a little less than the clearance) touch nothing of the part above
+    scoped((keep) => {
+      const parts = buildParts(geo, keep, adjustForPrint(PACKAGES['sample-house'](), 75, FDM).data, 75, FDM, 'keep', true).parts;
+      const plain = buildParts(geo, keep, adjustForPrint(PACKAGES['sample-house'](), 75, FDM).data, 75, FDM, 'keep', false).parts;
+      for (let i = 0; i + 1 < parts.length; i++) {
+        const tabs = keep(parts[i].solid.subtract(plain[i].solid));
+        expect(tabs.volume()).toBeGreaterThan(0);
+        expect(keep(tabs.intersect(parts[i + 1].solid)).volume()).toBe(0);
+        // the pockets (what the upper part lost) are larger than the tabs that go into them
+        expect(keep(plain[i + 1].solid.subtract(parts[i + 1].solid)).volume()).toBeGreaterThan(tabs.volume());
+      }
+    });
+  });
+});

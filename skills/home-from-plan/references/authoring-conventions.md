@@ -46,6 +46,11 @@ These rules make a package correct for the engine and stable for the user's save
 - `room`, `at` = a point on the wall in the middle of the window, `width`. Defaults: sill 0.85, head 2.35; bathrooms often sill
   1.4 / head 2.1; kitchen above the worktop sill ~1.0. A glazed door to a terrace or balcony: `sill: 0` and `passable: true` if
   the plot (`site`) exists and one can walk out.
+- A glazing that is not a rectangle — a gable window under the roof (a trapezoid, a pentagon up into the gable) — has
+  `outline` instead of `width` / `sill` / `head`: its corners as `[coordinate along the wall, height above the room floor]`
+  (x for a wall along X, y for a wall along Y; px in a px plan), every corner under the ceiling at its place; `at` still
+  names the wall. Walls along the plan axes only. Only a glazing one can walk through gets `passable` (a lift-and-slide or a
+  balcony door) — a fixed pane reaching the floor does not.
 - Windows belong on exterior walls (the compiler warns otherwise).
 
 ## Stairs

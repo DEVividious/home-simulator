@@ -23,6 +23,7 @@ import { roofSolid, roofWindowsOf } from '../solid/roofSolid.ts';
 import type { Keep } from '../solid/scope.ts';
 import type { CrossSection, Geometry, Manifold } from '../solid/wasm.ts';
 import type { PrintProfile } from './profiles.ts';
+import { joinParts, type JointInfo } from './joints.ts';
 import { mmPerM } from './scale.ts';
 
 export { builtLevels };
@@ -88,6 +89,30 @@ export function solidInputs(data: BuildingData): BuildingData {
   const d = JSON.parse(JSON.stringify(data)) as BuildingData;
   for (const r of d.rooms.rooms) r.roof_windows = [];
   for (const dm of d.roof?.dormers ?? []) delete dm.window;
+  return d;
+}
+
+/**
+ * A carried roof joined to the level above it. They only touch where the roof meets that level's walls, and solids that only
+ * touch keep a seam of two coincident faces (a joint's pocket across it would open it): a strip 5 mm either side of the seam,
+ * through the thickness of the level's slab, makes them overlap.
+ */
+function seamed(geo: Geometry, keep: Keep, level: Manifold, roof: Manifold, footprint: Vec2[][], z0: number, z1: number): Manifold {
+  const fp = keep(new geo.CrossSection(footprint)), sec = keep(roof.slice(Math.min(z1, z0 + 0.01)));
+  const strip = keep(keep(sec.offset(PROUD, 'Miter', 2)).intersect(keep(fp.offset(PROUD, 'Miter', 2))));
+  const parts = [level, roof];
+  if (strip.area() > 1e-9) parts.push(prism(keep, strip, snap(z0), snap(z1)));
+  return keep(geo.Manifold.union(parts));
+}
+
+/** the building block without the roof parts over one level (its dormers too); a roof left without parts is dropped */
+function withoutRoofOf(data: BuildingData, level: LevelId): BuildingData {
+  const d: BuildingData = JSON.parse(JSON.stringify(data));
+  if (!d.roof) return d;
+  const gone = new Set(d.roof.parts.filter((p) => p.level === level).map((p) => p.id));
+  d.roof.parts = d.roof.parts.filter((p) => !gone.has(p.id));
+  d.roof.dormers = (d.roof.dormers ?? []).filter((x) => !gone.has(x.part));
+  if (!d.roof.parts.length) delete d.roof;
   return d;
 }
 
@@ -195,9 +220,11 @@ export interface PartSolid {
   /** heights for the thin-wall sections, and the plan region they are checked in (null: everywhere) */
   sections: number[];
   mask: Vec2[][] | null;
+  /** the outline loops of the walls of its level (the joint to the part above stands on them) */
+  footprint?: Vec2[][];
 }
 
-export interface BuiltParts { parts: PartSolid[]; split: Split | null; notes: PrintNote[] }
+export interface BuiltParts { parts: PartSolid[]; split: Split | null; notes: PrintNote[]; joints: JointInfo[] }
 
 const keepBelow = (keep: Keep, m: Manifold, z: number) => keep(m.trimByPlane([0, 0, -1], -z));
 const keepAbove = (keep: Keep, m: Manifold, z: number) => keep(m.trimByPlane([0, 0, 1], z));
@@ -211,9 +238,10 @@ function sectionHeights(b: Building, level: LevelId, base: number, top: number):
 }
 
 /** The parts of an adjusted building block at 1:n: the solids of every level, the last one split, and the roof part. */
-export function buildParts(geo: Geometry, keep: Keep, data: BuildingData, n: number, profile: PrintProfile, eaves: EavesMode): BuiltParts {
+/** `joints`: registration tabs between the stacked parts (joints.ts; default on) */
+export function buildParts(geo: Geometry, keep: Keep, data: BuildingData, n: number, profile: PrintProfile, eaves: EavesMode, joints = true): BuiltParts {
   const withWindows = building(data), inputs = solidInputs(data), b = building(inputs), levels = builtLevels(b), notes: PrintNote[] = [];
-  if (!levels.length) return { parts: [], split: null, notes };
+  if (!levels.length) return { parts: [], split: null, notes, joints: [] };
   const k = mmPerM(n), [lo, hi] = span(b), parts: PartSolid[] = [], last = levels[levels.length - 1].id;
   const ramp = (s: StairDef) => s.riser * k < profile.step || s.tread * k < profile.step;
   const built = new Set(levels.map((l) => l.id));
@@ -243,33 +271,42 @@ export function buildParts(geo: Geometry, keep: Keep, data: BuildingData, n: num
     }
     return m;
   };
-  for (const l of levels) {
-    if (l.id === last) continue;
-    const s = levelSolid(geo, keep, b, l.id, { roofOverlap: PROUD })!, f = s.frame;
-    let m = arriving(withStairs(s.solid, b, l.id, f.top), b, l.id);
-    const roof = roofSolid(geo, keep, b, l.id, lo, hi);
+  // a roof over a lower level (a wing beside a smaller upper floor) is cut at the underside of the next level's slab: what is
+  // above goes with the next level's part, so every level's part stays open from above and the parts stack like floors
+  let carry: Manifold | null = null;
+  levels.forEach((l, i) => {
+    if (l.id === last) return;
+    const roof = roofSolid(geo, keep, b, l.id, lo, hi), next = levels[i + 1], zc = snap(next.floorZ - b.shell.slab);
+    // a roofed level is built as a level under another one: its rooms open through the top at the next slab's underside
+    const bl = roof ? building(withoutRoofOf(inputs, l.id)) : b, s = levelSolid(geo, keep, bl, l.id, { roofOverlap: PROUD })!, f = s.frame;
+    let m = arriving(withStairs(s.solid, bl, l.id, f.top), bl, l.id);
+    if (carry) { m = seamed(geo, keep, m, carry, s.plan.footprint, f.bottom, f.floor); carry = null; }
     if (roof) {
-      notes.push({ code: 'roof.fixed', element: l.id, message: `the roof over level ${l.id} is printed with its level (only the roof of the last level comes off)` });
       const pockets = windowRecesses(geo, keep, withWindows, l.id, profile, n, notes);
-      m = keep(geo.Manifold.union([m, roof.solid]));
-      if (pockets.length) m = keep(m.subtract(keep(geo.Manifold.union(pockets))));
+      let r = roof.solid;
+      if (pockets.length) r = keep(r.subtract(keep(geo.Manifold.union(pockets))));
+      const up = keepAbove(keep, r, zc), cut = zc - r.boundingBox().min[2];
+      if (!up.isEmpty()) carry = up;
+      notes.push({ code: 'roof.carried', element: l.id, message: `the roof over level ${l.id} is printed with level ${next.id}'s part: the part of level ${l.id} stays open from above${cut > 0.005 ? ` (its lowest ${Math.round(cut * 100)} cm, under the cut, are not printed)` : ''}` });
     }
     const top = m.boundingBox().max[2];
-    parts.push({ id: l.id, kind: 'level', level: l.id, base: f.bottom, top, solid: m, sections: sectionHeights(b, l.id, f.bottom, f.top), mask: null });
-  }
+    parts.push({ id: l.id, kind: 'level', level: l.id, base: f.bottom, top, solid: m, sections: sectionHeights(bl, l.id, f.bottom, f.top), mask: null, footprint: s.plan.footprint });
+  });
   // the last level: its part below the split, the roof part above it
   const split = splitHeight(b, last, eaves), z = split.z;
   const below = building(atSplit(inputs, last, z, 'below')), above = building(atSplit(inputs, last, z, 'above'));
   const sb = levelSolid(geo, keep, below, last, { roofOverlap: PROUD })!, footprint = sb.plan.footprint;
   let lower = arriving(withStairs(sb.solid, below, last, z), below, last);
+  const carried = carry as Manifold | null;
+  if (carried) lower = seamed(geo, keep, lower, carried, sb.plan.footprint, sb.frame.bottom, sb.frame.floor);
   const roofed = !!b.roof?.byLevel(last).length, fp = () => prism(keep, loopsSection(geo, keep, footprint), lo, hi);
   if (roofed && split.roofBelow) {
     const r = roofSolid(geo, keep, below, last, lo, hi);
     if (r) lower = keep(geo.Manifold.union([lower, keep(r.solid.intersect(fp()))]));
   }
-  parts.push({ id: last, kind: 'level', level: last, base: sb.frame.bottom, top: z, solid: keepBelow(keep, lower, z), sections: sectionHeights(b, last, sb.frame.bottom, z), mask: null });
+  parts.push({ id: last, kind: 'level', level: last, base: sb.frame.bottom, top: z, solid: keepBelow(keep, lower, z), sections: sectionHeights(b, last, sb.frame.bottom, z), mask: null, footprint });
   const sa = levelSolid(geo, keep, above, last, { roofOverlap: PROUD })!, r = roofed ? roofSolid(geo, keep, above, last, lo, hi) : null;
-  let upper = keepAbove(keep, r ? keep(geo.Manifold.union([sa.solid, r.solid])) : sa.solid, z);
+  let upper = keepAbove(keep, keep(geo.Manifold.union([sa.solid, ...(r ? [r.solid] : []), ...(carried ? [carried] : [])])), z);
   if (eaves === 'trim' && roofed) {
     upper = keep(upper.intersect(fp()));
     notes.push({ code: 'eaves.trimmed', element: 'roof', message: 'the eaves and verges are cut at the outer faces of the walls (--eaves trim)' });
@@ -279,5 +316,15 @@ export function buildParts(geo: Geometry, keep: Keep, data: BuildingData, n: num
   const pockets = roofed ? windowRecesses(geo, keep, withWindows, last, profile, n, notes) : [];
   if (pockets.length) upper = keep(upper.subtract(keep(geo.Manifold.union(pockets))));
   parts.push({ id: 'roof', kind: 'roof', level: last, base: z, top: upper.boundingBox().max[2], solid: upper, sections: [snap(z + 0.01)], mask: footprint });
-  return { parts, split, notes };
+  // the joints: tabs on every part's walls, pockets in the part stacked on it
+  const made: JointInfo[] = [];
+  if (joints) for (let i = 0; i + 1 < parts.length; i++) {
+    const a = parts[i], c = parts[i + 1];
+    if (!a.footprint) continue;
+    const j = joinParts(geo, keep, a.solid, c.solid, a.footprint, b.shell.exteriorWall, c.base, mmPerM(n), profile, [a.id, c.id]);
+    a.solid = j.lower; c.solid = j.upper; a.top = Math.max(a.top, j.lower.boundingBox().max[2]);
+    made.push(j.info);
+    if (!j.info.made) notes.push({ code: 'joint.none', element: `${a.id}/${c.id}`, message: `no joint between ${a.id} and ${c.id}: ${j.info.reason}` });
+  }
+  return { parts, split, notes, joints: made };
 }

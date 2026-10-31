@@ -14,8 +14,8 @@ const compiled = (p: string): BuildingData => {
 };
 
 /** plan fixtures with roofs: gable along X and along Y (an attic with dormers, roof windows, a chimney), hip, shed, flat with a
- *  parapet, L-shaped gable, T-shaped hip */
-export const ROOF_FIXTURES = ['roof-gable-x', 'roof-gable-y', 'roof-hip', 'roof-shed', 'roof-flat', 'roof-l-gable', 'roof-t-hip'];
+ *  parapet, L-shaped gable, T-shaped hip, a flat-roofed ground-floor wing wrapped round a smaller upper floor */
+export const ROOF_FIXTURES = ['roof-gable-x', 'roof-gable-y', 'roof-hip', 'roof-shed', 'roof-flat', 'roof-l-gable', 'roof-t-hip', 'roof-wing-flat'];
 /** plan fixtures with the other stair kinds: a straight flight (up east, with a short top landing), L-shaped stairs (up north,
  *  turning left — turned and mirrored) */
 export const STAIR_FIXTURES = ['stairs-straight', 'stairs-l'];

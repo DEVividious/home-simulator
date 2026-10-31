@@ -34,7 +34,9 @@ export function splitNeedles(P: ArrayLike<number>, index: Uint32Array, hMin: num
       if (o === undefined || !alive[o] || o === i) continue;
       const u = tris[o], d = u.find((v) => v !== a && v !== b)!;
       // (a, b, c) and (b, a, d) become (c, a, d) and (c, d, b); a → d, d → b, b → c, c → a stay — only when neither is a needle
-      if (height([c, a, d]) < hMin || height([c, d, b]) < hMin) continue;
+      // a flat triangle (no area at all) is flipped even when the new ones are thin — only not into flat ones again
+      const flat = height(t) < 1e-9, h1 = height([c, a, d]), h2 = height([c, d, b]);
+      if (flat ? h1 < 1e-9 || h2 < 1e-9 : h1 < hMin || h2 < hMin) continue;
       alive[i] = alive[o] = false;
       for (const x of [t, u]) for (let j = 0; j < 3; j++) if (edgeOf.get(key(x[j], x[(j + 1) % 3])) === (x === t ? i : o)) edgeOf.delete(key(x[j], x[(j + 1) % 3]));
       tris.push([c, a, d], [c, d, b]); alive.push(true, true);

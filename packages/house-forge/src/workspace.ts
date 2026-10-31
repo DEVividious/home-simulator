@@ -41,6 +41,8 @@ export interface BuildSettings {
   minWall: number | null;
   margin: number;
   eaves: 'keep' | 'trim';
+  /** registration tabs between the stacked parts (absent in builds made before 0.2.0: on) */
+  joints?: boolean;
   lang: string;
 }
 

@@ -275,3 +275,33 @@ describe('compiler checks', () => {
     expect(B.roomById.get('R')!.ceiling.heightAt(5, 4)).toBeCloseTo(2.5, 6);
   });
 });
+
+describe('a gable window with a polygonal outline (plan.json `outline`)', () => {
+  it('compiles to polygon_YZ glazing, cut to its outline, framed along every side; a corner above the roof is an error', async () => {
+    const { windowMeshes } = await import('@home-sim/core/solid/frames');
+    // roof-gable-y: the ridge along Y — the walls along X are gables; a pentagon in the south gable of a room under the roof
+    const b0 = building(compilePlan(planOf('roof-gable-y'), { catalog: null }).project!.building), room = b0.rooms.find((r) => r.ceiling.kind === 'roof')!;
+    const [x0, y0, x1] = room.bbox, xm = (x0 + x1) / 2, h = (x: number) => room.ceiling.heightAt(x, y0 + 0.01);
+    const corners = [[xm - 0.5, 0.3], [xm - 0.5, h(xm - 0.5) - 0.15], [xm, h(xm) - 0.15], [xm + 0.5, h(xm + 0.5) - 0.15], [xm + 0.5, 0.3]];
+    const p = planOf('roof-gable-y');
+    p.windows = [...(p.windows ?? []), { id: 'WG', room: room.id, at: [xm, y0], outline: corners }];
+    const r = compilePlan(p, { catalog: null });
+    expect(r.issues.filter((i) => i.level === 'error')).toEqual([]);
+    const o = r.project!.building.rooms.rooms.find((x) => x.id === room.id)!.openings.find((x) => x.id === 'WG')!;
+    expect(o.polygon_YZ).toHaveLength(5); expect(o.plane_axis).toBe('Y'); expect(o.to - o.from_).toBeCloseTo(1.0, 6);
+    const b = building(r.project!.building);
+    scoped((keep) => {
+      const s = levelSolid(geo, keep, b, room.level)!;
+      expect(s.solid.status()).toBe('NoError');
+      const w = s.windows.find((x) => x.id === 'WG')!;
+      expect(w.outline).toHaveLength(5);
+      const mesh = windowMeshes([w]);
+      expect(mesh.frames.index.length / 3).toBe(5 * 12);                     // a bar (6 quads) along each of the 5 sides
+      expect(mesh.glass.index.length / 3).toBe(3 * 2 * 2);                   // a fan of 3, on both faces
+    });
+    // a corner above the roof plane is refused
+    const q = planOf('roof-gable-y');
+    q.windows = [...(q.windows ?? []), { id: 'WG', room: room.id, at: [xm, y0], outline: [[xm - 0.5, 0.3], [xm, h(xm) + 0.3], [xm + 0.5, 0.3]] }];
+    expect(compilePlan(q, { catalog: null }).issues.map((i) => i.code)).toContain('window.roof');
+  });
+});

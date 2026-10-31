@@ -680,6 +680,7 @@
       "description": "a point on the window wall, in the middle of the window"
      },
      "width": {
+      "description": "width along the wall [m] (not with outline)",
       "type": "number",
       "exclusiveMinimum": 0
      },
@@ -691,6 +692,25 @@
       "type": "number",
       "exclusiveMinimum": 0
      },
+     "outline": {
+      "description": "a glazing that is not a rectangle (a gable window under the roof): its corners as [coordinate along the wall (a point coordinate: x for a wall along X, y along Y; px in a px plan), height above the room floor (m)] — instead of width / sill / head; walls along the plan axes only",
+      "minItems": 3,
+      "type": "array",
+      "items": {
+       "type": "array",
+       "prefixItems": [
+        {
+         "type": "number"
+        },
+        {
+         "type": "number"
+        }
+       ],
+       "items": false,
+       "minItems": 2,
+       "maxItems": 2
+      }
+     },
      "passable": {
       "description": "floor-level glazed door one can walk through onto the terrain",
       "type": "boolean"
@@ -699,8 +719,7 @@
     "required": [
      "id",
      "room",
-     "at",
-     "width"
+     "at"
     ],
     "additionalProperties": false
    }

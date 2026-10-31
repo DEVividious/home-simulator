@@ -34,6 +34,8 @@ checked (watertight, one solid, read back) and fitted on the bed.
   --min-wall <mm>               override the profile's smallest wall
   --margin <mm>                 kept free on every side of the bed — default 10
   --eaves keep | trim           trim: cut the eaves and verges at the outer faces of the walls — default keep
+  --joints on | off             registration tabs on the walls and pockets in the part above, so the parts stack like
+                                bricks — default on
   --scales                      list the standard scales with the size of every part, write nothing
   --dry-run                     build and check, write dry-run.json and a preview, print the approval card — no STL
   --details                     with the card: every printability change, note and overhang
@@ -51,10 +53,12 @@ function settingsFrom(o: Opts, base?: BuildSettings): BuildSettings {
     minWall: num('--min-wall') ?? base?.minWall ?? null,
     margin: num('--margin') ?? base?.margin ?? 10,
     eaves: ((o['--eaves'] as string | undefined) ?? base?.eaves ?? 'keep') as BuildSettings['eaves'],
+    joints: o['--joints'] !== undefined ? o['--joints'] === 'on' : base?.joints ?? true,
     lang: (o['--lang'] as string | undefined) ?? base?.lang ?? 'en',
   };
   if (!s.bed) throw new UsageError(`--bed is required: a printer ("K1C", "Prusa MK4") or the bed size in mm ("220x220x250")\n\n${PRINT_HELP}`);
   if (s.eaves !== 'keep' && s.eaves !== 'trim') throw new UsageError(`--eaves must be keep or trim, not ${s.eaves}`);
+  if (o['--joints'] !== undefined && o['--joints'] !== 'on' && o['--joints'] !== 'off') throw new UsageError(`--joints must be on or off, not ${String(o['--joints'])}`);
   if (!LANGS.includes(s.lang)) throw new UsageError(`--lang ${s.lang}: one of ${LANGS.join(', ')}`);
   return s;
 }
@@ -77,6 +81,7 @@ function buildCommand(ws: Workspace, s: BuildSettings, outputDir: string | undef
   if (s.minWall !== null) a.push(`--min-wall ${s.minWall}`);
   if (s.margin !== 10) a.push(`--margin ${s.margin}`);
   if (s.eaves !== 'keep') a.push(`--eaves ${s.eaves}`);
+  if (s.joints === false) a.push('--joints off');
   if (s.lang !== 'en') a.push(`--lang ${s.lang}`);
   if (outputDir) a.push(`--output-dir ${q(outputDir)}`);
   return a.join(' ');
@@ -97,6 +102,9 @@ function facts(m: PrintModel, p: Parsed, details: boolean): string[] {
   out.push(`- Printer: ${bedText(p.bed)}, ${p.margin} mm margin`);
   out.push(`- ${m.parts.length} part(s), each printed on its own:`, ...partLines(m));
   if (m.split) out.push(`- The roof comes off at ${m.split.z.toFixed(2)} m (${SPLIT_RULE[m.split.rule]})`);
+  const joined = m.joints.filter((j) => j.made);
+  if (joined.length) out.push(`- The parts stack and lock: ${joined.map((j) => `${j.tabs} tabs (${j.heightMm} mm) on ${j.between[0]} into ${j.between[1]}`).join('; ')}, ${p.profile.clearance} mm clearance`);
+  for (const j of m.joints.filter((x) => !x.made)) out.push(`- No joint between ${j.between[0]} and ${j.between[1]}: ${j.reason}`);
   out.push(`- Profile: ${p.profile.label} — walls at least ${p.profile.wall} mm on the print`);
   if (m.adjustments.length) {
     const list = m.adjustments.map((a) => `${a.element}: ${a.scaledMm} → ${a.printedMm} mm (${a.rule})`);
@@ -124,7 +132,7 @@ export async function printCommand(o: Opts): Promise<number> {
   const geo = await geometry();
   if (o['--scales']) {
     console.log(`${id}: part sizes on ${bedText(p.bed)} (margin ${p.margin} mm, ${p.profile.id})`);
-    for (const c of scaleTable(data, geo, { bed: p.bed, profile: p.profile, margin: p.margin, eaves: s.eaves })) {
+    for (const c of scaleTable(data, geo, { bed: p.bed, profile: p.profile, margin: p.margin, eaves: s.eaves, joints: s.joints ?? true })) {
       console.log(`  ${scaleLabel(c.n).padEnd(6)} ${c.fits ? 'fits    ' : 'too big '} ${c.parts.map((x) => `${x.id} ${mm(x.sizeMm)}${x.fit.rotated ? ' (turned)' : ''}`).join(' · ')}`);
     }
     return 0;
@@ -194,5 +202,5 @@ export async function printCommand(o: Opts): Promise<number> {
 }
 
 function buildModel(data: BuildingData, geo: Awaited<ReturnType<typeof geometry>>, id: string, p: Parsed, s: BuildSettings, meta: Record<string, string>): PrintModel {
-  return printModel(data, geo, { bed: p.bed, profile: p.profile, scale: p.scale, margin: p.margin, eaves: s.eaves, name: id, meta });
+  return printModel(data, geo, { bed: p.bed, profile: p.profile, scale: p.scale, margin: p.margin, eaves: s.eaves, joints: s.joints ?? true, name: id, meta });
 }
