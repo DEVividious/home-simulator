@@ -192,7 +192,10 @@ export async function runAcceptance(ctx, EN) {
 
   // ---- 7. floor material (a tap on the material card applies it)
   await K.openSheet('arrange');
-  await tap(S.arrangeTab('colours'));
+  await tap(S.arrangeTab('colours')); await sleep(400);
+  // the whole wall palette is in view in the half-open sheet, its last row not under the tabs
+  const palette = await page.$$eval('[data-testid="paint-colors"] button.hm-sw', (bs) => bs.map((b) => { const r = b.getBoundingClientRect(), x = r.left + r.width / 2, y = r.top + r.height / 2, e = document.elementFromPoint(x, y); return !!e && (e === b || b.contains(e)); }));
+  check('7a. colours on a phone: every swatch of the wall palette can be tapped (none under the tabs)', palette.length >= 20 && palette.every(Boolean), `${palette.filter(Boolean).length} / ${palette.length} swatches in view`);
   await tap(T('surface-floor'));
   const f0 = JSON.stringify((await st()).arrangement.finishes.floor ?? null);
   const mats = await page.$$eval(`${T('materials')} [data-testid^="mat-"]`, (els) => els.map((e) => ({ id: e.dataset.testid, on: e.classList.contains('on') })));

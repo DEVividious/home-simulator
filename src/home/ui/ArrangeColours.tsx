@@ -1,7 +1,7 @@
 // ARRANGE › Colours: Walls | Floor | Ceiling, the kinds of finish, the palette with "Original" first, the materials. The whole room
 // by default; a click on a wall in the scene chooses that wall only ("Walls" goes back to the whole room). Advanced mode adds the
 // whole-home scope, several chosen walls and the tile / board layout (ADR 0038).
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { applyFinish, applyWallsHouse, HOUSE_WALL_ROOMS, previewFinish, previewWallsHouse } from '../actions';
 import {
   categoriesFor, categoryName, editableLayout, effectiveTexture, isParquet, isPlanks, isTiled, LAYOUT_LIMITS, materialById, materialsFor, neutralFinish, type MaterialDef,
@@ -9,6 +9,7 @@ import {
 import { wallLabel, type HomeRoom } from '../model/rooms';
 import type { FinishLayout, FinishRef } from '../model/types';
 import { useArrangement } from '../store/design';
+import { useLayout } from '../store/layout';
 import { selectedWallIds, ui, useUi } from '../store/ui';
 import { materialThumbnail } from '../three/textures';
 import { fmtNum, t } from '../../i18n';
@@ -90,6 +91,14 @@ export function ArrangeColours({ room }: { room: HomeRoom }) {
   const apply = (ref: FinishRef | null, label?: string) => (house ? applyWallsHouse(ref, label) : applyFinish(room, target, ref, label));
   const mats = materialsFor(kind, [cat]);
   const isPaint = cat === 'wall-paint';
+  // on a phone the half-open sheet showed only the top of the palette, its lower swatches under the tabs: the sheet scrolls so
+  // the whole palette is in view (after the sheet's own scroll to the top on a new selection)
+  const mobile = useLayout((l) => l.mobile), palette = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!mobile || !isPaint) return;
+    const f = requestAnimationFrame(() => palette.current?.scrollIntoView({ block: 'nearest' }));
+    return () => cancelAnimationFrame(f);
+  }, [mobile, isPaint, kind]);
   const paintBase = curMat && curMat.category === cat ? curMat.id : mats[0]?.id;
   const what = kind === 'floor' ? t('steps.floor') : kind === 'ceiling' ? t('steps.ceiling') : one ? t('steps.thisWall') : t('steps.walls');
   const original = (
@@ -118,7 +127,7 @@ export function ArrangeColours({ room }: { room: HomeRoom }) {
         {cats.map((c) => <button key={c.id} type="button" className={c.id === cat ? 'on' : ''} onClick={() => setCat(c.id)} data-testid={`mcat-${c.id}`}>{categoryName(c.id)}</button>)}
       </div>
       {isPaint && (
-        <div className="hm-palette" data-testid="palette">
+        <div className="hm-palette" data-testid="palette" ref={palette}>
           {original}
           <Swatches value={cur?.color ?? (curMat?.category === cat ? curMat?.baseColor : null)} colors={PAINT_COLORS} recent={recent} testid="paint-colors"
             onPreview={(hex) => { const ref = { materialId: paintBase, color: hex }; if (house) previewWallsHouse(ref); else previewFinish(room, target, ref); }}
