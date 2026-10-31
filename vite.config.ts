@@ -12,7 +12,7 @@ function documentApi(): Plugin {
   const root = process.cwd();
   return {
     name: 'home-simulator-document-api',
-    configureServer(server) { server.middlewares.use(configApiMiddleware(root)); server.middlewares.use(importApiMiddleware(root)); },
+    configureServer(server) { server.middlewares.use(configApiMiddleware(root, true)); server.middlewares.use(importApiMiddleware(root)); },
     configurePreviewServer(server) { server.middlewares.use(configApiMiddleware(root)); server.middlewares.use(importApiMiddleware(root)); },
   };
 }

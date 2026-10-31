@@ -4,7 +4,7 @@
 // underside planes (from the knee height or the 1.40 / 2.20 lines, and the pitch). Dormers stand on one plane of a part and are
 // carried back to its ridge; chimneys run from the slab of the lowest level they stand in. A level slope without a roof block
 // becomes a gable part with exactly the planes of the old attic ceilings. The checks a union cannot make are made here.
-import { area } from '../model/geom2d.ts';
+import { area, distToPolygonEdges, pointInPolygon } from '../model/geom2d.ts';
 import { outerOutline } from '../model/outline.ts';
 import { gableExtent, inRegion, planeJson, planeZ, raise, regionPolygon, roofModel, ROOF_DEFAULTS, surfaceAt, surfaceRange, type Plane, type RoofModel } from '../model/roof.ts';
 import type { DormerJson, Rect, RoofJson, RoofPartJson, Vec2 } from '../package/types.ts';
@@ -199,9 +199,13 @@ export function compileRoof(ctx: RoofContext): CompiledRoof {
       if (hits) p.over[i] = 0;
     });
     // a level above the part's roof
+    // (a polygon part: some point of the level's walls more than half a wall inside the polygon — its bounding box may reach
+    // under a level that only stands beside it)
+    const h = (t + 0.02) / 2, inPart = (x: number, y: number) => !p.polygon || (pointInPolygon([x, y], p.polygon, 0) && distToPolygonEdges([x, y], p.polygon) >= h);
+    const overlaps = (g: number[]) => { for (let x = g[0] + h; x <= g[2] - h; x += 0.05) for (let y = g[1] + h; y <= g[3] - h; y += 0.05) if (inPart(x, y)) return true; return false; };
     for (const l of up) for (const g of grownRooms(l).map(bboxOf)) {
       const w = Math.min(g[2], b[2]) - Math.max(g[0], b[0]), d = Math.min(g[3], b[3]) - Math.max(g[1], b[1]);
-      if (w > t + 0.02 && d > t + 0.02) { err('roof.levelAbove', `roof part "${p.id}": level "${l}" stands over it — a roof part covers the top of its level`); break; }
+      if (w > t + 0.02 && d > t + 0.02 && overlaps([Math.max(g[0], b[0]), Math.max(g[1], b[1]), Math.min(g[2], b[2]), Math.min(g[3], b[3])])) { err('roof.levelAbove', `roof part "${p.id}": level "${l}" stands over it — a roof part covers the top of its level`); break; }
     }
   }
 

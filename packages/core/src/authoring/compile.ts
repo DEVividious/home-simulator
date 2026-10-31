@@ -211,7 +211,7 @@ export function compilePlan(input: PlanInput | unknown, opts: CompileOptions): C
         for (const o2 of eb) {
           if (!parallel(e1, o2) || o2.out === e1.out) continue;
           const e2 = inFrameOf(e1, o2), gap = (e2.c - e1.c) * e1.out;
-          if (gap <= 0 || gap > 0.6 || from < e2.lo - 0.005 || to > e2.hi + 0.005) continue;
+          if (gap <= 0 || gap > 0.8 || from < e2.lo - 0.005 || to > e2.hi + 0.005) continue;   // up to a wall with a flue in it
           const mid = (e1.c + e2.c) / 2, off = Math.abs(acrossOf(e1, p) - mid), score = off + Math.abs(t - (from + to) / 2);
           if (off > gap / 2 + 0.3) continue;                 // "at" must be on (or right next to) this wall
           if (!best || score < best.score) best = { score, res: { axis: e1.axis, frame: e1, faces: [Math.min(e1.c, e2.c), Math.max(e1.c, e2.c)].map(r3) as [number, number], from, to, edgeA: e1, edgeB: o2 } };

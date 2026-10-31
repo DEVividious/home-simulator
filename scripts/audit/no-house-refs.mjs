@@ -54,7 +54,8 @@ const walk = (p) => {
   const abs = path.join(ROOT, p);
   if (!fs.existsSync(abs)) return;
   const st = fs.statSync(abs);
-  if (st.isDirectory()) { for (const e of fs.readdirSync(abs)) if (!SKIP_DIRS.has(e)) walk(path.join(p, e)); }
+  // local projects (projects/local-*) are a developer's own buildings, kept out of git (.gitignore) — not scanned
+  if (st.isDirectory()) { for (const e of fs.readdirSync(abs)) if (!SKIP_DIRS.has(e) && !(p === 'projects' && e.startsWith('local-'))) walk(path.join(p, e)); }
   else if (TEXT.test(p) && p !== SELF) files.push(p);
 };
 SCAN.forEach(walk);

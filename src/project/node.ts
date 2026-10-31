@@ -41,12 +41,16 @@ export function readProjectDir(dir: string): ProjectPackage {
   return data;
 }
 
-/** directories under root/projects that contain a project.json */
-export function projectDirs(root: string): string[] {
+/** local projects: projects/local-<name>/ — a developer's own buildings, kept out of git (.gitignore), the genericity audit, the
+ *  build, the PWA and the browser tests; only the dev server and the command-line tools see them */
+export const isLocalProject = (dir: string): boolean => dir.startsWith('local-');
+
+/** directories under root/projects that contain a project.json (local projects only with `local`) */
+export function projectDirs(root: string, opts: { local?: boolean } = {}): string[] {
   const base = path.join(root, PROJECTS_DIR);
   if (!fs.existsSync(base)) return [];
   return fs.readdirSync(base, { withFileTypes: true })
-    .filter((e) => e.isDirectory() && fs.existsSync(path.join(base, e.name, 'project.json')))
+    .filter((e) => e.isDirectory() && (opts.local || !isLocalProject(e.name)) && fs.existsSync(path.join(base, e.name, 'project.json')))
     .map((e) => e.name).sort();
 }
 
@@ -54,10 +58,11 @@ export function projectDirs(root: string): string[] {
 const EXAMPLES = ['sample-house', 'demo-apartment'];
 /**
  * projects/index.json built from the project directories. Default project: HOME_SIM_DEFAULT_PROJECT, then the first
- * project that is not a shipped example, then the examples in the order of EXAMPLES.
+ * project that is not a shipped example, then the examples in the order of EXAMPLES. Local projects only with `local` (the dev
+ * server).
  */
-export function buildProjectIndex(root: string): ProjectIndex {
-  const projects = projectDirs(root).map((d) => {
+export function buildProjectIndex(root: string, opts: { local?: boolean } = {}): ProjectIndex {
+  const projects = projectDirs(root, opts).map((d) => {
     let name = d, names: Record<string, string> | undefined, description: string | undefined;
     try { const m = (readProjectJson(path.join(root, PROJECTS_DIR, d)) as ProjectPackage).manifest; name = m.name; names = m.names; description = m.description; } catch { /* reported at load time */ }
     return { id: d, name, ...(names ? { names } : {}), ...(description ? { description } : {}), dir: `${PROJECTS_DIR}/${d}/` };

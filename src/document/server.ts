@@ -87,8 +87,8 @@ export function loadConfig(root: string): SaveResult {
 
 const packages = new Map<string, Promise<ProjectPackage>>();
 /** package of the project named in the URL (?project=<id>; absent — the default of the project index); null — unknown project */
-async function packageOf(root: string, url: string): Promise<ProjectPackage | null> {
-  const index = buildProjectIndex(root);
+async function packageOf(root: string, url: string, local: boolean): Promise<ProjectPackage | null> {
+  const index = buildProjectIndex(root, { local });
   const id = new URLSearchParams(url.split('?')[1] ?? '').get(PROJECT_PARAM) ?? index.default;
   if (!index.projects.some((p) => p.id === id)) return null;
   if (!packages.has(id)) packages.set(id, Promise.resolve().then(() => readProjectDir(resolve(root, 'projects', id))));
@@ -97,7 +97,8 @@ async function packageOf(root: string, url: string): Promise<ProjectPackage | nu
   return p;
 }
 
-export function configApiMiddleware(root: string) {
+/** `local`: the dev server — local projects (projects/local-*) are served too */
+export function configApiMiddleware(root: string, local = false) {
   return (req: IncomingMessage, res: ServerResponse, next: () => void) => {
     if (!req.url || req.url.split('?')[0] !== API_PATH) return next();
     const send = (r: SaveResult) => {
@@ -108,7 +109,7 @@ export function configApiMiddleware(root: string) {
     };
     // an error loading the package OR in the handler itself (e.g. a damaged file on read) ends with a 500 response — never
     // with a hanging request
-    const run = (fn: () => SaveResult) => void packageOf(root, req.url!)
+    const run = (fn: () => SaveResult) => void packageOf(root, req.url!, local)
       .then((pkg) => send(pkg ? withProject(pkg, fn) : { status: 400, body: { errors: ['unknown project'] } }))
       .catch((e: unknown) => send({ status: 500, body: { errors: [String((e as Error)?.message ?? e)] } }));
     if (req.method === 'GET') return run(() => loadConfig(root));

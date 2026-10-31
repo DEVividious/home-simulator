@@ -521,10 +521,13 @@ try {
   await resetOrigin(page, BASE);
   // ================================================================== project index
   const idx = await (await fetch(`${BASE}/projects/index.json`)).json();
-  const dirs = readdirSync(resolve(ROOT, 'projects'), { withFileTypes: true }).filter((e) => e.isDirectory() && existsSync(resolve(ROOT, 'projects', e.name, 'project.json')) && !e.name.startsWith('__e2e_broken')).map((e) => e.name).sort();
+  const dirs = readdirSync(resolve(ROOT, 'projects'), { withFileTypes: true }).filter((e) => e.isDirectory() && existsSync(resolve(ROOT, 'projects', e.name, 'project.json')) && !e.name.startsWith('__e2e_broken') && !e.name.startsWith('local-')).map((e) => e.name).sort();
   check('project index /projects/index.json: schema, one entry per package directory (id, name, dir), default project', idx.schema === 'home-simulator/projects-index' && idx.version === 1
     && dirs.every((d) => idx.projects.some((p) => p.id === d && p.dir === `projects/${d}/` && p.name === pkg(d).manifest.name)) && dirs.includes(idx.default) && ['demo-apartment', 'sample-house'].every((d) => dirs.includes(d)),
     `${idx.projects.map((p) => `${p.id} "${p.name}"`).join(', ')}; default ${idx.default}`);
+  const local = readdirSync(resolve(ROOT, 'projects')).filter((d) => d.startsWith('local-'));
+  if (local.length) check(`local projects (${local.join(', ')}) are not in the built app: not in the index, not served`,
+    !idx.projects.some((p) => p.id.startsWith('local-')) && (await fetch(`${BASE}/projects/${local[0]}/project.json`)).status === 404, idx.projects.map((p) => p.id).join(', '));
 
   const facts = ['demo-apartment', 'sample-house'].filter((id) => !ONLY.length || ONLY.includes(id)).map(factsOf);
   for (const F of facts) await runProject(F);

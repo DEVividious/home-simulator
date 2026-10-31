@@ -611,3 +611,19 @@ describe('variants survive a save round trip on the server', () => {
     } finally { rmSync(dir, { recursive: true, force: true }); }
   });
 });
+
+describe('local projects (projects/local-*)', () => {
+  it('are listed only for the dev server: never in the index of the build, the preview or the tests', async () => {
+    const fs = await import('node:fs'), os = await import('node:os'), p = await import('node:path');
+    const { buildProjectIndex, projectDirs, isLocalProject } = await import('../node');
+    const root = fs.mkdtempSync(p.join(os.tmpdir(), 'home-sim-local-'));
+    try {
+      for (const id of ['sample-house', 'local-house']) { fs.mkdirSync(p.join(root, 'projects', id), { recursive: true }); fs.writeFileSync(p.join(root, 'projects', id, 'project.json'), JSON.stringify({ manifest: { name: id } })); }
+      expect(isLocalProject('local-house')).toBe(true); expect(isLocalProject('sample-house')).toBe(false);
+      expect(projectDirs(root)).toEqual(['sample-house']);
+      expect(buildProjectIndex(root).projects.map((x) => x.id)).toEqual(['sample-house']);
+      const dev = buildProjectIndex(root, { local: true });
+      expect(dev.projects.map((x) => x.id)).toEqual(['local-house', 'sample-house']); expect(dev.default).toBe('local-house');
+    } finally { fs.rmSync(root, { recursive: true, force: true }); }
+  });
+});

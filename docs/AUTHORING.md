@@ -23,3 +23,9 @@ The human version of the `home-from-plan` skill. You write `projects/<id>/source
 
 Things the format cannot express yet (walls at angles other than 45° without a model, winding or spiral stairs) are listed in
 docs/KNOWN_LIMITATIONS.md. A building with such geometry can supply a GLB model (`assets.model` in `plan.json`, copied into the package; docs/PROJECT_PACKAGE_SPEC.md).
+
+**Local projects.** A building you keep for yourself — your own home, a client's house, anything that must not be published —
+goes to `projects/local-<name>/` (`project.id` = the directory name). Such a directory is ignored by git, skipped by the
+genericity audit, and seen only by the dev server (`npm run dev`) and the command-line tools (`project:build`, `project:validate`,
+`project:preview`, `project:print`): the preview server, the build, the PWA, the phone install and the browser tests never list
+or serve it (`isLocalProject` in `src/project/node.ts`). In the dev server a local project opens by default.

@@ -16,6 +16,8 @@ projects/*/preview/
 projects/*/print/
 # temporary projects of the browser tests (scripts/verify/verify_features.mjs)
 projects/e2e-*/
+# local projects: a developer's own buildings — dev server and command-line tools only (src/project/node.ts isLocalProject)
+projects/local-*/
 
 # locally downloaded tools (adb for phone install)
 .tools/
