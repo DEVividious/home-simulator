@@ -6,6 +6,7 @@
 // the size and averaged down; texts are drawn afterwards at the final size (5×7 font, capitals). Deterministic.
 import { building, type BuildingData } from '../model/building.ts';
 import { contourOf, planeZ, regionBox, regionPolygon, surfaceAt, surfaceFacets, type Plane, type Surface } from '../model/roof.ts';
+import { stairDrawing } from '../model/stairs.ts';
 import type { LevelId, Vec2 } from '../package/types.ts';
 import { fillPolygon, fillRect, image, line, polyline, shrink, text, textWidth, type Image, type RGB } from '../print/raster.ts';
 
@@ -151,28 +152,15 @@ export function planImage(data: BuildingData, levelId: LevelId, o: { name: strin
       sh.label(at, w.id, 1, BLUE_TEXT, 'middle', 0, out > 0 ? -14 : 4);
     }
   }
-  // stairs: tread lines of both flights and an arrow up the lower flight, drawn in the canonical frame and turned / mirrored
-  // onto the plan (model/stairs.ts)
+  // stairs: the outline, tread lines, the partition of a U-turn and the walking line with its arrow (model/stairs.ts)
   for (const s of B.stairs) if (s.fromLevel === levelId || s.toLevel === levelId) {
-    const [sx0, sy0, sx1, sy1] = s.bbox, r = s.orient?.rotate ?? 0, mir = !!s.orient?.mirror;
-    const [cw, cd] = r % 180 ? [sy1 - sy0, sx1 - sx0] : [sx1 - sx0, sy1 - sy0];
-    const W = ([qx, qy]: Vec2): Vec2 => {
-      const cx = mir ? cw - (qx - sx0) : qx - sx0, cy = qy - sy0;
-      const [ux, uy] = r === 0 ? [cx, cy] : r === 90 ? [cd - cy, cx] : r === 180 ? [cw - cx, cd - cy] : [cy, cw - cx];
-      return [sx0 + ux, sy0 + uy];
-    };
-    const cx1 = sx0 + cw, cy1 = sy0 + cd, le = s.landingEdge, T = s.tread;
-    const box = rect(sx0, sy0, sx1, sy1);
-    sh.poly(box, STAIR); sh.outline(box, STAIR_EDGE);
-    for (let i = 1; i < s.risers; i++) {
-      sh.seg(W([s.split, cy1 - i * T]), W([cx1, cy1 - i * T]), STAIR_LINE);
-      sh.seg(W([sx0, le + (i - 1) * T]), W([s.split, le + (i - 1) * T]), STAIR_LINE);
-    }
-    sh.seg(W([s.split, le]), W([s.split, cy1]), STAIR_EDGE);
-    const mid = (s.split + cx1) / 2;
-    sh.seg(W([mid, cy1 - 0.1]), W([mid, le + 0.15]), STAIR_TEXT, 2);
-    sh.poly([W([mid, le + 0.05]), W([mid - 0.12, le + 0.25]), W([mid + 0.12, le + 0.25])], STAIR_TEXT);
-    sh.label(W([(sx0 + s.split) / 2, (le + cy1) / 2]), `${s.id} ${s.fromLevel === levelId ? L.up : L.down}`, 1, STAIR_TEXT, 'middle', 0, -5, true);
+    const d = stairDrawing(s);
+    sh.poly(d.outline, STAIR); sh.outline(d.outline, STAIR_EDGE);
+    for (const [a, b] of d.treads) sh.seg(a, b, STAIR_LINE);
+    for (const [a, b] of d.edges) sh.seg(a, b, STAIR_EDGE);
+    for (let i = 1; i < d.path.length; i++) sh.seg(d.path[i - 1], d.path[i], STAIR_TEXT, 2);
+    sh.poly(d.head, STAIR_TEXT);
+    sh.label(d.label, `${s.id} ${s.fromLevel === levelId ? L.up : L.down}`, 1, STAIR_TEXT, 'middle', 0, -5, true);
   }
   // ceilings under the roof: the 1.40 m and 2.20 m height lines (as attic plans draw them); roof windows
   for (const r of rooms) {

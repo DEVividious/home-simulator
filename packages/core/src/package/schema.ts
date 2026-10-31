@@ -56,12 +56,16 @@ export const DoorSchema = z.looseObject({
   source: z.array(z.string()), confidence, notes: z.string().optional(), flush: z.boolean().optional(),
 });
 
-const StairSchema = z.looseObject({
-  id, kind: z.literal('u-turn'), fromLevel: id, toLevel: id, bbox: z.tuple([num, num, num, num]),
-  risers: z.number().int().positive(), riser: num, tread: num, flightWidth: num, gap: num, landingZ: num, topZ: num,
-  split: num, run: num, landingEdge: num, confidence: z.string(), note: z.string().optional(),
+const stairCommon = {
+  id, fromLevel: id, toLevel: id, bbox: z.tuple([num, num, num, num]),
+  risers: z.number().int().positive(), riser: num, tread: num, flightWidth: num, topZ: num, run: num, confidence: z.string(), note: z.string().optional(),
   orient: z.strictObject({ rotate: z.union([z.literal(0), z.literal(90), z.literal(180), z.literal(270)]), mirror: z.boolean() }).optional(),
-});
+};
+const StairSchema = z.discriminatedUnion('kind', [
+  z.looseObject({ ...stairCommon, kind: z.literal('straight') }),
+  z.looseObject({ ...stairCommon, kind: z.literal('l-turn'), upperRisers: z.number().int().positive(), upperRun: num, landingZ: num }),
+  z.looseObject({ ...stairCommon, kind: z.literal('u-turn'), gap: num, landingZ: num, split: num, landingEdge: num }),
+]);
 
 const rect = z.tuple([num, num, num, num]);
 const PlaneSchema = z.strictObject({ n: vec3, d: num }).refine((p) => p.n[2] > 1e-6, 'a roof plane must face up (n[2] > 0)');

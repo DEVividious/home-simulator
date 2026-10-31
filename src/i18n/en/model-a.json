@@ -13,6 +13,7 @@
  "walk.stairs": "Stairs",
  "walk.levelRoom": "{level} — {room}",
  "walk.doorToSite": "Doorway: {room} ↔ outside",
+ "walk.exit": "Exit",
  "walk.site": "Outside",
  "walk.siteSurface": "Outside — {surface}",
  "elPlacement.dragOntoWall": "Drag onto a wall.",

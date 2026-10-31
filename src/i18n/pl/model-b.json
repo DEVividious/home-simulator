@@ -54,6 +54,8 @@
  "interiors.arrangement": "Aranżacja",
  "interiors.copyName": "{name} (kopia)",
  "stairs.facts": "Konstrukcja żelbetowa: 2 biegi × {risers} stopni ({riser} × {tread} cm), spocznik {level} — to dane budynku",
+ "stairs.factsStraight": "Konstrukcja żelbetowa: 1 bieg × {risers} stopni ({riser} × {tread} cm) — to dane budynku",
+ "stairs.factsL": "Konstrukcja żelbetowa: 2 biegi pod kątem prostym ({risers} + {upper} stopni, {riser} × {tread} cm), spocznik {level} — to dane budynku",
  "devices.category.sockets": "Gniazdka",
  "devices.category.lighting": "Oświetlenie",
  "devices.category.control": "Sterowanie",

@@ -29,7 +29,8 @@ import { cancelPlace, forgetPlace } from './store/elPlace';
 import { EYE_LEVEL_FOV, eyeLevelPitch, heightRange } from './model/elPlacement';
 import { sceneApi } from './scene/sceneApi';
 import { walkInput } from './scene/walkInput';
-import { doorById, doorCenter, doorsOfLevel, inDoorway, isOperable, openOf } from './model/doors';
+import { doorById, doorCenter, doorsOfLevel, inDoorway, isOperable, openOf, PASS_OPEN } from './model/doors';
+import { EXIT_WALK_OUT, exitById } from './model/exits';
 import { doors, openDoor, toggleDoorOpen } from './store/doors';
 import type { Vec2 } from './model/types';
 import { addPoint, EL_TYPES, elRoom, elWall, removePoint, resolvePlan, siteLevelId, updatePoint, type ElectricalPlan, type ElPoint, type ElType, type Placement } from './model/electrical';
@@ -548,6 +549,17 @@ export function toggleDoorInWalk(id: string): boolean {
   }
   if (openOf(doors.get(), id) >= 0.5) return setDoor(id, 0);
   toggleDoorOpen(id);
+  return true;
+}
+
+/** walk: an exit sign clicked — the door opened, then the walk goes out through it onto the site (usability issue B8) */
+export function walkOutside(id: string): boolean {
+  const e = exitById(id);
+  if (!e) return false;
+  if (isOperable(id) && openOf(doors.get(), id) < PASS_OPEN) openDoor(id, 1);
+  // two legs: up to the opening square to it (the straight line from the room), then out through it
+  const leg = (d: number): Vec2 => [e.at[0] + e.out[0] * d, e.at[1] + e.out[1] * d], fail = () => toast(t('actions.comeCloserToDoor'));
+  walkInput.to = { p: leg(-0.6), reach: 0.2, done: () => { walkInput.to = { p: leg(EXIT_WALK_OUT), reach: 0.25, done: () => {}, fail }; }, fail };
   return true;
 }
 

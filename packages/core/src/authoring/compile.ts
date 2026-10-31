@@ -297,17 +297,31 @@ export function compilePlan(input: PlanInput | unknown, opts: CompileOptions): C
     if (!lf || !lt) { err('stairs.level', `stairs "${s.id}": unknown level`); continue; }
     const [a, b] = [P([s.box[0], s.box[1]], s.from), P([s.box[2], s.box[3]], s.from)];
     const box: [number, number, number, number] = [Math.min(a[0], b[0]), Math.min(a[1], b[1]), Math.max(a[0], b[0]), Math.max(a[1], b[1])];
-    const rise = lt.floorZ - lf.floorZ, riser = r3(rise / (2 * s.risers)), run = r3((s.risers - 1) * s.tread);
-    if (riser > 0.2 || riser < 0.14) warn('stairs.riser', `stairs "${s.id}": riser ${riser} m (comfortable: 0.15–0.19)`);
+    const rise = lt.floorZ - lf.floorZ, T = s.tread, fw = s.flightWidth;
     // canonical frame (model/stairs.ts): up the lower flight towards −Y, turning right; `up` turns it, `turn: left` mirrors it
-    const rotate = ({ S: 0, E: 90, N: 180, W: 270 } as const)[s.up], mirror = s.turn === 'left', across = rotate % 180 ? box[3] - box[1] : box[2] - box[0];
-    const deep = rotate % 180 ? box[2] - box[0] : box[3] - box[1], width = 2 * s.flightWidth + s.gap;
-    if (Math.abs(across - width) > 0.06) warn('stairs.width', `stairs "${s.id}": box is ${r3(across)} m wide across the flights, they need ${r3(width)} m`);
-    if (deep < run + s.flightWidth * 0.8) err('stairs.depth', `stairs "${s.id}": box is too short for ${s.risers - 1} treads of ${s.tread} m plus a landing`);
-    const cy1 = box[1] + deep;
-    stairs.push({ id: s.id, kind: 'u-turn', fromLevel: s.from, toLevel: s.to, bbox: box, risers: s.risers, riser, tread: s.tread, flightWidth: s.flightWidth, gap: s.gap,
-      landingZ: r3(rise / 2), topZ: r3(rise), split: r3(box[0] + s.flightWidth + s.gap / 2), run, landingEdge: r3(cy1 - run),
-      confidence: s.confidence ?? D.confidence, ...(s.note ? { note: s.note } : {}), ...(rotate || mirror ? { orient: { rotate, mirror } } : {}) });
+    const rotate = ({ S: 0, E: 90, N: 180, W: 270 } as const)[s.up], mirror = s.kind !== 'straight' && s.turn === 'left';
+    const across = rotate % 180 ? box[3] - box[1] : box[2] - box[0], deep = rotate % 180 ? box[2] - box[0] : box[3] - box[1];
+    const head = { id: s.id, fromLevel: s.from, toLevel: s.to, bbox: box }, topZ = r3(rise);
+    const tail = { confidence: s.confidence ?? D.confidence, ...(s.note ? { note: s.note } : {}), ...(rotate || mirror ? { orient: { rotate, mirror } } : {}) };
+    const total = s.kind === 'u-turn' ? 2 * s.risers : s.risers + (s.upperRisers ?? 0), riser = r3(rise / total), run = r3((s.risers - 1) * T);
+    if (riser > 0.2 || riser < 0.14) warn('stairs.riser', `stairs "${s.id}": riser ${riser} m (comfortable: 0.15–0.19) — ${total} risers for ${r3(rise)} m`);
+    if (s.kind === 'straight') {
+      if (Math.abs(across - fw) > 0.06) warn('stairs.width', `stairs "${s.id}": box is ${r3(across)} m wide, the flight ${fw} m`);
+      if (deep < run - 0.06) err('stairs.depth', `stairs "${s.id}": box is ${r3(deep)} m long, ${s.risers - 1} treads of ${T} m need ${run} m`);
+      else if (deep > run + T + 0.01) warn('stairs.depth', `stairs "${s.id}": box is ${r3(deep - run)} m longer than ${s.risers - 1} treads — the rest is a landing at the upper floor; check the risers and the tread`);
+      stairs.push({ ...{ id: s.id, kind: 'straight' as const }, ...head, risers: s.risers, riser, tread: T, flightWidth: fw, topZ, run: r3(Math.min(run, deep)), ...tail });
+    } else if (s.kind === 'l-turn') {
+      const up = s.upperRisers!, upperRun = r3((up - 1) * T), landD = deep - run, landW = across - upperRun;
+      if (landD < fw * 0.8 || landW < fw * 0.8) err('stairs.depth', `stairs "${s.id}": box is ${r3(across)} × ${r3(deep)} m — ${s.risers - 1} + ${up - 1} treads of ${T} m leave a landing of ${r3(landW)} × ${r3(landD)} m for flights ${fw} m wide`);
+      else if (landD > fw + 0.6 || landW > fw + 0.6) warn('stairs.depth', `stairs "${s.id}": the landing comes out ${r3(landW)} × ${r3(landD)} m for flights ${fw} m wide — check the risers of each flight and the tread`);
+      stairs.push({ ...{ id: s.id, kind: 'l-turn' as const }, ...head, risers: s.risers, upperRisers: up, riser, tread: T, flightWidth: fw, landingZ: r3((rise * s.risers) / total), topZ, run, upperRun, ...tail });
+    } else {
+      const width = 2 * fw + s.gap;
+      if (Math.abs(across - width) > 0.06) warn('stairs.width', `stairs "${s.id}": box is ${r3(across)} m wide across the flights, they need ${r3(width)} m`);
+      if (deep < run + fw * 0.8) err('stairs.depth', `stairs "${s.id}": box is too short for ${s.risers - 1} treads of ${T} m plus a landing`);
+      const cy1 = box[1] + deep;
+      stairs.push({ ...{ id: s.id, kind: 'u-turn' as const }, ...head, risers: s.risers, riser, tread: T, flightWidth: fw, gap: s.gap, landingZ: r3(rise / 2), topZ, split: r3(box[0] + fw + s.gap / 2), run, landingEdge: r3(cy1 - run), ...tail });
+    }
     // opening in the floor of the upper level: the room of `to` containing the box centre
     const c: Vec2 = [(box[0] + box[2]) / 2, (box[1] + box[3]) / 2];
     const upper = plan.rooms.find((r) => r.level === s.to && inPolygon(c, polys.get(r.id)!));

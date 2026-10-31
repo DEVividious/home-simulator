@@ -4,16 +4,17 @@ import path from 'node:path';
 import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
 import { readProjectDir } from '../../project/node';
-import { stairAllowed, stairFrame, stairPart, stairSteps, stairZ, type StairDef, type StairOrient } from '../model/stairs';
+import { stairAllowed, stairFrame, stairPart, stairSteps, stairZ, type StairOrient } from '../model/stairs';
+import type { UTurnStairDef } from '@home-sim/core/package/types';
 import type { Vec2 } from '../model/types';
 import { DEFAULT_STAIRS } from '../model/stairsConfig';
 import { buildStairs } from '../three/stairGeometry';
 
-const S0 = readProjectDir(path.resolve(__dirname, '..', '..', '..', 'projects', 'sample-house')).building.stairs![0];
+const S0 = readProjectDir(path.resolve(__dirname, '..', '..', '..', 'projects', 'sample-house')).building.stairs![0] as UTurnStairDef;
 const bb = (g: THREE.BufferGeometry) => { g.computeBoundingBox(); const b = g.boundingBox!; return [b.min.x, -b.max.z, b.max.x, -b.min.z]; };
 
 /** the sample stairs turned / mirrored in place: the plan outline keeps its corner, its sides swap for 90° and 270° */
-function oriented(o: StairOrient): StairDef {
+function oriented(o: StairOrient): UTurnStairDef {
   const [x0, y0, x1, y1] = S0.bbox, swap = o.rotate % 180 !== 0;
   return { ...S0, bbox: swap ? [x0, y0, x0 + (y1 - y0), y0 + (x1 - x0)] : S0.bbox, orient: o };
 }

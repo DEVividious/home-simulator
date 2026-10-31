@@ -11,7 +11,7 @@
 | Opening without door | a gap without a leaf | `passages[]` |
 | Window | thin double / triple lines across the wall band, often lighter | `windows[]` on that wall; width = length of the glazing lines |
 | Balcony / terrace door | window symbol reaching the floor, sometimes with an arc | window with `sill: 0` (`passable: true` if the plot is modelled) |
-| Stairs | parallel tread lines, a line with a dot at the start and an arrow towards "up" | `stairs[]`: U-turn with `up` (arrow direction on the lower flight) and `turn`; other shapes: nearest U-turn or a note |
+| Stairs | parallel tread lines, a line with a dot at the start and an arrow towards "up" | `stairs[]` with `kind`: `straight` (one run of treads), `l-turn` (two runs at a right angle, a square landing in the corner), `u-turn` (two runs side by side); `up` = arrow direction on the lower flight, `turn` on the landing; winders / spiral: nearest kind and a README note |
 | Bathtub | rounded rectangle ~1.6–1.8 × 0.7–0.8 m | `bathtub` (variant by length) — also a scale check |
 | WC | oval bowl + tank against a wall, ~0.4 × 0.65 m | `toilet` against that wall |
 | Washbasin | small oval / rectangle at a wall | `vanity` |

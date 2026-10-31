@@ -63,10 +63,20 @@ Walls (`<room>-w<n>`, n = edge index of the outline in counter-clockwise order),
 `openDir`; sliding doors move along `slide.dir`. Doors to the exterior are drawn, opened and walked through like any other.
 
 `building.doorFacts` (optional): `overrides` (`{ <doorId>: { flush?, source } }`), `passableOpenings` (window ids of floor-level
-glazed doors one can walk through onto the site). `building.stairs`: two-flight U-turn stairs `{ id, kind: "u-turn", fromLevel,
-toLevel, bbox, risers, riser, tread, flightWidth, gap, landingZ, topZ, split, run, landingEdge, confidence, note?, orient? }` —
-`split` and `landingEdge` in the canonical frame (lower flight rising towards −Y on the larger-X side); `orient: { rotate: 0 | 90
-| 180 | 270, mirror }` turns it counter-clockwise onto `bbox` after mirroring (docs/WALK_AND_STAIRS.md).
+glazed doors one can walk through onto the site). `building.stairs`: stairs between two levels, one of three kinds — every
+record has `{ id, kind, fromLevel, toLevel, bbox, risers, riser, tread, flightWidth, topZ, run, confidence, note?, orient? }`
+and by kind:
+
+| `kind` | extra fields | `risers`, `run` |
+|---|---|---|
+| `straight` | — | all the risers, the length of the flight (a longer `bbox` ends in a landing at `topZ`) |
+| `l-turn` | `upperRisers`, `upperRun`, `landingZ` | the lower flight's |
+| `u-turn` | `gap`, `landingZ`, `split`, `landingEdge` | per flight; `split` and `landingEdge` are canonical coordinates |
+
+The layout is drawn in a canonical frame (the lower flight rising towards −Y on the larger-X side, turning right);
+`orient: { rotate: 0 | 90 | 180 | 270, mirror }` turns it counter-clockwise onto `bbox` after mirroring. `bbox` is the bounding
+box: an L does not fill its corner. The room of `toLevel` holding the stairs has `stair_opening` = `bbox`; the opening in its
+floor is the outline of the stairs (the L for an l-turn) (docs/WALK_AND_STAIRS.md).
 `building.shell`: generated-shell parameters `{ exteriorWall = 0.30, slab = 0.25 }`.
 
 ## building.roof

@@ -1,0 +1,33 @@
+{
+ "schema": "home-simulator/plan",
+ "version": 1,
+ "project": { "id": "stairs-l", "name": "L-shaped stairs", "buildingType": "house" },
+ "units": "m",
+ "source": "synthetic test fixture: a two-storey house with L-shaped stairs in a corner — up north along the east wall, turning left on the landing",
+ "levels": [
+  { "id": "G", "name": "Ground", "floorZ": 0, "ceiling": 2.6 },
+  { "id": "U", "name": "Upper", "floorZ": 2.85, "ceiling": 2.5 }
+ ],
+ "rooms": [
+  { "id": "A", "name": "Living", "level": "G", "kind": "living", "rect": [0.3, 0.3, 7.3, 5.3] },
+  { "id": "F", "name": "Hall", "level": "U", "kind": "hall", "rect": [3.0, 2.4, 7.3, 5.3] },
+  { "id": "G1", "name": "Bedroom", "level": "U", "kind": "bed", "rect": [0.3, 0.3, 7.3, 2.28] },
+  { "id": "H", "name": "Study", "level": "U", "kind": "office", "rect": [0.3, 2.4, 2.88, 5.3] }
+ ],
+ "doors": [
+  { "id": "D0", "between": ["A", "exterior"], "at": [0.15, 1.5], "width": 1.0, "swingInto": "A", "hinge": "left" },
+  { "id": "D1", "between": ["F", "G1"], "at": [4.0, 2.34], "width": 0.8 },
+  { "id": "D2", "between": ["F", "H"], "at": [2.94, 3.0], "width": 0.8 }
+ ],
+ "windows": [
+  { "id": "W1", "room": "A", "at": [3.5, 0.3], "width": 1.6 },
+  { "id": "W2", "room": "A", "at": [3.0, 5.3], "width": 1.2 },
+  { "id": "W3", "room": "G1", "at": [3.5, 0.3], "width": 1.2 },
+  { "id": "W4", "room": "H", "at": [1.5, 5.3], "width": 0.8 }
+ ],
+ "stairs": [
+  { "id": "S1", "kind": "l-turn", "from": "G", "to": "U", "box": [4.51, 2.51, 7.3, 5.3], "up": "N", "turn": "left", "risers": 8, "upperRisers": 8, "tread": 0.27, "flightWidth": 0.9 }
+ ],
+ "roof": { "parts": [{ "id": "main", "level": "U", "type": "hip", "pitch": 35 }] },
+ "site": { "margin": 4 }
+}

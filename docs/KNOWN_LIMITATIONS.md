@@ -34,9 +34,12 @@ the behaviour is named in brackets. When a limit is lifted, remove it here in th
   gzipped) in a worker (`src/home/three/coreWorker.ts`). Where it cannot load or run, the older grid shell is shown
   instead; `?shell=grid` forces it. The grid shell (`packages/core/src/model/gridShell.ts`) stays for one release and still
   gives the wall mass of the plan views.
-- **One stair type.** `StairDef` supports only `kind: "u-turn"`: two flights with the same number of risers, a landing and a
-  gap between the flights. Straight, L-shaped, winding and spiral stairs are not supported. The stair box is axis-aligned; it
-  can face any of the four directions and turn either way (`up`, `turn` in `plan.json`), but not stand at another angle
+- **Three stair kinds.** `StairDef.kind` is `straight` (one flight), `l-turn` (two flights at a right angle with a landing in the
+  corner) or `u-turn` (two flights with the same number of risers side by side, a landing across both). Winders, spiral stairs,
+  a straight flight with a landing half way and stairs with three or more flights are not supported; both flights of an L or U
+  have one width. The stair box is axis-aligned; it can face any of the four directions and turn either way (`up`, `turn` in
+  `plan.json`), but not stand at another angle. Which sides are walls follows the kind (a U's lower flight is open on its outer
+  side, an L stands in a corner, a straight flight is open on both sides) — it is not read from the walls around it
   (`packages/core/src/model/stairs.ts`).
 - **Stair geometry is not editable in the app.** The user chooses only the finish (treads, risers, handrail, balustrade);
   step count and size are building data (`src/home/model/stairsConfig.ts`).
@@ -107,7 +110,7 @@ the behaviour is named in brackets. When a limit is lifted, remove it here in th
   node named `ENV_TREES` only turn see-through between the camera and the building.
 - **Walking outside needs the `site` module.** Without it the walk stays inside the building. Terrain is flat at
   `site.groundLevel` unless the package brings a terrain model.
-- **Level changes only by stairs.** A walk moves between levels only on a `u-turn` stair of the package.
+- **Level changes only by stairs.** A walk moves between levels only on the stairs of the package.
 - **Default views are generic.** A compiled project gets "Overview", "Other side" and "From above" plus "Interior"; named
   views need `views` in the package, which `plan.json` cannot write (see above).
 - **Software rendering is slow.** Without GPU acceleration (SwiftShader, llvmpipe) the scene works but is very slow; Settings

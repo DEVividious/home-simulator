@@ -7,7 +7,8 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { activateProject, project } from '../../project/active';
 import { readProjectDir } from '../../project/node';
 import { shellFootprint } from '../model/shell';
-import { stairPart, stairs, stairSteps, stairZ, type StairDef } from '../model/stairs';
+import { stairPart, stairs, stairSteps, stairZ } from '../model/stairs';
+import type { UTurnStairDef } from '@home-sim/core/package/types';
 import type { Vec2 } from '../model/types';
 import { setDoorGate } from '../model/walk';
 import { exteriorDoors, nearExteriorDoor, passableOpenings, WalkWorld, type WalkPose } from '../model/walkWorld';
@@ -34,8 +35,8 @@ function walk(world: WalkWorld, from: WalkPose, dx: number, dy: number, metres: 
 }
 
 describe('sample house', () => {
-  let world: WalkWorld, S: StairDef;
-  beforeAll(() => { activateProject(readProject('sample-house')); world = worldOf(); S = stairs()[0]; });
+  let world: WalkWorld, S: UTurnStairDef;
+  beforeAll(() => { activateProject(readProject('sample-house')); world = worldOf(); S = stairs()[0] as UTurnStairDef; });
   afterAll(() => { setDoorGate(null); activateProject(readProject('demo-apartment')); });
 
   describe('stairs S1 (2 × 9 risers, landing at mid height, L0 → L1)', () => {

@@ -101,31 +101,54 @@ export interface DoorDef {
 }
 
 // ------------------------------------------------------------------ stairs
-export interface StairDef {
+/** stair kinds: one straight flight; two flights at a right angle with a landing in the corner (`l-turn`); two flights side
+ *  by side with a landing across both (`u-turn`) */
+export type StairKind = 'straight' | 'l-turn' | 'u-turn';
+interface StairCommon {
   id: string;
-  kind: 'u-turn';
   /** level the stairs start from and the level they lead to */
   fromLevel: LevelId; toLevel: LevelId;
-  /** plan outline (floor opening) [x0, y0, x1, y1] */
+  /** plan outline [x0, y0, x1, y1] — the bounding box of the flights and landings (an L stair does not fill its corner) */
   bbox: [number, number, number, number];
-  /** risers per flight, riser height, tread depth [m] */
+  /** risers of the (lower) flight: straight — all of them; l-turn — the lower flight; u-turn — each flight; riser height,
+   *  tread depth [m] */
   risers: number; riser: number; tread: number;
   flightWidth: number;
-  /** gap between the flights [m] */
-  gap: number;
-  /** landing and upper level height relative to the lower level floor [m] */
-  landingZ: number; topZ: number;
-  /** flight split line (X coordinate) */
-  split: number;
-  /** flight length in plan and landing edge (Y coordinate) */
-  run: number; landingEdge: number;
+  /** upper level height relative to the lower level floor [m] */
+  topZ: number;
+  /** length in plan of the (lower) flight: (risers − 1) treads [m] */
+  run: number;
   confidence: string;
   /** note from the project sources shown with the stairs (e.g. railing height from the plan) */
   note?: string;
-  /** canonical frame → plan: mirror across the flights first (the lower flight on the smaller-X side), then turn
-   *  counter-clockwise; absent = as canonical (walking up the lower flight towards −Y) */
+  /** canonical frame → plan: mirror across the flights first (turning left instead of right), then turn counter-clockwise;
+   *  absent = as canonical (walking up the lower flight towards −Y) */
   orient?: StairOrient;
 }
+/** one flight up the canonical −Y, entry at the larger-Y side; a box longer than the flight leaves a top landing at the
+ *  upper floor height */
+export interface StraightStairDef extends StairCommon { kind: 'straight' }
+/** lower flight up the canonical −Y on the larger-X side, a landing in the (larger-X, smaller-Y) corner, upper flight towards
+ *  −X along the smaller-Y side — turning right */
+export interface LTurnStairDef extends StairCommon {
+  kind: 'l-turn';
+  /** risers of the upper flight and its length in plan [m] */
+  upperRisers: number; upperRun: number;
+  /** landing height relative to the lower level floor [m] */
+  landingZ: number;
+}
+/** lower flight on the larger-X side up the canonical −Y, the landing at the smaller-Y edge, upper flight on the smaller-X side
+ *  back towards +Y — turning right */
+export interface UTurnStairDef extends StairCommon {
+  kind: 'u-turn';
+  /** gap between the flights [m] */
+  gap: number;
+  /** landing height relative to the lower level floor [m] */
+  landingZ: number;
+  /** flight split line (canonical X) and landing edge (canonical Y) */
+  split: number; landingEdge: number;
+}
+export type StairDef = StraightStairDef | LTurnStairDef | UTurnStairDef;
 export interface StairOrient { rotate: 0 | 90 | 180 | 270; mirror: boolean }
 
 // ------------------------------------------------------------------ generated shell

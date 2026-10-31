@@ -69,34 +69,53 @@ switches to it.
 A project without a site has no corridors to the outside and no walking on the ground; a project without stairs keeps the walk
 on its single level.
 
+## 3.1 Exits
+
+On the level at ground every exterior door and floor-level passable glazing shows a green **Exit** sign just inside its head
+and a green arrow on the floor pointing out — so the way out, and which glazing opens, can be seen from inside (usability issue
+B8). A click or tap on either walks out: a closed door opens, the walk goes up to the opening and through it onto the plot
+(`src/home/model/exits.ts`, `src/home/scene/ExitSigns.tsx`, `walkOutside` in `src/home/actions.ts`). The signs exist only
+while walking and only in projects with a site.
+
 ## 4. Stairs — `packages/core/src/model/stairs.ts`, `src/home/model/stairs.ts`
 
-The engine supports one stair kind: **two-flight U-turn stairs with a landing** (`kind: "u-turn"`), in any of four
-directions and turning either way. In `plan.json`:
+The engine knows three stair kinds, in any of four directions and (with a landing) turning either way:
+
+| `kind` | shape | `risers` |
+|---|---|---|
+| `straight` | one flight; a box longer than the flight leaves a short landing at the upper floor height at its top | all of them |
+| `l-turn` | lower flight, a landing in the corner, upper flight at a right angle (`upperRisers`) | of the lower flight |
+| `u-turn` (default) | two flights side by side, a landing across both ends, a `gap` between the flights | per flight |
 
 ```json
-"stairs": [{ "id": "S1", "from": "L0", "to": "L1", "box": [x0, y0, x1, y1], "up": "S", "turn": "right",
-             "risers": 9, "tread": 0.255, "flightWidth": 0.9, "gap": 0.05 }]
+"stairs": [{ "id": "S1", "kind": "l-turn", "from": "L0", "to": "L1", "box": [x0, y0, x1, y1], "up": "N", "turn": "left",
+             "risers": 8, "upperRisers": 8, "tread": 0.27, "flightWidth": 0.9 }]
 ```
 
-- `box` — the plan outline of both flights and the landing (the floor opening of the upper level).
-- `up` — the direction one walks up the **lower flight** (`N` = +Y, `S`, `E`, `W`); the **landing** is at that end of the box.
-- `turn` — which way one turns on the landing going up; the **upper flight** returns beside the lower one and arrives on the
-  upper level at the end where the lower flight starts.
-- `risers` per flight (two flights); the riser height follows from the level heights (`StairDef.riser`, `landingZ`, `topZ`).
-- `gap` — the divider between the flights.
+- `box` — the plan outline of every flight and landing; for an L the box around the L (its free corner stays part of the room
+  on both levels — only the L is the floor opening of the upper level).
+- `up` — the direction one walks up the **lower flight** (`N` = +Y, `S`, `E`, `W`); a straight flight arrives at that end, an
+  L or U has its landing there.
+- `turn` — which way one turns on the landing going up (L, U); a U's upper flight returns beside the lower one and arrives on
+  the upper level at the end where the lower flight starts, an L's upper flight runs along the box edge at the landing's end.
+- the riser height follows from the level heights and the risers of all flights (`StairDef.riser`, `landingZ`, `topZ`).
 
-The engine computes in one canonical frame (up `S`, turn `right`: lower flight on the larger-X side rising towards −Y, landing
-at the smaller-Y edge, upper flight on the smaller-X side); `StairDef.orient` (`rotate` 0 / 90 / 180 / 270 counter-clockwise,
-`mirror`) maps it onto the plan, and `split` / `landingEdge` are canonical coordinates (`stairFrame` in
-`packages/core/src/model/stairs.ts`). Other shapes (straight, L, winding, spiral) need an engine extension.
+The engine computes in one canonical frame (up `S`, turn `right`: the lower flight on the larger-X side rising towards −Y, the
+landing at the smaller-Y end — across the box for a U, in the corner for an L — and the upper flight towards −X);
+`StairDef.orient` (`rotate` 0 / 90 / 180 / 270 counter-clockwise, `mirror`) maps it onto the plan (`stairFrame` in
+`packages/core/src/model/stairs.ts`). The layout is a list of **pieces** — flights and landings as canonical rectangles
+(`stairPieces`) — and their **sides**: entry, exit, joined to the next piece, wall, open (a drop) or the U's partition
+(`stairSides`). The walk, the 3D stairs, the plan drawings and the print all read them. A U's walls are its smaller-X and
+smaller-Y sides (the lower flight's outer side is open); an L stands in a corner (its outer sides are walls, the inner sides of
+the L are open); a straight flight is open on both sides.
 
 **Walking on stairs.** The rendered steps are real; navigation uses an **invisible ramp** over the step nosings that matches the
-flights (`stairZ`): flight 1 from the lower floor to the landing, the landing flat, flight 2 to the upper floor. Single steps are
+flights (`stairZ`): each flight from its lower end to its upper end, landings flat. Single steps are
 not obstacles, and with 8 cm segments a 17.5 cm riser is about 5.5 cm of height change per segment — well under `MAX_STEP`. Edges
-do not catch: motion slides along the divider or a wall (walking up diagonally works). Movement between flights is possible only
-via the landing (divider + balustrade). Typical climb on a keyboard: forward (W) up the lower flight to the landing, turn with the
-mouse or step sideways (A / D) along the landing, forward up the upper flight; on a phone the joystick does the same.
+do not catch: motion slides along the divider or a wall (walking up diagonally works). A figure keeps clear of walls, open sides
+and the partition beside them (not around their ends); movement between flights is possible only via the landing. Typical climb
+on a keyboard: forward (W) up the lower flight to the landing, turn with the mouse or step sideways (A / D) along the landing,
+forward up the upper flight; on a phone the joystick does the same.
 
 ### 4.1 Stairs finishes
 
@@ -140,7 +159,8 @@ joystick through `src/home/scene/walkInput.ts`.
 - Furniture is not an obstacle in the walk; collisions are with wall faces (room outlines), the building outline and the plot
   bounds.
 - Walking on the plot is limited to `walkBounds`; beyond it there is no walkable surface.
-- Only U-turn stairs along the Y axis.
+- Stairs are straight, L-shaped or U-turn with a box along the plan axes; no winders, spiral stairs or straight flights with a
+  landing half way.
 - Photo matching, garage doors and gates are not part of the engine.
 
 ## Files and tests

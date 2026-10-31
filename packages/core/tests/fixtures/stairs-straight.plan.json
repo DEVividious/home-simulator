@@ -1,0 +1,35 @@
+{
+ "schema": "home-simulator/plan",
+ "version": 1,
+ "project": { "id": "stairs-straight", "name": "Straight stairs", "buildingType": "house" },
+ "units": "m",
+ "source": "synthetic test fixture: a two-storey house with a straight flight along a wall, walked up towards +X",
+ "levels": [
+  { "id": "G", "name": "Ground", "floorZ": 0, "ceiling": 2.6 },
+  { "id": "U", "name": "Upper", "floorZ": 2.85, "ceiling": 2.5 }
+ ],
+ "rooms": [
+  { "id": "A", "name": "Living", "level": "G", "kind": "living", "rect": [0.3, 0.3, 7.3, 4.3] },
+  { "id": "B", "name": "Kitchen", "level": "G", "kind": "kitchen", "rect": [0.3, 4.42, 7.3, 6.3] },
+  { "id": "C", "name": "Hall", "level": "U", "kind": "hall", "rect": [0.3, 2.9, 7.3, 4.3] },
+  { "id": "D", "name": "Bedroom", "level": "U", "kind": "bed", "rect": [0.3, 0.3, 7.3, 2.78] },
+  { "id": "E", "name": "Bathroom", "level": "U", "kind": "bath", "rect": [0.3, 4.42, 7.3, 6.3] }
+ ],
+ "doors": [
+  { "id": "D0", "between": ["A", "exterior"], "at": [0.15, 1.5], "width": 1.0, "swingInto": "A", "hinge": "left" },
+  { "id": "D1", "between": ["A", "B"], "at": [6.8, 4.36], "width": 0.8 },
+  { "id": "D2", "between": ["C", "D"], "at": [6.8, 2.84], "width": 0.8 },
+  { "id": "D3", "between": ["C", "E"], "at": [6.8, 4.36], "width": 0.8 }
+ ],
+ "windows": [
+  { "id": "W1", "room": "A", "at": [3.5, 0.3], "width": 1.6 },
+  { "id": "W2", "room": "B", "at": [3.5, 6.3], "width": 1.2 },
+  { "id": "W3", "room": "D", "at": [3.5, 0.3], "width": 1.2 },
+  { "id": "W4", "room": "E", "at": [3.5, 6.3], "width": 0.8 }
+ ],
+ "stairs": [
+  { "id": "S1", "kind": "straight", "from": "G", "to": "U", "box": [2.0, 3.4, 6.2, 4.3], "up": "E", "risers": 16, "tread": 0.27, "flightWidth": 0.9 }
+ ],
+ "roof": { "parts": [{ "id": "main", "level": "U", "type": "gable", "ridge": "X", "pitch": 35 }] },
+ "site": { "margin": 4 }
+}

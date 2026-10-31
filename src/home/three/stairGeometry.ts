@@ -3,6 +3,7 @@
 // (≤ 6 draw calls). three.js frame: (x, height, −y LCS). The walking surface in walk mode remains the ramp from model/stairs.ts.
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import { flightAlong, flightLength, flightSlice, stairPieces, stairSides, type StairFlight, type StairPiece, type StairSide } from '@home-sim/core/model/stairs';
 import { stairFrame, stairs, type StairDef } from '../model/stairs';
 import type { StairsConfig } from '../model/stairsConfig';
 
@@ -15,11 +16,15 @@ function box(x0: number, x1: number, y0: number, y1: number, z0: number, z1: num
   g.translate((x0 + x1) / 2, (z0 + z1) / 2, -(y0 + y1) / 2);
   return g;
 }
-/** prism: a (y, z) polygon in LCS extruded along x ∈ [xa, xb] (balustrade panels running along the slope) */
-function prismYZ(poly: [number, number][], xa: number, xb: number): THREE.BufferGeometry {
-  const g = new THREE.ExtrudeGeometry(new THREE.Shape(poly.map(([y, z]) => new THREE.Vector2(y, z))), { depth: xb - xa, bevelEnabled: false, curveSegments: 1 });
-  // (shape x = LCS y, shape y = LCS z, extrusion = LCS x) → three (x, z, −y)
-  g.applyMatrix4(new THREE.Matrix4().set(0, 0, 1, xa, 0, 1, 0, 0, -1, 0, 0, 0, 0, 0, 0, 1));
+/** a vertical panel along A → B (canonical plan points) of thickness th: its bottom at za → zb, its top H higher (balustrades
+ *  following the slope of a flight) */
+function panel(A: [number, number], B: [number, number], za: number, zb: number, H: number, th: number): THREE.BufferGeometry {
+  const L = Math.hypot(B[0] - A[0], B[1] - A[1]), u: [number, number] = [(B[0] - A[0]) / L, (B[1] - A[1]) / L], n: [number, number] = [u[1], -u[0]];
+  const g = new THREE.ExtrudeGeometry(new THREE.Shape([new THREE.Vector2(0, za), new THREE.Vector2(L, zb), new THREE.Vector2(L, zb + H), new THREE.Vector2(0, za + H)]), { depth: th, bevelEnabled: false, curveSegments: 1 });
+  // shape (s, z), extrusion e → LCS A + u·s + n·(e − th/2), height z → three (x, z, −y); n to the right of u keeps the basis
+  // right-handed (the faces outwards)
+  const o: [number, number] = [A[0] - (n[0] * th) / 2, A[1] - (n[1] * th) / 2];
+  g.applyMatrix4(new THREE.Matrix4().set(u[0], 0, n[0], o[0], 0, 1, 0, 0, -u[1], 0, -n[1], -o[1], 0, 0, 0, 1));
   return g;
 }
 const L3 = (x: number, y: number, z: number) => new THREE.Vector3(x, z, -y);
@@ -32,93 +37,100 @@ function bar(a: [number, number, number], b: [number, number, number], profile: 
   return g;
 }
 
-/** flight layout in the canonical frame of the stairs (model/stairs.ts stairFrame) — shared by the geometry and the tests */
-export function stairLayout(def: StairDef = stairs()[0]) {
-  const [x0, y0, x1, y1] = stairFrame(def).box;
-  const { tread: T, riser: R, risers: N, landingZ, topZ, split, gap, landingEdge: le } = def;
-  return {
-    x0, y0, x1, y1, T, R, N, landingZ, topZ, le,
-    /** lower flight (at +X): up towards −Y; upper flight (at −X): up towards +Y */
-    f1: [split + gap / 2, x1] as [number, number], f2: [x0, split - gap / 2] as [number, number],
-    /** line of the step edges (nosings): height above the lower floor at position y */
-    nose1: (y: number) => R + ((y1 - y) * R) / T,
-    nose2: (y: number) => landingZ + R + ((y - le) * R) / T,
-  };
-}
+/** the nosing line of a flight: height above the lower floor of the step edges at a distance d from its start */
+export const noseZ = (f: StairFlight, R: number, T: number, d: number) => f.z0 + R + (d * R) / T;
+/** the walking surface under a side point of a piece (flights: the nosing line) */
+const surfaceAt = (def: StairDef, p: StairPiece, q: [number, number]) => (p.kind === 'landing' ? p.z : noseZ(p, def.riser, def.tread, flightAlong(p, q)));
 
 export function buildStairs(c: StairsConfig, def: StairDef = stairs()[0]): StairGeometries {
-  const S = stairLayout(def), { x0, y0, x1, y1, T, R, N, landingZ, le } = S;
+  const pieces = stairPieces(def), sides = stairSides(def), T = def.tread, R = def.riser, top = def.topZ;
   const t = c.treadThickness, n = t > 0 ? c.nosing : 0, clad = t > 0, rt = 0.015;
   const parts: Record<StairPart, THREE.BufferGeometry[]> = { concrete: [], tread: [], riser: [], rail: [], balustrade: [], glass: [] };
   const slab = (z: number) => Math.min(z, 0.325);                       // step + 15 cm flight slab
-  // ---- lower flight: each step has its face (riser) on the +Y side
-  for (let i = 0; i < N - 1; i++) {
-    const ya = y1 - (i + 1) * T, yb = y1 - i * T, z = R * (i + 1);
-    parts.concrete.push(box(S.f1[0], S.f1[1], ya, yb, z - slab(z), z - t));
-    if (clad) parts.tread.push(box(S.f1[0], S.f1[1], ya, yb + n, z - t, z));
-    if (c.riser !== 'none') parts.riser.push(box(S.f1[0], S.f1[1], yb, yb + rt, z - R, z - t));
-  }
-  // ---- landing (riser of the last step of the lower flight at the landing edge)
-  parts.concrete.push(box(x0, x1, y0, le, landingZ - 0.2, landingZ - t));
-  if (clad) { parts.tread.push(box(x0, x1, y0, le, landingZ - t, landingZ)); if (n > 0) parts.tread.push(box(S.f1[0], S.f1[1], le, le + n, landingZ - t, landingZ)); }
-  if (c.riser !== 'none') parts.riser.push(box(S.f1[0], S.f1[1], le, le + rt, landingZ - R, landingZ - t));
-  // ---- upper flight: step face on the −Y side; the last riser at the upper floor
-  for (let i = 0; i < N - 1; i++) {
-    const ya = le + i * T, yb = le + (i + 1) * T, z = landingZ + R * (i + 1);
-    parts.concrete.push(box(S.f2[0], S.f2[1], ya, yb, z - slab(z), z - t));
-    if (clad) parts.tread.push(box(S.f2[0], S.f2[1], ya - n, yb, z - t, z));
-    if (c.riser !== 'none') parts.riser.push(box(S.f2[0], S.f2[1], ya - rt, ya, z - R, z - t));
-  }
-  if (c.riser !== 'none') parts.riser.push(box(S.f2[0], S.f2[1], y1 - rt, y1, S.topZ - R, S.topZ));
+  const rbox = ([x0, y0, x1, y1]: number[], z0: number, z1: number) => box(x0, x1, y0, y1, z0, z1);
+  pieces.forEach((p, i) => {
+    if (p.kind === 'landing') {
+      parts.concrete.push(rbox(p.rect, p.z - 0.2, p.z - t));
+      if (clad) parts.tread.push(rbox(p.rect, p.z - t, p.z));
+      return;
+    }
+    // each step has its face (riser) towards the start of the flight; the nosing overhangs it
+    for (let k = 0; k < p.risers - 1; k++) {
+      const z = p.z0 + R * (k + 1);
+      parts.concrete.push(rbox(flightSlice(p, k * T, (k + 1) * T), z - slab(z), z - t));
+      if (clad) parts.tread.push(rbox(flightSlice(p, k * T - n, (k + 1) * T), z - t, z));
+      if (c.riser !== 'none') parts.riser.push(rbox(flightSlice(p, k * T - rt, k * T), z - R, z - t));
+    }
+    // the last riser: onto the next piece (the landing's nosing over it) or up to the upper floor
+    const len = flightLength(p), next = pieces[i + 1], zn = next?.kind === 'landing' ? next.z : top;
+    if (c.riser !== 'none') parts.riser.push(rbox(flightSlice(p, len - rt, len), zn - R, next ? zn - t : zn));
+    if (clad && next && n > 0) parts.tread.push(rbox(flightSlice(p, len - n, len), zn - t, zn));
+  });
 
-  // ---- handrail: above the nosing line, on the outer side of the flights and / or at the partition
-  const h = c.handrail.height, p = c.handrail.profile, off = 0.07;
-  const rail = (x: number, flight: 1 | 2) => {
-    if (flight === 1) parts.rail.push(bar([x, y1, S.nose1(y1) + h], [x, le, S.nose1(le) + h], p), bar([x, le, landingZ + h], [x, le - 0.25, landingZ + h], p));
-    else parts.rail.push(bar([x, le, S.nose2(le) + h], [x, y1, S.nose2(y1) + h], p), bar([x, y1, S.topZ + h], [x, y1 + 0.25, S.topZ + h], p));
-  };
-  if (c.handrail.place === 'outer' || c.handrail.place === 'both') {
-    rail(x1 - off, 1); rail(x0 + off, 2);
-    // landing: wall handrail (y = y0) connecting both flights
-    parts.rail.push(bar([x0 + off, y0 + off, landingZ + h], [x1 - off, y0 + off, landingZ + h], p), bar([x0 + off, y0 + off, landingZ + h], [x0 + off, le, landingZ + h], p), bar([x1 - off, y0 + off, landingZ + h], [x1 - off, le, landingZ + h], p));
+  // ---- handrail: above the nosing line at the given height, along the outer sides of the stairs and / or the inner ones
+  //      (U-turn: by the partition; L: the open inner side; straight: the outer rail on one side, the inner on the other)
+  const h = c.handrail.height, prof = c.handrail.profile, off = 0.07;
+  const railSide = (e: StairSide) => (e.kind === 'wall' || e.kind === 'open' || e.kind === 'partition') && (def.kind === 'straight' ? (e.out[0] > 0 ? 'outer' : 'inner') : e.outer ? 'outer' : 'inner');
+  const place = c.handrail.place;
+  if (place !== 'none') for (const e of sides) {
+    const r = railSide(e);
+    if (!r || (place !== 'both' && place !== r)) continue;
+    const a: [number, number] = [e.a[0] - e.out[0] * off, e.a[1] - e.out[1] * off], b: [number, number] = [e.b[0] - e.out[0] * off, e.b[1] - e.out[1] * off];
+    if (e.piece.kind === 'landing') { parts.rail.push(bar([...a, e.piece.z + h], [...b, e.piece.z + h], prof)); continue; }
+    // up the flight, then 25 cm level onto the next piece (or the upper floor)
+    const f = e.piece, [lo, hi] = flightAlong(f, a) < flightAlong(f, b) ? [a, b] : [b, a], d = f.dir;
+    parts.rail.push(bar([...lo, surfaceAt(def, f, lo) + h], [...hi, f.z1 + h], prof), bar([...hi, f.z1 + h], [hi[0] + d[0] * 0.25, hi[1] + d[1] * 0.25, f.z1 + h], prof));
   }
-  if (c.handrail.place === 'inner' || c.handrail.place === 'both') { rail(S.f1[0] + off, 1); rail(S.f2[1] - off, 2); }
 
-  // ---- balustrade: partition between the flights (along the slope of each flight), open side of the lower flight and the
-  //      landing, guard rail at the stair opening on the upper floor (above the lower flight)
-  const b = c.balustrade;
-  if (b.type !== 'none') {
-    const H = b.height, target = b.type === 'glass' ? parts.glass : parts.balustrade, th = b.type === 'solid' ? 0.08 : b.type === 'glass' ? 0.012 : 0.014;
-    /** panel from (ya, za) to (yb, zb) — bottom along the step line, top H higher; x — panel axis */
-    const panel = (x: number, ya: number, za: number, yb: number, zb: number) => {
-      if (b.type === 'bars') {
-        const len = Math.abs(yb - ya), k = Math.max(2, Math.round(len / 0.11));
-        for (let i = 0; i <= k; i++) { const y = ya + ((yb - ya) * i) / k, z = za + ((zb - za) * i) / k; parts.balustrade.push(box(x - th / 2, x + th / 2, y - th / 2, y + th / 2, z + 0.03, z + H)); }
-        parts.balustrade.push(bar([x, ya, za + H], [x, yb, zb + H], 'rect', 0.8), bar([x, ya, za + 0.06], [x, yb, zb + 0.06], 'rect', 0.5));
+  // ---- balustrade: along the open sides and the U-turn partition (following the slope of each flight), and a guard rail at
+  //      the opening on the upper floor: over the foot of the stairs, and (straight, L) along the open sides below it
+  const bl = c.balustrade;
+  if (bl.type !== 'none') {
+    const H = bl.height, target = bl.type === 'glass' ? parts.glass : parts.balustrade, th = bl.type === 'solid' ? 0.08 : bl.type === 'glass' ? 0.012 : 0.014;
+    const put = (A: [number, number], B: [number, number], za: number, zb: number) => {
+      const L = Math.hypot(B[0] - A[0], B[1] - A[1]);
+      if (L < 0.02) return;
+      if (bl.type === 'bars') {
+        const k = Math.max(2, Math.round(L / 0.11));
+        for (let i = 0; i <= k; i++) { const x = A[0] + ((B[0] - A[0]) * i) / k, y = A[1] + ((B[1] - A[1]) * i) / k, z = za + ((zb - za) * i) / k; parts.balustrade.push(box(x - th / 2, x + th / 2, y - th / 2, y + th / 2, z + 0.03, z + H)); }
+        parts.balustrade.push(bar([...A, za + H], [...B, zb + H], 'rect', 0.8), bar([...A, za + 0.06], [...B, zb + 0.06], 'rect', 0.5));
       } else {
-        const z0 = b.type === 'glass' ? 0.05 : 0;
-        target.push(prismYZ([[ya, za + z0], [yb, zb + z0], [yb, zb + H], [ya, za + H]], x - th / 2, x + th / 2));
-        if (b.type === 'glass') parts.balustrade.push(bar([x, ya, za + H], [x, yb, zb + H], 'rect', 0.7));
+        const z0 = bl.type === 'glass' ? 0.05 : 0;
+        target.push(panel(A, B, za + z0, zb + z0, H - z0, th));
+        if (bl.type === 'glass') parts.balustrade.push(bar([...A, za + H], [...B, zb + H], 'rect', 0.7));
       }
     };
-    const inner1 = S.f1[0] - 0.012, inner2 = S.f2[1] + 0.012, east = x1 - 0.03;
-    panel(inner1, y1, S.nose1(y1) - R, le, landingZ);                       // partition — lower flight side
-    panel(inner2, le, landingZ, y1, S.topZ);                                 // partition — upper flight side
-    panel(east, y1, S.nose1(y1) - R, le, landingZ);                          // lower flight, open side
-    panel(east, le, landingZ, y0 + 0.03, landingZ);                          // landing, open side
-    // guard rail on the upper floor: edge of the opening above the lower flight
-    if (b.type === 'bars') {
-      const k = Math.max(2, Math.round((x1 - S.f1[0]) / 0.11));
-      for (let i = 0; i <= k; i++) { const x = S.f1[0] + ((x1 - S.f1[0]) * i) / k; parts.balustrade.push(box(x - th / 2, x + th / 2, y1 - 0.03 - th / 2, y1 - 0.03 + th / 2, S.topZ + 0.03, S.topZ + H)); }
-      parts.balustrade.push(bar([S.f1[0], y1 - 0.03, S.topZ + H], [x1, y1 - 0.03, S.topZ + H], 'rect', 0.8));
-    } else {
-      target.push(box(S.f1[0], x1, y1 - 0.03 - th / 2, y1 - 0.03 + th / 2, S.topZ + (b.type === 'glass' ? 0.05 : 0), S.topZ + H));
-      if (b.type === 'glass') parts.balustrade.push(bar([S.f1[0], y1 - 0.03, S.topZ + H], [x1, y1 - 0.03, S.topZ + H], 'rect', 0.7));
+    /** the bottom of a panel at a side point: the flight's walking ramp (one riser below the nosing line), or the landing */
+    const bottom = (p: StairPiece, q: [number, number]) => (p.kind === 'landing' ? p.z : surfaceAt(def, p, q) - R);
+    for (const e of sides) {
+      if (e.kind !== 'open' && e.kind !== 'partition') continue;
+      // open sides: 3 cm inside the stairs; the partition: just outside the flight, in the gap
+      const k = e.kind === 'open' ? -0.03 : 0.012;
+      const A: [number, number] = [e.a[0] + e.out[0] * k, e.a[1] + e.out[1] * k], B: [number, number] = [e.b[0] + e.out[0] * k, e.b[1] + e.out[1] * k];
+      put(A, B, bottom(e.piece, e.a), bottom(e.piece, e.b));
+    }
+    for (const e of sides) {
+      const guard = e.kind === 'entry' || (def.kind !== 'u-turn' && e.kind === 'open');
+      if (!guard) continue;
+      // the part of the side where the stairs are more than a metre below the upper floor
+      let A: [number, number] = [e.a[0] - e.out[0] * 0.03, e.a[1] - e.out[1] * 0.03], B: [number, number] = [e.b[0] - e.out[0] * 0.03, e.b[1] - e.out[1] * 0.03];
+      const p = e.piece;
+      if (e.kind !== 'entry') {
+        if (p.kind === 'landing') { if (p.z > top - 1) continue; }
+        else {
+          const dMax = ((top - 1 - p.z0) / Math.max(1e-9, p.z1 - p.z0)) * flightLength(p);
+          if (dMax <= 0) continue;
+          const da = flightAlong(p, A), db = flightAlong(p, B), cut = (P: [number, number], Q: [number, number], dp: number, dq: number): [number, number] => { const s = (dMax - dp) / (dq - dp); return [P[0] + (Q[0] - P[0]) * s, P[1] + (Q[1] - P[1]) * s]; };
+          if (da > dMax && db > dMax) continue;
+          if (da > dMax) A = cut(B, A, db, da); else if (db > dMax) B = cut(A, B, da, db);
+        }
+      }
+      put(A, B, top, top);
     }
   }
 
   // canonical frame → plan (turn / mirror): the affine map of model/stairs.ts in the three.js frame (x, height, −y)
-  const f = stairFrame(def), o = f.toWorld([x0, y0]), ex = f.toWorld([x0 + 1, y0]), ey = f.toWorld([x0, y0 + 1]);
+  const f = stairFrame(def), [x0, y0] = f.box, o = f.toWorld([x0, y0]), ex = f.toWorld([x0 + 1, y0]), ey = f.toWorld([x0, y0 + 1]);
   const a00 = ex[0] - o[0], a10 = ex[1] - o[1], a01 = ey[0] - o[0], a11 = ey[1] - o[1];
   const bx = o[0] - a00 * x0 - a01 * y0, by = o[1] - a10 * x0 - a11 * y0;
   const turned = a00 !== 1 || a11 !== 1 || a01 !== 0 || a10 !== 0;

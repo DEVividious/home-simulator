@@ -6,7 +6,7 @@
 import { shellSpec } from '../model/shell';
 import { stairArrivesAt } from '../model/stairs';
 import * as THREE from 'three';
-import { area as polyArea } from '@home-sim/core/model/geom2d';
+import { offsetPolygon, area as polyArea } from '@home-sim/core/model/geom2d';
 import { planeZ } from '@home-sim/core/model/roof';
 import type { HomeRoom, RoomWall, WallHole } from '../model/rooms';
 import type { Vec2 } from '../model/types';
@@ -101,6 +101,8 @@ const rectPoly = (r: [number, number, number, number]): Vec2[] => [[r[0], r[1]],
  * all — when a hole touches the contour, so its sides on or beyond an edge move 2 mm into the room.
  */
 function holeInside(h: Vec2[], poly: Vec2[]): Vec2[] {
+  // an L-shaped opening (l-turn stairs): 2 mm smaller all round
+  if (h.length !== 4) return offsetPolygon(h, -0.002);
   const e = 0.002, xs = poly.map((p) => p[0]), ys = poly.map((p) => p[1]);
   let x0 = Math.max(Math.min(...h.map((p) => p[0])), Math.min(...xs) + e), x1 = Math.min(Math.max(...h.map((p) => p[0])), Math.max(...xs) - e);
   let y0 = Math.max(Math.min(...h.map((p) => p[1])), Math.min(...ys) + e), y1 = Math.min(Math.max(...h.map((p) => p[1])), Math.max(...ys) - e);
@@ -185,7 +187,7 @@ export function revealGeometry(room: HomeRoom, w: RoomWall, depth = revealDepth(
 
 /** floor (with a stair opening on the level the stairs arrive at from below) */
 export function floorGeometry(room: HomeRoom, offset = SURFACE_OFFSET): THREE.BufferGeometry {
-  const holes = room.stairOpening && stairArrivesAt(room.level) ? [rectPoly(room.stairOpening)] : [];
+  const holes = room.stairOutline && stairArrivesAt(room.level) ? [room.stairOutline] : [];
   return toGeometry([flatGeometry(room.polygon, holes, () => room.floorZ + offset, false)]);
 }
 
@@ -193,7 +195,7 @@ export function floorGeometry(room: HomeRoom, offset = SURFACE_OFFSET): THREE.Bu
 export function ceilingGeometry(room: HomeRoom, offset = SURFACE_OFFSET): THREE.BufferGeometry {
   const zOf = (x: number, y: number) => room.floorZ + room.ceiling.heightAt(x, y) - offset;
   if (room.ceiling.kind === 'flat') {
-    const holes = room.stairOpening ? [rectPoly(room.stairOpening)] : [];
+    const holes = room.stairOutline ? [room.stairOutline] : [];
     return toGeometry([flatGeometry(room.polygon, holes, zOf, true)]);
   }
   const pos: number[] = [], uv: number[] = [];

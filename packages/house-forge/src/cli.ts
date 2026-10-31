@@ -136,7 +136,7 @@ function compile(o: Opts): number {
       console.log(`  - ${r.id} ${r.name} (${r.kind}): ${fmt(r.area)} m²${src.area_data !== src.area ? ` — on the drawing ${fmt(src.area_data)} m² (${src.area_data ? `${Math.round(((src.area - src.area_data) / src.area_data) * 100)} %` : ''})` : ''}${under}`);
     }
   }
-  const doors = plan.data.doors.length, windows = rooms.reduce((s, r) => s + r.openings.length, 0), stairs = b.stairs.map((s) => `${s.id} ${s.fromLevel} → ${s.toLevel}`);
+  const doors = plan.data.doors.length, windows = rooms.reduce((s, r) => s + r.openings.length, 0), stairs = b.stairs.map((s) => `${s.id} ${s.kind} ${s.fromLevel} → ${s.toLevel}`);
   console.log(`- Openings: ${doors} door(s), ${windows} window(s) (counted per room)${stairs.length ? `; stairs ${stairs.join(', ')}` : ''}`);
   if (raw.roof?.parts?.length) {
     const top = roofBounds(b)?.max[2];

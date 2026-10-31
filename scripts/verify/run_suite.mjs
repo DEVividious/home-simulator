@@ -25,6 +25,7 @@ const ALL = [
   ['mounted', 'verify_mounted.mjs', 5],
   ['electrical', 'verify_electrical.mjs', 5],
   ['shell', 'verify_shell.mjs', 3],
+  ['features', 'verify_features.mjs', 4],
 ];
 const unknown = only.filter((n) => !ALL.some(([x]) => x === n));
 if (unknown.length) { console.error(`unknown test(s): ${unknown.join(', ')} — available: ${ALL.map(([n]) => n).join(', ')}`); process.exit(2); }

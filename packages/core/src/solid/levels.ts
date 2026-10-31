@@ -183,8 +183,8 @@ export function levelSolid(geo: Geometry, keep: Keep, b: Building, level: LevelI
   for (const c of cuts) voids.push(keep(tags.original(cutterSolid(geo, keep, c), { kind: 'opening', level, roomId: c.roomId, holeId: c.id, wallId: c.wallId })));
   if (stairArrivesAt(b, level)) {
     const stairId = b.stairs.find((s) => s.toLevel === level)?.id;
-    for (const r of rooms) if (r.stairOpening) {
-      const box = rectSection(geo, keep, r.stairOpening.map(snap));
+    for (const r of rooms) if (r.stairOutline) {
+      const box = keep(new CrossSection([r.stairOutline.map(snap2)]));
       voids.push(keep(tags.original(prism(keep, box, snap(frame.bottom - PROUD), snap(frame.floor + PROUD)), { kind: 'shaft', level, roomId: r.id, stairId })));
     }
   }

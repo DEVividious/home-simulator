@@ -1122,6 +1122,16 @@
       "type": "string",
       "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
      },
+     "kind": {
+      "default": "u-turn",
+      "description": "straight: one flight; l-turn: two flights at a right angle, a landing in the corner; u-turn: two flights side by side, a landing across both",
+      "type": "string",
+      "enum": [
+       "straight",
+       "l-turn",
+       "u-turn"
+      ]
+     },
      "box": {
       "type": "array",
       "prefixItems": [
@@ -1141,11 +1151,11 @@
       "items": false,
       "minItems": 4,
       "maxItems": 4,
-      "description": "[x0, y0, x1, y1] — outline of the whole stair (both flights and the landing)"
+      "description": "[x0, y0, x1, y1] — outline of the whole stair (every flight and landing; for an l-turn the box around the L)"
      },
      "up": {
       "default": "S",
-      "description": "direction one walks up the lower flight (N = +y, plan up); the landing is at that end of the box",
+      "description": "direction one walks up the (lower) flight (N = +y, plan up); a straight flight arrives at that end of the box, an l-turn or u-turn has its landing there",
       "type": "string",
       "enum": [
        "N",
@@ -1156,7 +1166,7 @@
      },
      "turn": {
       "default": "right",
-      "description": "which way one turns on the landing going up (towards the upper flight)",
+      "description": "l-turn, u-turn: which way one turns on the landing going up (towards the upper flight)",
       "type": "string",
       "enum": [
        "left",
@@ -1167,7 +1177,13 @@
       "type": "integer",
       "minimum": 2,
       "maximum": 9007199254740991,
-      "description": "risers per flight (two flights, U-turn)"
+      "description": "straight: all the risers; l-turn: the risers of the lower flight; u-turn: risers per flight (both flights have them)"
+     },
+     "upperRisers": {
+      "description": "l-turn: the risers of the upper flight",
+      "type": "integer",
+      "minimum": 2,
+      "maximum": 9007199254740991
      },
      "tread": {
       "type": "number",
@@ -1179,6 +1195,7 @@
      },
      "gap": {
       "default": 0.05,
+      "description": "u-turn: the gap between the flights [m]",
       "type": "number",
       "minimum": 0
      },

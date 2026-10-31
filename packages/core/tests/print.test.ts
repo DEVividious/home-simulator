@@ -13,7 +13,7 @@ import { profileOf } from '@home-sim/core/print/profiles';
 import { encodePng } from '@home-sim/core/print/raster';
 import { fitOnBed, parseScale } from '@home-sim/core/print/scale';
 import { checkStl, splitNeedles } from '@home-sim/core/print/stl';
-import type { StairDef } from '@home-sim/core/package/types';
+import type { StairDef, UTurnStairDef } from '@home-sim/core/package/types';
 import { levelSolid } from '@home-sim/core/solid/levels';
 import { liveObjects, scoped } from '@home-sim/core/solid/scope';
 import { loadGeometry, type Geometry } from '@home-sim/core/solid/wasm';
@@ -233,7 +233,7 @@ describe('stairs', () => {
   });
 
   it('the steps in the slab of the upper level stand in its floor opening, on the bed of its part, on top of the lower flight', () => {
-    const s = PACKAGES['sample-house']().stairs![0];                      // last step of the upper flight at 2.787, L0's part ends at 2.70
+    const s = PACKAGES['sample-house']().stairs![0] as UTurnStairDef;                      // last step of the upper flight at 2.787, L0's part ends at 2.70
     expect(print('sample-house').notes.map((x) => x.code)).toContain('stairs.split');
     scoped((keep) => {
       const parts = buildParts(geo, keep, PACKAGES['sample-house'](), 75, FDM, 'keep').parts, L0 = parts[0].solid, L1 = parts[1].solid;

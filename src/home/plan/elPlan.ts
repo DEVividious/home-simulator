@@ -11,6 +11,7 @@ import {
 import { offsetPolygon } from '@home-sim/core/model/geom2d';
 import { allLevels, DEFAULT_PLAN_WALL_OFFSET, levelById, levelName, roomById, roomsOfLevel, type RoomWall } from '../model/rooms';
 import { stairs } from '../model/stairs';
+import { stairDrawing } from '@home-sim/core/model/stairs';
 import type { LevelId, Vec2 } from '../model/types';
 import { t } from '../../i18n';
 
@@ -169,9 +170,9 @@ export function buildPlan(o: PlanOptions): PlanDrawing {
     }
     // ---- stairs
     for (const st of stairs().filter((x) => x.fromLevel === level || x.toLevel === level)) {
-      const [sx0, sy0, sx1, sy1] = st.bbox;
-      prims.push({ k: 'poly', pts: [[sx0, sy0], [sx1, sy0], [sx1, sy1], [sx0, sy1]], stroke: LIGHT, lw: mm(0.14), close: true });
-      for (let y = sy1 - st.tread; y > sy0 + 0.9; y -= st.tread) prims.push({ k: 'poly', pts: [[sx0, y], [sx1, y]], stroke: FAINT, lw: mm(0.1) });
+      const d = stairDrawing(st);
+      prims.push({ k: 'poly', pts: d.outline, stroke: LIGHT, lw: mm(0.14), close: true });
+      for (const [a, b] of d.treads) prims.push({ k: 'poly', pts: [a, b], stroke: FAINT, lw: mm(0.1) });
     }
     // ---- furniture as a light background
     for (const f of o.furniture ?? []) prims.push({ k: 'poly', pts: f, stroke: '#c9cdd3', lw: mm(0.1), close: true, fill: '#f6f7f8' });

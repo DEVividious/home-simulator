@@ -112,13 +112,16 @@ const WindowSchema = z.strictObject({
 
 const StairSchema = z.strictObject({
   id, from: id, to: id,
-  box: z.tuple([num, num, num, num]).describe('[x0, y0, x1, y1] — outline of the whole stair (both flights and the landing)'),
-  up: z.enum(['N', 'S', 'E', 'W']).default('S').describe('direction one walks up the lower flight (N = +y, plan up); the landing is at that end of the box'),
-  turn: z.enum(['left', 'right']).default('right').describe('which way one turns on the landing going up (towards the upper flight)'),
-  risers: z.number().int().min(2).describe('risers per flight (two flights, U-turn)'),
-  tread: num.positive(), flightWidth: num.positive(), gap: num.min(0).default(0.05),
+  kind: z.enum(['straight', 'l-turn', 'u-turn']).default('u-turn').describe('straight: one flight; l-turn: two flights at a right angle, a landing in the corner; u-turn: two flights side by side, a landing across both'),
+  box: z.tuple([num, num, num, num]).describe('[x0, y0, x1, y1] — outline of the whole stair (every flight and landing; for an l-turn the box around the L)'),
+  up: z.enum(['N', 'S', 'E', 'W']).default('S').describe('direction one walks up the (lower) flight (N = +y, plan up); a straight flight arrives at that end of the box, an l-turn or u-turn has its landing there'),
+  turn: z.enum(['left', 'right']).default('right').describe('l-turn, u-turn: which way one turns on the landing going up (towards the upper flight)'),
+  risers: z.number().int().min(2).describe('straight: all the risers; l-turn: the risers of the lower flight; u-turn: risers per flight (both flights have them)'),
+  upperRisers: z.number().int().min(2).optional().describe('l-turn: the risers of the upper flight'),
+  tread: num.positive(), flightWidth: num.positive(), gap: num.min(0).default(0.05).describe('u-turn: the gap between the flights [m]'),
   note: z.string().optional(), confidence: z.string().optional(),
-});
+}).refine((s) => s.kind !== 'l-turn' || s.upperRisers !== undefined, 'an l-turn needs upperRisers (the risers of the upper flight)')
+  .refine((s) => s.kind === 'l-turn' || s.upperRisers === undefined, 'upperRisers is for l-turn stairs only');
 
 const FurnitureSchema = z.strictObject({
   key: id.optional(), room: id, catalogId: z.string().min(1), variant: z.string().nullable().optional(),

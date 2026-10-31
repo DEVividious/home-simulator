@@ -15,7 +15,7 @@
 | `door.swing` | `swingInto` is not one of the two rooms (or `exterior` for an outside door) | use a room id of `between`; for an outside door that opens outwards, `"exterior"` |
 | `window.wall` / `window.span` | `at` is not on a wall of the room / the window is longer than the wall | put `at` on the wall line; check the width |
 | `window.interior` (warning) | a window on a wall shared with another room | probably the wrong room or wall |
-| `stairs.*` | box too short / centre not in a room of both levels / unusual riser / box width across the flights | see authoring-conventions.md § Stairs; `up` and `turn` set the direction |
+| `stairs.*` | box too short for the treads (`stairs.depth`: and the landing) / centre not in a room of both levels / unusual riser / box width across the flights | see authoring-conventions.md § Stairs: check `kind` (straight, l-turn, u-turn), the risers of each flight and the tread; `up` and `turn` set the direction |
 | `furniture.ceiling` (warning) | an item is taller than the sloped ceiling above part of it | move it towards the ridge, choose a lower variant or give `dims.h`; a knee-wall cupboard is fine below 1.40 |
 | `furniture.catalog` / `furniture.variant` | unknown catalog id / variant | skills/home-from-plan/references/catalog-ids.md |
 | `furniture.outside` (warning) | the centre of an item is outside its room | wrong room id or coordinates |

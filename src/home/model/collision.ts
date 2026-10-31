@@ -1,7 +1,7 @@
 // Furniture collisions — warnings (not blocking): item ↔ wall (sticks out of the room), item ↔ item, item ↔ door /
 // passage (swing zone), item ↔ window (taller than the sill right in front of the window), stairs, sloped ceiling.
 import { fmtCm, t } from '../../i18n';
-import { stairArrivesAt } from './stairs';
+import { stairArrivesAt, stairOpeningRects } from './stairs';
 import { mayOverlap, type CatalogItem } from '../catalog/furniture';
 import { convexInsidePolygon, convexOverlap, obbCorners, obbOverlap, type OBB } from '@home-sim/core/model/geom2d';
 import { doorById, leafSegment } from './doors';
@@ -58,9 +58,8 @@ export function furnitureWarnings(room: HomeRoom, item: CatalogItem, p: Furnitur
       if (w.sill > 0.05 && block > w.sill + 0.02) { out.push({ kind: 'window', level: 'warn', text: t('collision.window', { height: cm(block), sill: cm(w.sill) }) }); break; }
       if (w.sill <= 0.05 && top > 1.2) { out.push({ kind: 'window', level: 'info', text: t('collision.glazing') }); break; }
     }
-    if (room.stairOpening) {
-      const [x0, y0, x1, y1] = room.stairOpening;
-      if (convexOverlap(corners, [[x0, y0], [x1, y0], [x1, y1], [x0, y1]], 0.01)) out.push({ kind: 'stairs', level: 'warn', text: stairArrivesAt(room.level) ? t('collision.stairOpening') : t('collision.stairFlight') });
+    if (stairOpeningRects(room).some(([x0, y0, x1, y1]) => convexOverlap(corners, [[x0, y0], [x1, y0], [x1, y1], [x0, y1]], 0.01))) {
+      out.push({ kind: 'stairs', level: 'warn', text: stairArrivesAt(room.level) ? t('collision.stairOpening') : t('collision.stairFlight') });
     }
     if (room.ceiling.kind !== 'flat') {
       const avail = Math.min(...[...corners, o.c].map((q) => room.ceiling.heightAt(q[0], q[1])));

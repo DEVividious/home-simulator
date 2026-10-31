@@ -12,7 +12,7 @@ import { derived, derivedByKey } from '../../project/active';
 import { t } from '../../i18n';
 import { segDist } from '@home-sim/core/model/geom2d';
 import { allLevels, roomById, roomsOfLevel, type HoleKind, type HomeRoom, type RoomWall, type WallHole } from './rooms';
-import { stairs } from './stairs';
+import { inStairOpening } from './stairs';
 import type { LevelId, Vec2, Vec3 } from './types';
 
 /** virtual "outside" space: building facades and points on the site (only in a project with a site) */
@@ -236,7 +236,7 @@ function slabsClear(o: Vec3, d: Vec3, room: MountSpace, hz: number): boolean {
     if (!(l.floorZ > lo + 1e-6 && l.floorZ <= hi + 1e-6)) continue;          // slab outside the ray segment
     if (Math.abs(d[2]) < 1e-9) return false;
     const s = (l.floorZ - o[2]) / d[2], x = o[0] + d[0] * s, y = o[1] + d[1] * s;
-    if (!stairs().some((st) => st.toLevel === l.id && x > st.bbox[0] && x < st.bbox[2] && y > st.bbox[1] && y < st.bbox[3])) return false;
+    if (!inStairOpening(l.id, [x, y])) return false;
   }
   return true;
 }

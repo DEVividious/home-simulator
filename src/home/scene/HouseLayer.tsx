@@ -17,6 +17,7 @@ import { useSides } from '../store/sides';
 import { patchTreeMaterials, seeUniforms, setSeeThroughTarget } from '../three/seeThrough';
 import { wake } from './renderLoop';
 import { FlatGround, FlatGroundMesh, GroundProbe, StairsMesh } from './WalkLayer';
+import { ExitSigns } from './ExitSigns';
 import { DoorsLayer } from './DoorsLayer';
 import { SectionCaps } from './SectionCaps';
 import { BoundaryLine, EnvironmentLayer, ModelLayer, SiteLayer, type ModelSettings, type Picked } from './ModelLayers';
@@ -88,6 +89,7 @@ export function HouseLayer({ data, mode }: { data: SceneData; mode: SceneMode })
         {model ? <ModelLayer url={model} settings={settings} onPick={onPick} /> : requestedShell() === 'grid' ? <GridShell mode={mode} /> : <CoreShellLayer mode={mode} />}
         <StairsMesh config={sides[0].variant.stairs} walking={walking} selected={selection?.kind === 'stairs'} />
         <DoorsLayer mode={mode} />
+        {siteOn && <ExitSigns walking={walking} />}
         <SectionCaps mode={mode} />
       </group>
       {/* expert helpers: 1 m grid at the lowest floor, axes at the project origin (glTF: x, y up, −project y) */}

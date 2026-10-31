@@ -9,7 +9,9 @@ import { readProjectDir } from '../../project/node';
 import { hasStairs, inStairBox, stairAllowed, stairArrivesAt, stairFacts, stairs, stairZ, type StairDef } from '../model/stairs';
 import { DEFAULT_STAIRS, finishLook, isFinish, resolveStairs, STAIR_FINISHES, STAIRS_PRESETS, stairsErrors, stairsSummary, type StairsConfig } from '../model/stairsConfig';
 import { variantExtrasErrors, type Variant } from '../model/variantData';
-import { buildStairs, stairLayout } from '../three/stairGeometry';
+import { buildStairs, noseZ } from '../three/stairGeometry';
+import { stairPieces, type StairFlight } from '@home-sim/core/model/stairs';
+import type { UTurnStairDef } from '@home-sim/core/package/types';
 
 const root = path.resolve(__dirname, '..', '..', '..');
 const readProject = (id: string) => readProjectDir(path.join(root, 'projects', id));
@@ -28,8 +30,8 @@ describe('project without stairs (demo apartment)', () => {
 });
 
 describe('sample house stairs', () => {
-  let S: StairDef;
-  beforeAll(() => { activateProject(readProject('sample-house')); S = stairs()[0]; });
+  let S: UTurnStairDef;
+  beforeAll(() => { activateProject(readProject('sample-house')); S = stairs()[0] as UTurnStairDef; });
   afterAll(() => { activateProject(readProject('demo-apartment')); });
 
   describe('stairs configuration stored in the variant', () => {
@@ -58,7 +60,7 @@ describe('sample house stairs', () => {
     it('structure description on the stairs card comes from the project stair data: number and size of steps, landing level', () => {
       expect(stairFacts(S)).toBe('Reinforced concrete structure: 2 flights × 9 steps (16.4 × 27 cm), landing +1.475 — this is building data');
       // other stairs — other numbers (centimetres without trailing zeros, level with 2–3 decimals)
-      expect(stairFacts({ ...S, risers: 8, riser: 0.18, tread: 0.27, landingZ: 1.44 })).toBe('Reinforced concrete structure: 2 flights × 8 steps (18 × 27 cm), landing +1.44 — this is building data');
+      expect(stairFacts({ ...S, risers: 8, riser: 0.18, tread: 0.27, landingZ: 1.44 } as StairDef)).toBe('Reinforced concrete structure: 2 flights × 8 steps (18 × 27 cm), landing +1.44 — this is building data');
     });
   });
 
@@ -85,9 +87,9 @@ describe('sample house stairs', () => {
     });
     it('handrail: above the nosing line at the given height; outer — along the outer side of both flights, inner — at the partition', () => {
       const [x0, , x1, y1] = S.bbox;
-      const L = stairLayout();
-      expect(L.nose1(y1)).toBeCloseTo(S.riser, 6); expect(L.nose1(L.le)).toBeCloseTo(S.landingZ, 2);
-      expect(L.nose2(L.le)).toBeCloseTo(S.landingZ + S.riser, 6); expect(L.nose2(y1)).toBeCloseTo(S.topZ, 2);
+      const [f1, , f2] = stairPieces(S) as StairFlight[];
+      expect(noseZ(f1, S.riser, S.tread, 0)).toBeCloseTo(S.riser, 6); expect(noseZ(f1, S.riser, S.tread, S.run)).toBeCloseTo(S.landingZ, 2);
+      expect(noseZ(f2, S.riser, S.tread, 0)).toBeCloseTo(S.landingZ + S.riser, 6); expect(noseZ(f2, S.riser, S.tread, y1 - S.landingEdge)).toBeCloseTo(S.topZ, 2);
       const outer = bb(buildStairs({ ...DEFAULT_STAIRS, handrail: { place: 'outer', height: 0.9, profile: 'round', finish: 'oak' } }).rail!);
       expect(outer.x[0]).toBeLessThan(x0 + 0.12); expect(outer.x[1]).toBeGreaterThan(x1 - 0.12);
       expect(outer.z[1]).toBeCloseTo(S.topZ + 0.9, 1);

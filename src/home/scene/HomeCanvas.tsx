@@ -45,6 +45,8 @@ import { CompareOverlay } from '../ui/Compare';
 import { walkHud, useWalkHud } from '../store/walk';
 import { exitWalk } from '../store/ui';
 import { fmtM, fmtNum, t } from '../../i18n';
+import { exits } from '../model/exits';
+import { arrowPosition, signPosition } from './ExitSigns';
 
 const SKY = '#cfe0ee', INDOOR = '#eef1f5';
 
@@ -139,6 +141,8 @@ function SceneBridge() {
         const d = doorById(id), sg = d ? leafSegment(d, t) : null;
         return d && sg ? at([sg.a[0] + (sg.b[0] - sg.a[0]) * along, sg.a[1] + (sg.b[1] - sg.a[1]) * along, d.floorZ + h]) : null;
       },
+      /** exits in the walk (usability issue B8): ids, kinds and where their sign and floor arrow are on the screen (tests) */
+      exits: () => exits().map((e) => ({ id: e.id, kind: e.kind, sign: at(signPosition(e)), arrow: at(arrowPosition(e)), shown: !!sceneRef.current?.getObjectByName(`HOME_EXIT_${e.id}`) })),
       /** depth diagnostics (finishes z-fighting with the slab / wall when zoomed out): sets the camera distance to the target; returns the camera state */
       depthProbe(distance?: number) {
         const c = sceneApi.camera as THREE.PerspectiveCamera | null, t = sceneApi.target;

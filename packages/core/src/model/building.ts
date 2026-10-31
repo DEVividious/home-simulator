@@ -4,6 +4,7 @@
 // added by the app, never here.
 import { flatCeiling, roofCeiling, type CeilingProfile } from './ceiling.ts';
 import { ccw, centroid, dist, norm, pointInPolygon, round, segDist, sub } from './geom2d.ts';
+import { stairOutline } from './stairs.ts';
 import { atticPlanes, roofFromAttic, roofModel, type RoofModel, type RoofPiece } from './roof.ts';
 import type { DoorDef, LevelId, ProjectPackage, Rect, RoomJson, RoomKind, ShellSpec, StairDef, Vec2 } from '../package/types.ts';
 
@@ -57,6 +58,8 @@ export interface Room {
   doors: { id: string | null; wallId: string; t0: number; t1: number; leaf: number; passage: boolean; center: Vec2 }[];
   windows: { id: string; wallId: string; t0: number; t1: number; sill: number; head: number; kind: HoleKind }[];
   stairOpening: [number, number, number, number] | null;
+  /** the outline of that opening (counter-clockwise): the stairs' outline — the L of an l-turn — or the rectangle */
+  stairOutline: Vec2[] | null;
   roofWindows: { id: string; rect: [number, number, number, number] }[];
 }
 
@@ -107,7 +110,7 @@ function ceilingFor(r: RoomJson, poly: Vec2[], roof: RoofModel | null, roofWindo
   return under.length ? roofCeiling(under, c.z!, r.floor_z, poly, roofWindows) : flatCeiling(c.z!, r.floor_z, poly);
 }
 
-function buildRoom(r: RoomJson, roof: RoofModel | null): Room {
+function buildRoom(r: RoomJson, roof: RoofModel | null, stairs: StairDef[]): Room {
   const poly = ccw(r.polygon.map((p) => [p[0], p[1]] as Vec2));
   const ceiling = ceilingFor(r, poly, roof, r.roof_windows.map((w) => [w.plan_rect[0], w.plan_rect[1], w.plan_rect[2], w.plan_rect[3]]));
   const walls: RoomWall[] = poly.map((a, i) => {
@@ -164,8 +167,15 @@ function buildRoom(r: RoomJson, roof: RoofModel | null): Room {
     id: r.id, name: r.name, label: r.label ?? r.name, kind: r.kind ?? 'room', tags: r.tags ?? [], level: r.level, floorZ: r.floor_z, area: r.area, areaData: r.area_data, idSource: r.id_source,
     polygon: poly, bbox: [x0, y0, x1, y1], center: centroid(poly), rectangular: r.rectangular, ceiling, walls, doors, windows,
     stairOpening: r.stair_opening ? [r.stair_opening[0], r.stair_opening[1], r.stair_opening[2], r.stair_opening[3]] : null,
+    stairOutline: r.stair_opening ? openingOutline(r, stairs) : null,
     roofWindows: r.roof_windows.map((w) => ({ id: w.id, rect: [w.plan_rect[0], w.plan_rect[1], w.plan_rect[2], w.plan_rect[3]] })),
   };
+}
+
+/** the outline of a room's stair opening: the outline of the stairs arriving there with that box, else the box */
+function openingOutline(r: RoomJson, stairs: StairDef[]): Vec2[] {
+  const [x0, y0, x1, y1] = r.stair_opening!, s = stairs.find((q) => q.toLevel === r.level && q.bbox.every((v, i) => Math.abs(v - r.stair_opening![i]) < 1e-6));
+  return s ? stairOutline(s) : [[x0, y0], [x1, y0], [x1, y1], [x0, y1]];
 }
 
 const NO_STAIRS: StairDef[] = [];
@@ -179,11 +189,11 @@ export function building(data: BuildingData): Building {
   const attic = data.roof ? null : roofFromAttic(src.rooms, shell.exteriorWall);
   const roof = data.roof ? roofModel(data.roof) : attic ? roofModel(attic, true) : null;
   const levels: Level[] = Object.entries(src.levels).map(([id, l]) => ({ id, name: l.name, floorZ: l.floor_z, cutHeight: l.cut_height ?? DEFAULT_CUT_HEIGHT, planWallOffset: l.plan_wall_offset ?? DEFAULT_PLAN_WALL_OFFSET })).sort((a, b) => a.floorZ - b.floorZ);
-  const rooms = src.rooms.map((r) => buildRoom(r, roof));
+  const stairs = data.stairs ?? NO_STAIRS, rooms = src.rooms.map((r) => buildRoom(r, roof, stairs));
   const roomsByLevel = new Map<LevelId, Room[]>(levels.map((l) => [l.id, rooms.filter((r) => r.level === l.id)]));
   const b: Building = {
     levels, levelById: new Map(levels.map((l) => [l.id, l])), rooms, roomById: new Map(rooms.map((r) => [r.id, r])), roomsByLevel,
-    doors: data.doors, stairs: data.stairs ?? NO_STAIRS, shell, roof,
+    doors: data.doors, stairs, shell, roof,
   };
   cache.set(data, b);
   return b;

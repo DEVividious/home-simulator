@@ -14,7 +14,7 @@
 import { building, roomsOfLevel, type Building, type BuildingData } from '../model/building.ts';
 import { offsetPolygon } from '../model/geom2d.ts';
 import { regionPolygon, surfaceRange } from '../model/roof.ts';
-import { stairFrame } from '../model/stairs.ts';
+import { flightLength, stairFrame, stairPieces, stairSides, type StairPiece } from '../model/stairs.ts';
 import type { LevelId, StairDef, Vec2, Vec3 } from '../package/types.ts';
 import { builtLevels, dormerOpenings, levelFrame, levelSolid, span } from '../solid/levels.ts';
 import { PROUD, snap } from '../solid/openings.ts';
@@ -97,48 +97,60 @@ export interface PrintNote { code: string; element: string; message: string }
 const ccwPoly = (p: Vec2[]): Vec2[] => { let s = 0; for (let i = 0; i < p.length; i++) { const a = p[i], b = p[(i + 1) % p.length]; s += a[0] * b[1] - b[0] * a[1]; } return s < 0 ? [...p].reverse() : p; };
 
 /**
- * A flight of stairs or the landing as a profile (u along the walking line, z up) extruded across the flight: the canonical frame
- * (stairs.ts) mapped onto the plan, the local axes turned so the map is a rotation (a mirror would turn the solid inside out).
+ * A flight of stairs or a landing as a profile (u along the walking line, z up) extruded across it: `start` is the canonical point
+ * at u = 0 on one side, `along` the walking direction and `across` the direction over the width (canonical frame, stairs.ts),
+ * mapped onto the plan; the local axes are turned so the map is a rotation (a mirror would turn the solid inside out).
  */
-function flightSolid(geo: Geometry, keep: Keep, s: StairDef, profile: Vec2[], origin: Vec2, along: Vec2, x0: number, x1: number, floorZ: number, [z0, z1]: [number, number]): Manifold | null {
+function flightSolid(geo: Geometry, keep: Keep, s: StairDef, profile: Vec2[], start: Vec2, along: Vec2, across: Vec2, width: number, floorZ: number, [z0, z1]: [number, number]): Manifold | null {
   const f = stairFrame(s);
   let cs = keep(new geo.CrossSection([ccwPoly(profile.map((p) => [snap(p[0]), snap(p[1])] as Vec2))]));
   cs = keep(cs.intersect(keep(new geo.CrossSection([[[-1e3, z0], [1e3, z0], [1e3, z1], [-1e3, z1]]]))));
   if (cs.area() < 1e-8) return null;
-  const w = (p: Vec2): Vec2 => f.toWorld(p);
-  const o = w([x0, origin[1]]), uW = w([x0 + along[0], origin[1] + along[1]]), xW = w([x0 + 1, origin[1]]);
-  const U: Vec3 = [uW[0] - o[0], uW[1] - o[1], 0], X: Vec3 = [xW[0] - o[0], xW[1] - o[1], 0], width = x1 - x0;
+  const o = f.toWorld(start), uW = f.toWorld([start[0] + along[0], start[1] + along[1]]), xW = f.toWorld([start[0] + across[0], start[1] + across[1]]);
+  const U: Vec3 = [uW[0] - o[0], uW[1] - o[1], 0], X: Vec3 = [xW[0] - o[0], xW[1] - o[1], 0];
   // local (u, z, w) → plan o + U·u + X·w, height floorZ + z; det [U, Z, X] = U × Z · X must be positive
   const det = (U[1] * 1 - 0) * X[0] - (U[0] * 1) * X[1];
-  const [W, start]: [Vec3, Vec2] = det > 0 ? [X, o] : [[-X[0], -X[1], 0], [o[0] + X[0] * width, o[1] + X[1] * width]];
+  const [W, o2]: [Vec3, Vec2] = det > 0 ? [X, o] : [[-X[0], -X[1], 0], [o[0] + X[0] * width, o[1] + X[1] * width]];
   const m = keep(cs.extrude(width));
-  return keep(m.transform([U[0], U[1], 0, 0, 0, 0, 1, 0, W[0], W[1], 0, 0, start[0], start[1], floorZ, 1]));
+  return keep(m.transform([U[0], U[1], 0, 0, 0, 0, 1, 0, W[0], W[1], 0, 0, o2[0], o2[1], floorZ, 1]));
 }
 
 /**
- * Solid stairs from the floor of their lower level — two flights and the landing — between the heights `from` and `to`
- * (absolute). `reach` carries the end of the upper flight that far beyond the stairs' outline: the piece printed with the upper
- * level runs into the edge of its floor there.
+ * Solid stairs from the floor of their lower level — every flight and landing (stairs.ts) — between the heights `from` and `to`
+ * (absolute). Each piece runs 5 mm into the next one, and its outer sides 5 mm into the walls around the stairs; `reach` carries
+ * the top of the stairs that far beyond their outline: the piece printed with the upper level runs into the edge of its floor.
  */
 export function stairSolid(geo: Geometry, keep: Keep, s: StairDef, floorZ: number, [from, to]: [number, number], ramp: boolean, reach = 0): Manifold | null {
-  const f = stairFrame(s), [bx0, by0, bx1, by1] = f.box, { tread: t, riser: r, risers, landingZ, split, gap } = s, le = s.landingEdge, P = PROUD, n = risers - 1;
+  const { tread: t, riser: r } = s, P = PROUD, pieces = stairPieces(s), sides = stairSides(s);
   const clip: [number, number] = [Math.max(-1, from - floorZ), Math.min(1e3, to - floorZ)];
-  // flight 1: from the entry (y = by1, u = 0) down the canonical y to the landing edge; its far end runs 5 mm into the landing
-  const run1 = by1 - le, top1: Vec2[] = [];
-  if (ramp) top1.push([0, r], [(n - 1) * t, r * n]);
-  else for (let i = 0; i < n; i++) top1.push([i * t, r * (i + 1)], [(i + 1) * t, r * (i + 1)]);
-  top1.push([run1 + P, r * n]);
-  const f1 = flightSolid(geo, keep, s, [[0, -P], [run1 + P, -P], ...[...top1].reverse()], [0, by1], [0, -1], split + gap / 2, bx1 + P, floorZ, clip);
-  // landing: the full width at the far end of the flights (flight 1 runs into it, flight 2 starts inside it)
-  const land = flightSolid(geo, keep, s, [[-P, -P], [le - by0, -P], [le - by0, landingZ], [-P, landingZ]], [0, by0], [0, 1], bx0 - P, bx1 + P, floorZ, clip);
-  // flight 2: from the landing edge up the canonical y; it starts 5 mm inside the landing
-  const top2: Vec2[] = [[-P, landingZ], [0, landingZ]];
-  if (ramp) top2.push([0, landingZ + r], [(n - 1) * t, landingZ + r * n], [n * t, landingZ + r * n]);
-  else for (let i = 0; i < n; i++) top2.push([i * t, landingZ + r * (i + 1)], [(i + 1) * t, landingZ + r * (i + 1)]);
-  if (reach > 0) top2.push([top2[top2.length - 1][0] + reach, top2[top2.length - 1][1]]);
-  const end2 = top2[top2.length - 1][0];
-  const f2 = flightSolid(geo, keep, s, [[-P, -P], [end2, -P], ...[...top2].reverse()], [0, le], [0, 1], bx0 - P, split - gap / 2, floorZ, clip);
-  const parts = [f1, land, f2].filter((m): m is Manifold => !!m);
+  const same = (a: Vec2, b: Vec2) => a[0] === b[0] && a[1] === b[1];
+  /** how far a piece reaches beyond its side facing n: into a wall or a balustrade side, or (the top) into the upper floor */
+  const grow = (p: StairPiece, n: Vec2) => {
+    const es = sides.filter((e) => e.piece === p && same(e.out, n));
+    if (es.some((e) => e.outer && e.kind !== 'entry' && e.kind !== 'exit')) return P;
+    return p === pieces[pieces.length - 1] && p.kind === 'landing' && es.some((e) => e.kind === 'exit') ? reach : 0;
+  };
+  const parts: Manifold[] = [];
+  pieces.forEach((p, i) => {
+    const [x0, y0, x1, y1] = p.rect;
+    if (p.kind === 'landing') {
+      const a = x0 - grow(p, [-1, 0]), b = x1 + grow(p, [1, 0]), u0 = -grow(p, [0, -1]), u1 = y1 - y0 + grow(p, [0, 1]);
+      parts.push(...[flightSolid(geo, keep, s, [[u0, -P], [u1, -P], [u1, p.z], [u0, p.z]], [a, y0], [0, 1], [1, 0], b - a, floorZ, clip)].filter((m): m is Manifold => !!m));
+      return;
+    }
+    const n = p.risers - 1, len = flightLength(p), z0 = p.z0, top: Vec2[] = [];
+    if (i > 0) top.push([-P, z0], [0, z0]);
+    if (ramp) top.push([0, z0 + r], [(n - 1) * t, z0 + r * n], [len, z0 + r * n]);
+    else for (let k = 0; k < n; k++) top.push([k * t, z0 + r * (k + 1)], [(k + 1) * t, z0 + r * (k + 1)]);
+    const end = top[top.length - 1];
+    if (i < pieces.length - 1) top.push([len + P, end[1]]);
+    else if (reach > 0) top.push([end[0] + reach, end[1]]);
+    const along = p.dir, across: Vec2 = along[0] ? [0, 1] : [1, 0];
+    const [c0, c1] = along[0] ? [y0 - grow(p, [0, -1]), y1 + grow(p, [0, 1])] : [x0 - grow(p, [-1, 0]), x1 + grow(p, [1, 0])];
+    const u = along[0] > 0 ? x0 : along[0] < 0 ? x1 : along[1] > 0 ? y0 : y1, start: Vec2 = along[0] ? [u, c0] : [c0, u];
+    const m = flightSolid(geo, keep, s, [[top[0][0], -P], [top[top.length - 1][0], -P], ...[...top].reverse()], start, along, across, c1 - c0, floorZ, clip);
+    if (m) parts.push(m);
+  });
   return parts.length ? keep(geo.Manifold.union(parts)) : null;
 }
 

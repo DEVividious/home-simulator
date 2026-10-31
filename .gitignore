@@ -14,6 +14,8 @@ userdata/
 reports/
 projects/*/preview/
 projects/*/print/
+# temporary projects of the browser tests (scripts/verify/verify_features.mjs)
+projects/e2e-*/
 
 # locally downloaded tools (adb for phone install)
 .tools/

@@ -78,7 +78,7 @@ function buildLevel(b: Building, level: LevelId, spec: ShellSpec): LevelShell {
   const holes: { room: Room; wall: RoomWall; hole: WallHole; p0: Vec2; p1: Vec2; out: Vec2 }[] = [];
   for (const r of rooms) {
     for (const q of r.polygon) { xv.push(q[0] - t, q[0], q[0] + t); yv.push(q[1] - t, q[1], q[1] + t); }
-    if (r.stairOpening) { xv.push(r.stairOpening[0], r.stairOpening[2]); yv.push(r.stairOpening[1], r.stairOpening[3]); }
+    if (r.stairOutline) for (const q of r.stairOutline) { xv.push(q[0]); yv.push(q[1]); }
     for (const w of r.walls) {
       if (!axisAligned(w)) continue;
       const out: Vec2 = [-w.inward[0] || 0, -w.inward[1] || 0];   // no −0
@@ -108,9 +108,9 @@ function buildLevel(b: Building, level: LevelId, spec: ShellSpec): LevelShell {
   };
   const walls = surface(xs, ys, zs, wallSolid);
   // --- slabs: under the whole level (without stair openings), roof slab over the top level
-  const stair = stairArrivesAt(b, level) ? rooms.map((r) => r.stairOpening).filter((s): s is [number, number, number, number] => !!s) : [];
+  const stair = stairArrivesAt(b, level) ? rooms.map((r) => r.stairOutline).filter((s): s is Vec2[] => !!s) : [];
   const built = (i: number, j: number) => cls[i * ny + j] !== 0;
-  const inStair = (i: number, j: number) => { const x = (xs[i] + xs[i + 1]) / 2, y = (ys[j] + ys[j + 1]) / 2; return stair.some((s) => x > s[0] && x < s[2] && y > s[1] && y < s[3]); };
+  const inStair = (i: number, j: number) => { const x = (xs[i] + xs[i + 1]) / 2, y = (ys[j] + ys[j + 1]) / 2; return stair.some((s) => pointInPolygon([x, y], s, 0)); };
   const floor = surface(xs, ys, [z0 - spec.slab, z0], (i, j) => built(i, j) && !inStair(i, j));
   const isTop = b.levels[b.levels.length - 1]?.id === level;
   const top = isTop ? surface(xs, ys, [z1, z1 + spec.slab], (i, j) => built(i, j)) : [];

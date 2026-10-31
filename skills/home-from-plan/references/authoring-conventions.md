@@ -46,15 +46,25 @@ These rules make a package correct for the engine and stable for the user's save
 - Windows belong on exterior walls (the compiler warns otherwise).
 
 ## Stairs
-- Only two-flight U-turn stairs are modelled: `box` [x0, y0, x1, y1] = both flights and the landing. `up` = the direction one
-  walks up the lower flight (on drawings: the arrow, from the "start" dot towards the landing; N = plan up), `turn` = left /
-  right on the landing. Width across the flights = 2 × flightWidth + gap; length ≥ (risers − 1) × tread + landing.
+- Three kinds (`kind`), read from the tread lines and the arrow:
+  - `straight` — one flight. `risers` = all the risers (count the tread lines and add one; or the "n × 17.5" note); the box is
+    flightWidth wide and (risers − 1) × tread long. A box a little longer ends in a landing at the upper floor.
+  - `l-turn` — a flight, a square landing in the corner, a flight at a right angle. `risers` = the lower flight's,
+    `upperRisers` = the upper flight's; the box is the rectangle around the L: (risers − 1) × tread + landing deep along the
+    lower flight, (upperRisers − 1) × tread + landing wide along the upper one. Its free corner stays part of the room.
+  - `u-turn` (the default) — two flights side by side, a landing across both ends. `risers` per flight; width across the
+    flights = 2 × flightWidth + `gap`; length ≥ (risers − 1) × tread + landing.
+- `up` = the direction one walks up the lower flight (on drawings: the arrow, from the "start" dot; N = plan up), `turn` = left /
+  right on the landing (l-turn, u-turn). `box` [x0, y0, x1, y1] = every flight and landing.
+- The riser comes from the level heights: (upper floorZ − lower floorZ) / all the risers — 0.15–0.19 m is normal; anything else
+  means a miscounted flight.
 - The centre of the box must lie in a room of the lower level and in a room of the upper level (the opening in its floor). On
   the lower level the space under the upper flight belongs to the room around the foot of the stairs; printed areas usually
   leave the stair out — say so in the README when `areaPrinted` differs for that reason.
 - Draw the box on the inner faces; a box reaching a few centimetres into a wall is clipped to the room.
-- Other stair shapes (straight, L-shaped, winding): the nearest U-turn of the same footprint, or the opening as a room plus a
-  `notIncluded` note; say it in the README.
+- Winding or spiral stairs, and a straight flight with a landing half way: the nearest of the three kinds with the same
+  footprint and the same number of risers (winders → `l-turn` with the turning steps counted as the landing), and say it in
+  the README.
 
 ## Walls that are not orthogonal
 - The generated shell needs axis-aligned walls. A 45° corner (a chamfered hall, a wall under the stairs) becomes a right angle:

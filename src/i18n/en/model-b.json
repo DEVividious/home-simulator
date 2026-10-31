@@ -54,6 +54,8 @@
  "interiors.arrangement": "Arrangement",
  "interiors.copyName": "{name} (copy)",
  "stairs.facts": "Reinforced concrete structure: 2 flights × {risers} steps ({riser} × {tread} cm), landing {level} — this is building data",
+ "stairs.factsStraight": "Reinforced concrete structure: 1 flight × {risers} steps ({riser} × {tread} cm) — this is building data",
+ "stairs.factsL": "Reinforced concrete structure: 2 flights at a right angle ({risers} + {upper} steps, {riser} × {tread} cm), landing {level} — this is building data",
  "devices.category.sockets": "Sockets",
  "devices.category.lighting": "Lighting",
  "devices.category.control": "Controls",
