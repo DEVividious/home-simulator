@@ -15,23 +15,32 @@ reference (`Z = 0` = lowest finished floor, usually). Describe the origin in `ma
 |---|---|---|
 | `projectId` | yes | = directory name; lower-case letters, digits, hyphens; never change after release (user data refers to it) |
 | `name`, `description`, `documentTitle` | name | display name; one line under it; title on PDFs |
-| `language` | no | preferred UI language (`en`, `pl`); the viewer's choice wins |
+| `names` | no | the name in other languages: `{ "<language code>": "…" }` (see Names in other languages) |
+| `language` | no | the language the names are written in, and the preferred UI language (`en`, `pl`); the viewer's choice wins |
 | `units` | yes | `"m"` |
 | `coordinateSystem` | yes | `{ name, description, up: "Z", handedness: "right" }` |
 | `buildingType` | yes | `house` / `apartment` (UI wording, default view) |
-| `levels` | yes | `[{ id, name, floorZ }]`, same as `building.rooms.levels` |
+| `levels` | yes | `[{ id, name, names?, floorZ }]`, same as `building.rooms.levels` |
 | `dataSources` | yes | where each data set comes from (human-readable) |
 | `modules` | yes | subset of `site`, `environment`, `sun`, `stairs` — each needs its data |
 | `capabilities` | yes | subset of `interiors`, `electrical`, `variants`, `walk` |
 | `defaultView` | yes | `{ levelId, roomId?, view?: "exterior" \| "interior" }` |
 | `resetNote`, `metadata` | metadata | sentence for "Restore project defaults"; free key–value pairs the engine ignores |
 
+### Names in other languages
+Every name a person reads — `manifest.name`, `manifest.levels[].name`, room names, viewpoint names and hints, view labels and
+hints — is written in `manifest.language`. An optional `names` (`hints` for hints, `labels` for view labels) next to it gives
+the text in other languages: `"names": { "pl": "Kuchnia" }` — two-letter language codes (`en`, `pl`). The app shows each text
+in the viewer's language, else as written; nothing else in the package changes with the language. `plan.json` takes the same
+fields; the build warns when a language is only partly translated (`names.missing`) or repeats the plan's language
+(`names.language`). `projects/index.json` copies `manifest.names`.
+
 ## building.rooms
 `{ levels: { <id>: { name, floor_z, cut_height?, plan_wall_offset? } }, rooms: Room[] }` — `cut_height` (default 2.30 m) is the
 section height above the floor (the compiler writes it 10 cm above the highest window head of the level, at least 2.30 m and
 below the ceiling, unless `plan.json` sets `cutHeight`); `plan_wall_offset` half the wall thickness drawn on plans.
 
-Room: `id`, `name`, `label?`, `level`, `floor_z`, `polygon` (inner wall faces), `bbox`, `rectangular`, `area`, `area_data`
+Room: `id`, `name`, `label?`, `names?` (the name in other languages), `level`, `floor_z`, `polygon` (inner wall faces), `bbox`, `rectangular`, `area`, `area_data`
 (printed area or `area`), `id_source`, `ceiling` (`{ kind: "flat", z }` absolute height; `{ kind: "roof", flat_z }` under the roof
 of the room's level — the underside of `building.roof` there, capped by the flat top `flat_z`; or, in packages written before the
 roof, `{ kind: "attic", flat_z, ridge_y | ridge_x, z_at_ridge, slope }` — ridge along X at `ridge_y` or along Y at `ridge_x`,
@@ -93,7 +102,7 @@ is updated (docs/PHONE.md).
 | `assets` | — | `{ model?, site?, environment?, bounds?, sectionCaps?, plinthExtra?, groundMeshes? }`, paths relative to the package |
 | `catalog` | — | `{ furniture?, materials? }` extension files; ids prefixed `<projectId>:` |
 | `views` | — | `{ presets: [{ id, label, icon, hint, dir? \| pose?: { position, target, fov }, fit? }], home? }` |
-| `viewpoints` | — | `[{ id, name, p, level \| "SITE", look: [x, y, h], fov, hint }]` — walk starts |
+| `viewpoints` | — | `[{ id, name, names?, p, level \| "SITE", look: [x, y, h], fov, hint, hints? }]` — walk starts |
 
 ### Model conventions (assets)
 - `model`: any GLB in project coordinates mapped to glTF (`x`, `z` up → glTF `y`, project `y` → glTF `−z`); the engine wraps it

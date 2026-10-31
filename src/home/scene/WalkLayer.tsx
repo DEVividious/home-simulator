@@ -4,7 +4,7 @@
 //   • StairsMesh — stairs from the building data with the variant finish (stairs.ts, stairsConfig.ts),
 //   • WalkController — walking (WASD / arrows, Shift — faster, mouse look, wheel — step; eye height above the floor /
 //     terrain, stairs, walking out through doors onto the site — WalkWorld).
-import { approach, keyClear, keyDown, keyInput, keyUp, walkInput, walkKeys } from './walkInput';
+import { approach, keyClear, lookSpeed, keyDown, keyInput, keyUp, walkInput, walkKeys } from './walkInput';
 import { useGLTF } from '@react-three/drei';
 import { useFrame, useThree } from '@react-three/fiber';
 import { useEffect, useMemo, useRef } from 'react';
@@ -163,14 +163,14 @@ export function WalkController({ data, mode }: { data: SceneData; mode: SceneMod
     if (!on) { walkHud.set({ on: false, place: '', kind: '', roomId: null }); if (!isWalking(ui.get())) walkInput.to = null; return; }
     const dom = gl.domElement, w = st.current;
     // looking around tracks ONE pointer (pointerId) — a second finger on the joystick does not rotate the view
-    let look: { id: number; x: number; y: number; yaw: number; pitch: number } | null = null;
+    let look: { id: number; x: number; y: number; yaw: number; pitch: number; k: number } | null = null;
     const typing = (e: KeyboardEvent) => { const t = e.target as HTMLElement | null; return !!t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable); };
-    const down = (e: PointerEvent) => { if (!look && (e.button === 0 || e.button === 2)) look = { id: e.pointerId, x: e.clientX, y: e.clientY, yaw: w.yaw, pitch: w.pitch }; };
+    const down = (e: PointerEvent) => { if (!look && (e.button === 0 || e.button === 2)) look = { id: e.pointerId, x: e.clientX, y: e.clientY, yaw: w.yaw, pitch: w.pitch, k: lookSpeed(e.pointerType) }; };
     const move = (e: PointerEvent) => {
       // dragging furniture / a device (sceneApi.locked) suspends looking around — as in the room walk
       if (!look || e.pointerId !== look.id || sceneApi.locked) return;
-      w.yaw = look.yaw - (e.clientX - look.x) * 0.0045;
-      w.pitch = THREE.MathUtils.clamp(look.pitch - (e.clientY - look.y) * 0.0045, -1.3, 1.3);
+      w.yaw = look.yaw - (e.clientX - look.x) * look.k;
+      w.pitch = THREE.MathUtils.clamp(look.pitch - (e.clientY - look.y) * look.k, -1.3, 1.3);
     };
     const up = (e: PointerEvent) => { if (look && e.pointerId === look.id) look = null; };
     const wheel = (e: WheelEvent) => { e.preventDefault(); w.push += -Math.sign(e.deltaY) * 0.5; };

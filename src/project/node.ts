@@ -58,9 +58,9 @@ const EXAMPLES = ['sample-house', 'demo-apartment'];
  */
 export function buildProjectIndex(root: string): ProjectIndex {
   const projects = projectDirs(root).map((d) => {
-    let name = d, description: string | undefined;
-    try { const m = (readProjectJson(path.join(root, PROJECTS_DIR, d)) as ProjectPackage).manifest; name = m.name; description = m.description; } catch { /* reported at load time */ }
-    return { id: d, name, ...(description ? { description } : {}), dir: `${PROJECTS_DIR}/${d}/` };
+    let name = d, names: Record<string, string> | undefined, description: string | undefined;
+    try { const m = (readProjectJson(path.join(root, PROJECTS_DIR, d)) as ProjectPackage).manifest; name = m.name; names = m.names; description = m.description; } catch { /* reported at load time */ }
+    return { id: d, name, ...(names ? { names } : {}), ...(description ? { description } : {}), dir: `${PROJECTS_DIR}/${d}/` };
   });
   const env = process.env.HOME_SIM_DEFAULT_PROJECT;
   const def = (env && projects.some((p) => p.id === env) ? env : undefined) ?? projects.find((p) => !EXAMPLES.includes(p.id))?.id ?? EXAMPLES.find((e) => projects.some((p) => p.id === e)) ?? projects[0]?.id ?? 'demo-apartment';

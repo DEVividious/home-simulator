@@ -50,6 +50,11 @@ Field notes:
 - `rect` / `polygon` / `at` / `box` / `boundary` / `along` are points (pixels in a px plan); `width`, `sill`, `head`, `height`,
   `elevation`, `dims`, `ceiling`, `tread`, `flightWidth`, `margin` are metres — always.
 - `look` of a viewpoint: [x, y, height above the floor in metres] — x, y are points.
+- Names in two languages: `name` (project, level, room, viewpoint) and a viewpoint's `hint` are written in
+  `project.language`; `names` / `hints` give the other app language (`en` or `pl`), e.g.
+  `{ "id": "R2", "name": "Kitchen", "names": { "pl": "<the name in Polish>" }, … }`. The app shows each name in the viewer's language. Give
+  every name the same languages — the build warns (`names.missing`) when a language is only partly there, and
+  (`names.language`) when `names` repeat the plan's own language.
 - One image per level (px plans): give each level its own `calibration` (same block as the plan's) with `originPx` at the SAME
   building corner on every image — usually the outer bottom-left corner of the walls, which stay in place between floors.
   Every point converts with the calibration of its level (rooms, doors, windows, furniture of rooms on that level; a stair box

@@ -5,7 +5,7 @@
 // (or Shift + left, middle) — pan, wheel — zoom towards the cursor, double-click — new orbit centre;
 // left button on furniture — move the furniture (camera control suspended: sceneApi.lockControls).
 // Exterior presets avoid the surrounding trees (the camera does not land in tree crowns — direction and distance with a clear view).
-import { approach, keyClear, keyDown, keyInput, keyUp, walkInput, walkKeys } from './walkInput';
+import { approach, keyClear, lookSpeed, keyDown, keyInput, keyUp, walkInput, walkKeys } from './walkInput';
 import { useFrame, useThree } from '@react-three/fiber';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
@@ -319,13 +319,13 @@ export function CameraController({ data, mode }: { data: SceneData; mode: SceneM
   useEffect(() => {
     if (!isWalk) return;
     const dom = gl.domElement, w = walk.current;
-    let look: { id: number; x: number; y: number; yaw: number; pitch: number } | null = null;   // one pointer (the joystick is the second finger)
+    let look: { id: number; x: number; y: number; yaw: number; pitch: number; k: number } | null = null;   // one pointer (the joystick is the second finger)
     const typing = (e: KeyboardEvent) => { const t = e.target as HTMLElement | null; return !!t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable); };
-    const down = (e: PointerEvent) => { if (!look && (e.button === 0 || e.button === 2)) look = { id: e.pointerId, x: e.clientX, y: e.clientY, yaw: w.yaw, pitch: w.pitch }; };
+    const down = (e: PointerEvent) => { if (!look && (e.button === 0 || e.button === 2)) look = { id: e.pointerId, x: e.clientX, y: e.clientY, yaw: w.yaw, pitch: w.pitch, k: lookSpeed(e.pointerType) }; };
     const move = (e: PointerEvent) => {
       if (!look || e.pointerId !== look.id || sceneApi.locked) return;
-      w.yaw = look.yaw - (e.clientX - look.x) * 0.0045;
-      w.pitch = THREE.MathUtils.clamp(look.pitch - (e.clientY - look.y) * 0.0045, -1.25, 1.25);
+      w.yaw = look.yaw - (e.clientX - look.x) * look.k;
+      w.pitch = THREE.MathUtils.clamp(look.pitch - (e.clientY - look.y) * look.k, -1.25, 1.25);
     };
     const up = (e: PointerEvent) => { if (look && e.pointerId === look.id) look = null; };
     const wheel = (e: WheelEvent) => { e.preventDefault(); w.push += -Math.sign(e.deltaY) * 0.4; };

@@ -47,6 +47,9 @@ export interface OpeningJson { id: string; kind: string; plane_axis: 'X' | 'Y'; 
  *  x = ridge_x; the ceiling falls by `slope` per metre away from it, capped by flat_z — a gable roof is derived from it at load */
 export interface CeilingJson { kind: 'flat' | 'attic' | 'roof'; z?: number; flat_z?: number; ridge_y?: number; ridge_x?: number; z_at_ridge?: number; slope?: number }
 /** room kind: default finishes, icons, plan colours — from the project data (field `kind`), never from the name */
+/** a text in other languages: ISO 639-1 language code → text (next to the text in the package's own language) */
+export type Names = Record<string, string>;
+
 export type RoomKind = 'bath' | 'kitchen' | 'garage' | 'tech' | 'hall' | 'bed' | 'living' | 'office' | 'storage' | 'room';
 /** room record in the package data */
 export interface RoomJson {
@@ -54,6 +57,8 @@ export interface RoomJson {
   rectangular: boolean; ceiling: CeilingJson; stair_opening: number[] | null; doors: DoorJson[]; openings: OpeningJson[]; roof_windows: { id: string; plan_rect: number[] }[];
   /** display name (default: `name`) */
   label?: string;
+  /** the display name in other languages (language code → name); `name` / `label` are in the package's language */
+  names?: Names;
   kind?: RoomKind;
   /** tags that drive engine behaviour (e.g. "garage" — vehicle fitting, "kitchen" — kitchen units) */
   tags?: string[];
@@ -230,6 +235,9 @@ export interface ViewPreset {
   label: string;
   icon: string;
   hint: string;
+  /** label and hint in other languages (language code → text) */
+  labels?: Names;
+  hints?: Names;
   /** direction from the building centre to the camera (project coordinates) — the whole building in frame */
   dir?: Vec3;
   /** explicit camera pose; used when `dir` is absent */
@@ -246,6 +254,9 @@ export interface Viewpoint {
   /** name shown in the UI; `en` — optional working name (tests, scripts) */
   name: string;
   en?: string;
+  /** name and hint in other languages (language code → text) */
+  names?: Names;
+  hints?: Names;
   p: Vec2;
   /** level / site: hint for the feet height when settling */
   level: LevelId | 'SITE';
@@ -274,17 +285,20 @@ export type ProjectCapability =
 
 export const PROJECT_CAPABILITIES: readonly ProjectCapability[] = ['interiors', 'electrical', 'variants', 'walk'];
 
-export interface ProjectLevel { id: string; name: string; floorZ: number }
+export interface ProjectLevel { id: string; name: string; floorZ: number; /** the name in other languages */ names?: Names }
 
 export interface ProjectManifest {
   projectId: string;
   /** display name (app title, PDF, exports) */
   name: string;
+  /** the name in other languages (language code → name) */
+  names?: Names;
   /** one line under the name (e.g. an address) */
   description?: string;
   /** title on documents (PDF, exports); defaults to `name` */
   documentTitle?: string;
-  /** preferred UI language of the project ('en', 'pl'); the viewer's choice wins */
+  /** the language of the package's names, and the UI language the project prefers ('en', 'pl'); the viewer's choice wins.
+   *  Names in other languages: the optional `names` next to each name (manifest, levels, rooms, viewpoints, views) */
   language?: string;
   units: 'm';
   coordinateSystem: { name: string; description: string; up: 'Z'; handedness: 'right' };

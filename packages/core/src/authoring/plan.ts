@@ -8,7 +8,7 @@
 // POINT (rect, polygon, at, box, boundary) is in pixels of the source image (x right, y DOWN) and is converted with the
 // calibration block; every SIZE (width, sill, head, heights, dims, offsets) is always in metres.
 import { z } from 'zod';
-import { ProjectSchema, RoomKindSchema } from '../package/schema.ts';
+import { NamesSchema, ProjectSchema, RoomKindSchema } from '../package/schema.ts';
 
 const num = z.number().finite();
 const pt = z.tuple([num, num]);
@@ -23,7 +23,7 @@ export const CalibrationSchema = z.strictObject({
 });
 
 const RoomSchema = z.strictObject({
-  id, name: z.string().min(1), level: id, kind: RoomKindSchema, tags: z.array(z.string()).optional(), label: z.string().optional(),
+  id, name: z.string().min(1), names: NamesSchema.optional().describe('the name in other languages (language code → name), e.g. {"en": "Kitchen"} next to a Polish name'), level: id, kind: RoomKindSchema, tags: z.array(z.string()).optional(), label: z.string().optional(),
   rect: z.tuple([num, num, num, num]).optional().describe('[x0, y0, x1, y1] of the inner wall faces'),
   polygon: z.array(pt).min(4).optional().describe('inner wall faces, axis-aligned edges, any order of corners along the outline'),
   ceiling: num.positive().optional().describe('ceiling height above this room floor [m]; default: level ceiling'),
@@ -140,8 +140,8 @@ export const PlanSchema = z.strictObject({
   schema: z.literal('home-simulator/plan'),
   version: z.literal(1),
   project: z.strictObject({
-    id: z.string().regex(/^[a-z0-9][a-z0-9-]*$/), name: z.string().min(1), description: z.string().optional(), documentTitle: z.string().optional(),
-    language: z.string().optional(), buildingType: z.enum(['house', 'apartment']),
+    id: z.string().regex(/^[a-z0-9][a-z0-9-]*$/), name: z.string().min(1), names: NamesSchema.optional(), description: z.string().optional(), documentTitle: z.string().optional(),
+    language: z.string().optional().describe('the language the names are written in (en, pl); `names` add the other languages'), buildingType: z.enum(['house', 'apartment']),
     origin: z.string().optional().describe('where the project origin is and how the axes run (human-readable)'),
     metadata: z.record(z.string(), z.union([z.string(), num, z.boolean(), z.null()])).optional(),
   }),
@@ -156,7 +156,7 @@ export const PlanSchema = z.strictObject({
     doorHeight: num.positive().default(2.05), leafHeight: num.positive().default(2.0), sill: num.min(0).default(0.85), head: num.positive().default(2.35),
     confidence: z.enum(['confirmed', 'probable', 'unknown']).default('probable'), basis: z.enum(['dimensioned', 'drawn', 'approximate']).default('approximate'),
   }).prefault({}),
-  levels: z.array(z.strictObject({ id, name: z.string(), floorZ: num, ceiling: num.positive().describe('ceiling height above the floor [m]'), cutHeight: num.positive().optional().describe('section height above the floor [m]; default: 10 cm above the highest window head, at least 2.30, below the ceiling'), slope: SlopeSchema.optional().describe('sloped ceilings of every room on this level (attic): without a roof block it becomes a gable roof part over the level; with one, a cross-check. A room\'s own `ceiling` is its flat top'), calibration: CalibrationSchema.optional().describe('px plans drawn as one image per level: the scale and origin of THIS level\'s image (the origin pixel = the same building corner on every image); default: the plan calibration') })).min(1),
+  levels: z.array(z.strictObject({ id, name: z.string(), names: NamesSchema.optional(), floorZ: num, ceiling: num.positive().describe('ceiling height above the floor [m]'), cutHeight: num.positive().optional().describe('section height above the floor [m]; default: 10 cm above the highest window head, at least 2.30, below the ceiling'), slope: SlopeSchema.optional().describe('sloped ceilings of every room on this level (attic): without a roof block it becomes a gable roof part over the level; with one, a cross-check. A room\'s own `ceiling` is its flat top'), calibration: CalibrationSchema.optional().describe('px plans drawn as one image per level: the scale and origin of THIS level\'s image (the origin pixel = the same building corner on every image); default: the plan calibration') })).min(1),
   rooms: z.array(RoomSchema).min(1),
   doors: z.array(DoorSchema).default([]),
   passages: z.array(PassageSchema).default([]),
@@ -176,7 +176,7 @@ export const PlanSchema = z.strictObject({
     northAzimuthX: num.describe('azimuth of the +X axis measured clockwise from geographic north [°] (90 = +X points east)'),
     confidence: z.enum(['confirmed', 'probable', 'unknown']).default('probable'), placeName: z.string().optional(),
   }).optional(),
-  viewpoints: z.array(z.strictObject({ id, name: z.string(), level: z.string(), at: pt, look: z.tuple([num, num, num]), fov: num.default(70), hint: z.string().default('') })).default([]),
+  viewpoints: z.array(z.strictObject({ id, name: z.string(), names: NamesSchema.optional(), level: z.string(), at: pt, look: z.tuple([num, num, num]), fov: num.default(70), hint: z.string().default(''), hints: NamesSchema.optional() })).default([]),
   defaultView: z.strictObject({ level: id.optional(), room: id.optional(), view: z.enum(['exterior', 'interior']).optional() }).optional(),
   notes: z.record(z.string(), z.string()).optional().describe('per room: where its default layout comes from'),
   capabilities: z.array(z.enum(['interiors', 'electrical', 'variants', 'walk'])).optional()

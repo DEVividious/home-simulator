@@ -5,6 +5,9 @@
  "manifest": {
   "projectId": "sample-house",
   "name": "Sample house",
+  "names": {
+   "pl": "Przykładowy dom"
+  },
   "description": "example project · two storeys, stairs, plot · synthetic data",
   "documentTitle": "Sample house (synthetic data)",
   "language": "en",
@@ -20,11 +23,17 @@
    {
     "id": "L0",
     "name": "Ground floor",
+    "names": {
+     "pl": "Parter"
+    },
     "floorZ": 0
    },
    {
     "id": "L1",
     "name": "First floor",
+    "names": {
+     "pl": "Piętro"
+    },
     "floorZ": 2.95
    }
   ],
@@ -74,6 +83,9 @@
     {
      "id": "H0",
      "name": "Hall",
+     "names": {
+      "pl": "Hol"
+     },
      "level": "L0",
      "floor_z": 0,
      "area": 14.1,
@@ -158,6 +170,9 @@
     {
      "id": "B0",
      "name": "Bathroom",
+     "names": {
+      "pl": "Łazienka"
+     },
      "level": "L0",
      "floor_z": 0,
      "area": 7.74,
@@ -227,6 +242,9 @@
     {
      "id": "LK",
      "name": "Living room with kitchen",
+     "names": {
+      "pl": "Salon z kuchnią"
+     },
      "level": "L0",
      "floor_z": 0,
      "area": 46.47,
@@ -318,6 +336,9 @@
     {
      "id": "H1",
      "name": "Landing",
+     "names": {
+      "pl": "Korytarz"
+     },
      "level": "L1",
      "floor_z": 2.95,
      "area": 14.1,
@@ -418,6 +439,9 @@
     {
      "id": "O1",
      "name": "Office",
+     "names": {
+      "pl": "Gabinet"
+     },
      "level": "L1",
      "floor_z": 2.95,
      "area": 7.74,
@@ -487,6 +511,9 @@
     {
      "id": "BR2",
      "name": "Bedroom 2",
+     "names": {
+      "pl": "Sypialnia 2"
+     },
      "level": "L1",
      "floor_z": 2.95,
      "area": 10.78,
@@ -556,6 +583,9 @@
     {
      "id": "B1",
      "name": "Bathroom (first floor)",
+     "names": {
+      "pl": "Łazienka na piętrze"
+     },
      "level": "L1",
      "floor_z": 2.95,
      "area": 10.78,
@@ -625,6 +655,9 @@
     {
      "id": "BR1",
      "name": "Main bedroom",
+     "names": {
+      "pl": "Główna sypialnia"
+     },
      "level": "L1",
      "floor_z": 2.95,
      "area": 23.74,
@@ -1792,6 +1825,9 @@
   {
    "id": "vp-front",
    "name": "Front door",
+   "names": {
+    "pl": "Drzwi wejściowe"
+   },
    "p": [
     -2.5,
     4.2
@@ -1803,11 +1839,17 @@
     1.6
    ],
    "fov": 70,
-   "hint": "outside the entrance"
+   "hint": "outside the entrance",
+   "hints": {
+    "pl": "przed wejściem"
+   }
   },
   {
    "id": "vp-garden",
    "name": "Garden",
+   "names": {
+    "pl": "Ogród"
+   },
    "p": [
     14,
     3.5
@@ -1819,11 +1861,17 @@
     1.4
    ],
    "fov": 70,
-   "hint": "from the garden towards the terrace door"
+   "hint": "from the garden towards the terrace door",
+   "hints": {
+    "pl": "z ogrodu w stronę drzwi tarasowych"
+   }
   },
   {
    "id": "vp-living",
    "name": "Living room",
+   "names": {
+    "pl": "Salon"
+   },
    "p": [
     8.6,
     1.2
@@ -1835,11 +1883,39 @@
     1.2
    ],
    "fov": 70,
-   "hint": "from the window towards the kitchen"
+   "hint": "from the window towards the kitchen",
+   "hints": {
+    "pl": "od okna w stronę kuchni"
+   }
+  },
+  {
+   "id": "vp-kitchen",
+   "name": "Kitchen",
+   "names": {
+    "pl": "Kuchnia"
+   },
+   "p": [
+    7.5,
+    5.6
+   ],
+   "level": "L0",
+   "look": [
+    7.5,
+    7.7,
+    1
+   ],
+   "fov": 70,
+   "hint": "towards the kitchen units",
+   "hints": {
+    "pl": "w stronę szafek kuchennych"
+   }
   },
   {
    "id": "vp-bedroom",
    "name": "Main bedroom",
+   "names": {
+    "pl": "Główna sypialnia"
+   },
    "p": [
     4.6,
     4.6
@@ -1851,7 +1927,10 @@
     1.2
    ],
    "fov": 70,
-   "hint": "from the door"
+   "hint": "from the door",
+   "hints": {
+    "pl": "od drzwi"
+   }
   }
  ]
 }

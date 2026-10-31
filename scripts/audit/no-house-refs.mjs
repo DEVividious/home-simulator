@@ -18,6 +18,8 @@ const SELF = path.relative(ROOT, new URL(import.meta.url).pathname);
 /** files allowed to contain Polish text */
 // beyond the dictionaries: the language rules (the Polish forbidden words) and the usability data (Polish personas and the
 // task goals in each persona's language) — language data by nature
+// and, in the packages, the Polish translations of names (`"pl": "…"` inside `names` / `hints`, plan.json and project.json)
+const POLISH_LINE_OK = (rel, line) => /^projects\/[^/]+\/(source\/plan|project)\.json$/.test(rel) && /"pl":\s*"/.test(line);
 const POLISH_OK = (rel) => /^src\/i18n\/pl\/[^/]+\.json$/.test(rel) || ['src/home/ui/language.json', 'scripts/usability/personas.json', 'scripts/usability/tasks.json'].includes(rel);
 
 // Each rule: name, regex — generic shapes of the source building's identifiers (no facts about it).
@@ -62,8 +64,9 @@ for (const rel of files) {
   const lines = fs.readFileSync(path.join(ROOT, rel), 'utf8').split('\n');
   lines.forEach((line, i) => {
     for (const [name, re] of RULES) if (re.test(line)) hits.push({ rel, line: i + 1, rule: name, text: line.trim().slice(0, 140) });
-    for (const w of hashedHits(line)) hits.push({ rel, line: i + 1, rule: 'source building fact (hashed list)', text: `"${w}" in: ${line.trim().slice(0, 120)}` });
-    if (!POLISH_OK(rel) && DIACRITICS.test(line) && !/i18n-ok/.test(line)) hits.push({ rel, line: i + 1, rule: 'Polish text outside a Polish dictionary', text: line.trim().slice(0, 140) });
+    // a translation of a name is language data: common words (e.g. the Polish for "ground floor") are not facts of a building
+    if (!POLISH_LINE_OK(rel, line)) for (const w of hashedHits(line)) hits.push({ rel, line: i + 1, rule: 'source building fact (hashed list)', text: `"${w}" in: ${line.trim().slice(0, 120)}` });
+    if (!POLISH_OK(rel) && !POLISH_LINE_OK(rel, line) && DIACRITICS.test(line) && !/i18n-ok/.test(line)) hits.push({ rel, line: i + 1, rule: 'Polish text outside a Polish dictionary', text: line.trim().slice(0, 140) });
   });
 }
 

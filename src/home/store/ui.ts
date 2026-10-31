@@ -278,8 +278,9 @@ let toastN = 0;
 export const toast = (text: string, level: 'info' | 'warn' | 'error' = 'info', ms?: number) => ui.set({ toast: { text, level, n: ++toastN, ...(ms ? { ms } : {}) } });
 export const cameraTo = (preset: UiState['camera']['preset'], bookmarkId?: string) => ui.set((s) => ({ camera: { preset, n: s.camera.n + 1, bookmarkId } }));
 
-/** in a room the Arrange step is the one that works with it (Look and Versions lead there); Electrical and Expert stay */
-const arrangeOr = (s: Section): Section => (s === 'look' || s === 'variants') && hasCapability('interiors') ? 'arrange' : s;
+/** entering a room: Versions leads to Arrange (the step that works with a room); Look stays Look — a person who only wanted to
+ *  go in did not expect the furniture list (usability issue B1); Electrical and Expert stay */
+const arrangeOr = (s: Section): Section => s === 'variants' && hasCapability('interiors') ? 'arrange' : s;
 /** entering a room (Room Mode) */
 export function enterRoom(roomId: string, level: LevelId) {
   ui.set((s) => ({ roomId, level, selection: null, section: arrangeOr(s.section), camera: { preset: 'room', n: s.camera.n + 1 } }));

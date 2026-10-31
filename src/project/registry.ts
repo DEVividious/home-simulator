@@ -9,7 +9,7 @@ import catalog from '../../data/furnitureCatalog.json';
 import materialCatalog from '../../data/materialCatalog.json';
 import { parseProjectCatalogs, resolveCatalogUrls, setProjectCatalogs, type EngineCatalogIds, type ProjectCatalogs } from './catalogs';
 
-export interface ProjectIndexEntry { id: string; name: string; description?: string; dir: string }
+export interface ProjectIndexEntry { id: string; name: string; /** the name in other languages */ names?: Record<string, string>; description?: string; dir: string }
 export interface ProjectIndex { schema: 'home-simulator/projects-index'; version: 1; default: string; projects: ProjectIndexEntry[] }
 
 let index: ProjectIndex | null = null;

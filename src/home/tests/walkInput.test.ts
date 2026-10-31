@@ -2,7 +2,7 @@
 // components were clamped separately and summed — a vector of length √2). The input is clamped to the unit circle.
 import { describe, expect, it } from 'vitest';
 import { walkInputVector } from '../model/walk';
-import { approach, keyClear, keyDown, keyInput, keyUp, PAD, padInput, TAP_MS, walkKeys } from '../scene/walkInput';
+import { approach, keyClear, keyDown, keyInput, keyUp, LOOK_SPEED, lookSpeed, PAD, padInput, TAP_MS, walkKeys } from '../scene/walkInput';
 
 const len = (v: [number, number]) => Math.hypot(v[0], v[1]);
 
@@ -88,5 +88,13 @@ describe('walk: a door clicked from far away is walked up to (usability issue A4
     let yaw = 0;
     for (let i = 0; i < 60; i++) yaw = approach([0, 0], yaw, { p: [-3, 0], reach: 1 }, 0, 1 / 30).yaw;
     expect(-Math.sin(yaw)).toBeCloseTo(-1, 3); expect(Math.cos(yaw)).toBeCloseTo(0, 3);
+  });
+});
+
+describe('walk: looking around (usability issue B4 — a short mouse drag turned half way round)', () => {
+  it('a mouse turns slower than a finger: 200 px of mouse ≈ 29°, of finger ≈ 52°', () => {
+    expect(lookSpeed('mouse')).toBeLessThan(lookSpeed('touch'));
+    expect(200 * lookSpeed('mouse') * 180 / Math.PI).toBeCloseTo(28.6, 0);
+    expect(lookSpeed('pen')).toBe(LOOK_SPEED.touch);
   });
 });

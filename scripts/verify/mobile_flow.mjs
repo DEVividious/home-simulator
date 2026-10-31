@@ -305,6 +305,12 @@ export async function extraChecks(ctx) {
   await K.drag([g2.x - 60, g2.y], [g2.x - 60, g2.y + 420], { steps: 12 }); const s3 = await settled();
   check('sheet: collapsed → medium (tap on the grip) → expanded (drag up) → collapsed (drag down); the medium sheet does not cover the scene',
     s0.state === 'collapsed' && s1.state === 'medium' && s2.state === 'expanded' && s3.state === 'collapsed' && s1.canvasH + s1.sheetH <= s1.bodyH + 2 && s2.sheetH > s1.sheetH && s0.canvasH > s1.canvasH, JSON.stringify([s0, s1, s2, s3]));
+  // usability issue B5: a tap on the title never opens the whole screen — open half way, the next tap closes
+  const g3 = await grip();
+  await K.tapXY(g3.x - 60, g3.y); const s4 = await settled();
+  const g4 = await grip();
+  await K.tapXY(g4.x - 60, g4.y); const s5 = await settled();
+  check('sheet: a tap on the title opens it half way, the next tap closes it (no full screen by a tap)', s4.state === 'medium' && s5.state === 'collapsed', JSON.stringify([s4.state, s5.state]));
   // two-finger pinch zooms the CAMERA, the page is not zoomed; one finger orbits
   await K.cameraStill();
   const st0 = await page.evaluate(() => { const r = document.querySelector('.hm-stage').getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; });

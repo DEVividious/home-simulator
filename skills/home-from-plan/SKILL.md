@@ -44,7 +44,8 @@ Create `projects/<id>/source/` and copy the inputs to `projects/<id>/source/inpu
    `tile_*.png` zooms. Labels are SOURCE pixel coordinates (x right, y down). On a small image (intake warns below 1200 px; walls
    are then 3–5 px thick) read wall faces and openings from close-ups: add `--zoom-box x0,y0,x1,y1` (repeatable, 4×, 10 px grid)
    for every area you need.
-2. Write down, for every room: name (as printed), kind, the rectangle (or polygon) of its **inner wall faces** in pixels —
+2. Write down, for every room: name (as printed, plus its translation into the other app language in `names` —
+   references/authoring-conventions.md § Text), kind, the rectangle (or polygon) of its **inner wall faces** in pixels —
    the boundary between wall and floor, not the centre of a wall line; fractional pixels (e.g. 111.5) are fine and matter on
    small images, here and in `--origin` — and its printed area if any. For every door: the two rooms (or `exterior`), the pixel in the middle of the opening, the swing arc —
    which room it opens into and on which side the hinge is (the arc's centre). Windows: the room, a pixel on the wall in the

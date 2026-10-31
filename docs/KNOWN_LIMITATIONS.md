@@ -160,6 +160,7 @@ the behaviour is named in brackets. When a limit is lifted, remove it here in th
 - **Two languages: English and Polish.** The language list in `src/i18n/index.ts` is fixed; a new language needs its
   dictionaries and an entry there.
 - **No plural rules.** Counted phrases use neutral forms ("Rooms: 4").
-- **Package texts are not translated.** Room names, level names, view labels and notes are shown as the package wrote them.
+- **Package texts in other languages only where the package gives them.** House, level, room and place names and view labels
+  are translated through their `names` (PROJECT_PACKAGE_SPEC.md); notes, sources and descriptions are shown as written.
 - **Catalog names:** English names live in `data/*.json`; other languages translate them by key (`furniture.<id>`,
   `material.<id>`). A missing translation falls back to English.

@@ -78,4 +78,10 @@ These rules make a package correct for the engine and stable for the user's save
 - On a wall of their room (within 5 cm): `wall` + `along`, or `at` on the wall line. `height` above the finished floor.
 
 ## Text
-- ids ASCII; names and labels in the user's language. No personal data (names, addresses, parcel numbers) in ids.
+- ids ASCII; names and labels in the user's language (`project.language`), as printed on the drawing. No personal data (names,
+  addresses, parcel numbers) in ids.
+- The app speaks English and Polish: give every name a person reads — the project, the levels, the rooms, the viewpoints and
+  their hints — its translation into the other language in `names` / `hints` (plan-schema.md). Translate what the room is
+  for (a porch at the entrance is an "Entrance porch", not a transliteration), keep numbers ("Room 2" stays numbered 2); never
+  leave the other language out for some names only. A walk place for each room the user will ask about by its use (e.g. a kitchen inside a
+  living room) is welcome.

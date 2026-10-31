@@ -27,6 +27,11 @@ export function keyInput(k: WalkKeys, now: number): { f: number; s: number; run:
   };
 }
 
+/** looking around in a walk [rad per pixel dragged]: a finger sweeps the screen, a mouse moves a short way — the same speed
+ *  for both turned a short mouse drag half way round (usability issue B4) */
+export const LOOK_SPEED = { touch: 0.0045, mouse: 0.0025 };
+export const lookSpeed = (pointerType: string): number => (pointerType === 'mouse' ? LOOK_SPEED.mouse : LOOK_SPEED.touch);
+
 /** joystick: dead zone, the speed just past it, the ring that runs (fractions of the pad radius) */
 export const PAD = { dead: 0.12, start: 0.4, run: 0.9 };
 /** joystick deflection (pad radius = 1; dy > 0 = down the screen) → walk input: past the dead zone it starts at 40 % of the

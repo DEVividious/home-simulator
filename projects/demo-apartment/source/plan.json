@@ -5,6 +5,7 @@
  "project": {
   "id": "demo-apartment",
   "name": "Demo apartment",
+  "names": { "pl": "Przykładowe mieszkanie" },
   "description": "example project · synthetic data",
   "documentTitle": "Demo apartment (synthetic data)",
   "language": "en",
@@ -15,12 +16,12 @@
  "units": "m",
  "source": "demo-apartment package (synthetic data)",
  "defaults": { "confidence": "confirmed" },
- "levels": [{ "id": "L1", "name": "Apartment", "floorZ": 0, "ceiling": 2.6 }],
+ "levels": [{ "id": "L1", "name": "Apartment", "names": { "pl": "Mieszkanie" }, "floorZ": 0, "ceiling": 2.6 }],
  "rooms": [
-  { "id": "R1", "name": "Living room with kitchenette", "level": "L1", "kind": "living", "tags": ["kitchen"], "rect": [2.52, 0.3, 8.7, 3.9] },
-  { "id": "R2", "name": "Bedroom", "level": "L1", "kind": "bed", "rect": [2.52, 4.02, 8.7, 6.7] },
-  { "id": "R3", "name": "Bathroom", "level": "L1", "kind": "bath", "rect": [0.3, 3.02, 2.4, 6.7] },
-  { "id": "R4", "name": "Hallway", "level": "L1", "kind": "hall", "rect": [0.3, 0.3, 2.4, 2.9] }
+  { "id": "R1", "name": "Living room with kitchenette", "names": { "pl": "Salon z aneksem kuchennym" }, "level": "L1", "kind": "living", "tags": ["kitchen"], "rect": [2.52, 0.3, 8.7, 3.9] },
+  { "id": "R2", "name": "Bedroom", "names": { "pl": "Sypialnia" }, "level": "L1", "kind": "bed", "rect": [2.52, 4.02, 8.7, 6.7] },
+  { "id": "R3", "name": "Bathroom", "names": { "pl": "Łazienka" }, "level": "L1", "kind": "bath", "rect": [0.3, 3.02, 2.4, 6.7] },
+  { "id": "R4", "name": "Hallway", "names": { "pl": "Przedpokój" }, "level": "L1", "kind": "hall", "rect": [0.3, 0.3, 2.4, 2.9] }
  ],
  "doors": [
   { "id": "D0", "between": ["R4", "exterior"], "at": [0.15, 1.8], "width": 1.0, "swingInto": "R4", "hinge": "left" },
@@ -75,8 +76,8 @@
   { "id": "SW4", "type": "switch", "room": "R4", "at": [0.6, 2.9], "height": 1.1, "label": "Switch — bathroom" }
  ],
  "viewpoints": [
-  { "id": "vp-entry", "name": "Entrance", "level": "L1", "at": [0.9, 1.8], "look": [2.4, 1.5, 1.5], "hint": "just inside the entrance door" },
-  { "id": "vp-sofa", "name": "From the sofa", "level": "L1", "at": [6.3, 1.5], "look": [6.3, 3.9, 1.4], "hint": "facing the TV" },
-  { "id": "vp-bed", "name": "Bedroom", "level": "L1", "at": [4.0, 5.3], "look": [8.0, 5.4, 1.2], "hint": "from the door towards the bed" }
+  { "id": "vp-entry", "name": "Entrance", "names": { "pl": "Wejście" }, "level": "L1", "at": [0.9, 1.8], "look": [2.4, 1.5, 1.5], "hint": "just inside the entrance door", "hints": { "pl": "zaraz za drzwiami wejściowymi" } },
+  { "id": "vp-sofa", "name": "From the sofa", "names": { "pl": "Z kanapy" }, "level": "L1", "at": [6.3, 1.5], "look": [6.3, 3.9, 1.4], "hint": "facing the TV", "hints": { "pl": "przodem do telewizora" } },
+  { "id": "vp-bed", "name": "Bedroom", "names": { "pl": "Sypialnia" }, "level": "L1", "at": [4.0, 5.3], "look": [8.0, 5.4, 1.2], "hint": "from the door towards the bed", "hints": { "pl": "od drzwi w stronę łóżka" } }
  ]
 }

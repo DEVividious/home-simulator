@@ -8,7 +8,8 @@ import { save, useDesign } from '../store/design';
 import { ui, useUi } from '../store/ui';
 import { ActionButton, Slot, useActionSlot } from './Action';
 import { Icon } from './icons';
-import { t } from '../../i18n';
+import { lang, t } from '../../i18n';
+import { inLang } from '@home-sim/core/package/names';
 
 /** the house name; with more than one project installed it is a picker (switching saves first and reloads the page) */
 function Brand() {
@@ -25,7 +26,7 @@ function ProjectPicker({ ids, cur }: { ids: string[]; cur: string }) {
   return (
     <label className="hm-brand-pick">
       <select value={cur} data-testid={a.testid} aria-label={a.label} onChange={(e) => { const id = e.target.value; void save().finally(() => switchProject(id)); }}>
-        {ids.map((id) => <option key={id} value={id}>{projectEntry(id)?.name ?? id}</option>)}
+        {ids.map((id) => { const e = projectEntry(id); return <option key={id} value={id}>{e ? inLang(e.name, e.names, lang()) : id}</option>; })}
       </select>
       <Icon name="chevron" size={14} />
     </label>

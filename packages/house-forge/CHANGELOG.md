@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.1
+
+- Every reply in the user's language, also the first sentence after a long run of tools.
+- `plan.json` takes names in a second language (`names`, viewpoint `hints`) for the Home Simulator app; the compiler warns when a
+  language is only partly translated. The print does not need them.
+
 ## 0.1.0
 
 - First version: plan images, vector PDF sheets (pymupdf) and DXF / DWG drawings read into `plan.json` with the Home Simulator

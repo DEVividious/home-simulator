@@ -25,6 +25,18 @@
      "type": "string",
      "minLength": 1
     },
+    "names": {
+     "type": "object",
+     "propertyNames": {
+      "type": "string",
+      "pattern": "^[a-z]{2}$"
+     },
+     "additionalProperties": {
+      "type": "string",
+      "minLength": 1
+     },
+     "description": "the text in other languages: language code → text (the main field is in the package's language)"
+    },
     "description": {
      "type": "string"
     },
@@ -32,6 +44,7 @@
      "type": "string"
     },
     "language": {
+     "description": "the language the names are written in (en, pl); `names` add the other languages",
      "type": "string"
     },
     "buildingType": {
@@ -209,6 +222,18 @@
      "name": {
       "type": "string"
      },
+     "names": {
+      "type": "object",
+      "propertyNames": {
+       "type": "string",
+       "pattern": "^[a-z]{2}$"
+      },
+      "additionalProperties": {
+       "type": "string",
+       "minLength": 1
+      },
+      "description": "the text in other languages: language code → text (the main field is in the package's language)"
+     },
      "floorZ": {
       "type": "number"
      },
@@ -359,6 +384,18 @@
      "name": {
       "type": "string",
       "minLength": 1
+     },
+     "names": {
+      "description": "the name in other languages (language code → name), e.g. {\"en\": \"Kitchen\"} next to a Polish name",
+      "type": "object",
+      "propertyNames": {
+       "type": "string",
+       "pattern": "^[a-z]{2}$"
+      },
+      "additionalProperties": {
+       "type": "string",
+       "minLength": 1
+      }
      },
      "level": {
       "type": "string",
@@ -1449,6 +1486,18 @@
      "name": {
       "type": "string"
      },
+     "names": {
+      "type": "object",
+      "propertyNames": {
+       "type": "string",
+       "pattern": "^[a-z]{2}$"
+      },
+      "additionalProperties": {
+       "type": "string",
+       "minLength": 1
+      },
+      "description": "the text in other languages: language code → text (the main field is in the package's language)"
+     },
      "level": {
       "type": "string"
      },
@@ -1490,6 +1539,18 @@
      "hint": {
       "default": "",
       "type": "string"
+     },
+     "hints": {
+      "type": "object",
+      "propertyNames": {
+       "type": "string",
+       "pattern": "^[a-z]{2}$"
+      },
+      "additionalProperties": {
+       "type": "string",
+       "minLength": 1
+      },
+      "description": "the text in other languages: language code → text (the main field is in the package's language)"
      }
     },
     "required": [
@@ -1657,6 +1718,30 @@
        },
        "hint": {
         "type": "string"
+       },
+       "labels": {
+        "type": "object",
+        "propertyNames": {
+         "type": "string",
+         "pattern": "^[a-z]{2}$"
+        },
+        "additionalProperties": {
+         "type": "string",
+         "minLength": 1
+        },
+        "description": "the text in other languages: language code → text (the main field is in the package's language)"
+       },
+       "hints": {
+        "type": "object",
+        "propertyNames": {
+         "type": "string",
+         "pattern": "^[a-z]{2}$"
+        },
+        "additionalProperties": {
+         "type": "string",
+         "minLength": 1
+        },
+        "description": "the text in other languages: language code → text (the main field is in the package's language)"
        },
        "dir": {
         "type": "array",

@@ -75,8 +75,13 @@ describe('end of the walk', () => {
     exitWalk();
     expect(ui.get()).toMatchObject({ roomId: 'R4', level: 'L1', houseView: 'interior', roomView: '3d' });
   });
-  it('another step (the user switched to Look during the walk): back in the room — Arrange', () => {
+  it('another step (the user switched to Look during the walk): back in the room, still in Look (usability issue B1)', () => {
     handedOver('look');
+    exitWalk();
+    expect(ui.get()).toMatchObject({ roomId: 'R1', section: 'look' });
+  });
+  it('the Versions step during the walk: back in the room — Arrange (the step that works with a room)', () => {
+    handedOver('variants');
     exitWalk();
     expect(ui.get()).toMatchObject({ roomId: 'R1', section: 'arrange' });
   });

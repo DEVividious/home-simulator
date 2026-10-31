@@ -9,6 +9,9 @@ const vec2 = z.tuple([num, num]);
 const vec3 = z.tuple([num, num, num]);
 const id = z.string().min(1);
 const confidence = z.enum(['confirmed', 'probable', 'unknown']);
+/** a text in other languages: ISO 639-1 code → text, next to the text in the package's own language (manifest.language) */
+export const NamesSchema = z.record(z.string().regex(/^[a-z]{2}$/, 'a two-letter language code (en, pl)'), z.string().min(1))
+  .describe('the text in other languages: language code → text (the main field is in the package\'s language)');
 
 export const RoomKindSchema = z.enum(['bath', 'kitchen', 'garage', 'tech', 'hall', 'bed', 'living', 'office', 'storage', 'room']);
 
@@ -34,7 +37,7 @@ const CeilingSchema = z.looseObject({
     'a sloped ceiling needs flat_z, z_at_ridge, slope > 0 and exactly one of ridge_x / ridge_y');
 
 export const RoomSchema = z.looseObject({
-  id, name: z.string(), label: z.string().optional(), level: id, floor_z: num,
+  id, name: z.string(), label: z.string().optional(), names: NamesSchema.optional(), level: id, floor_z: num,
   area: num, area_data: num, id_source: z.string(),
   bbox: z.array(num).length(4), polygon: z.array(vec2).min(3).describe('inner wall faces, metres, project coordinates'),
   rectangular: z.boolean(), ceiling: CeilingSchema,
@@ -96,21 +99,21 @@ const ElectricalPointSchema = z.looseObject({
 });
 
 const ViewSchema = z.looseObject({
-  id, label: z.string(), icon: z.string(), hint: z.string(), dir: vec3.optional(),
+  id, label: z.string(), icon: z.string(), hint: z.string(), labels: NamesSchema.optional(), hints: NamesSchema.optional(), dir: vec3.optional(),
   pose: z.looseObject({ position: vec3, target: vec3, fov: num }).optional(), fit: num.optional(),
 });
 
 const ViewpointSchema = z.looseObject({
-  id, name: z.string(), en: z.string().optional(), p: vec2, level: id, look: vec3, fov: num, hint: z.string(),
+  id, name: z.string(), en: z.string().optional(), names: NamesSchema.optional(), hints: NamesSchema.optional(), p: vec2, level: id, look: vec3, fov: num, hint: z.string(),
 });
 
 export const ManifestSchema = z.strictObject({
   projectId: z.string().regex(/^[a-z0-9][a-z0-9-]*$/, 'lower-case letters, digits and hyphens'),
-  name: z.string().min(1), description: z.string().optional(), documentTitle: z.string().optional(), language: z.string().optional(),
+  name: z.string().min(1), names: NamesSchema.optional(), description: z.string().optional(), documentTitle: z.string().optional(), language: z.string().optional(),
   units: z.literal('m'),
   coordinateSystem: z.strictObject({ name: z.string(), description: z.string(), up: z.literal('Z'), handedness: z.literal('right') }),
   buildingType: z.enum(['house', 'apartment']),
-  levels: z.array(z.strictObject({ id, name: z.string(), floorZ: num })).min(1),
+  levels: z.array(z.strictObject({ id, name: z.string(), names: NamesSchema.optional(), floorZ: num })).min(1),
   dataSources: z.record(z.string(), z.string()),
   modules: z.array(z.enum(['site', 'environment', 'sun', 'stairs'])),
   capabilities: z.array(z.enum(['interiors', 'electrical', 'variants', 'walk'])),
@@ -167,7 +170,7 @@ export const ProjectIndexSchema = z.strictObject({
   schema: z.literal('home-simulator/projects-index'),
   version: z.literal(1),
   default: id,
-  projects: z.array(z.strictObject({ id, name: z.string(), description: z.string().optional(), dir: z.string() })),
+  projects: z.array(z.strictObject({ id, name: z.string(), names: NamesSchema.optional(), description: z.string().optional(), dir: z.string() })),
 });
 
 /** human-readable structural errors: "path: message" */

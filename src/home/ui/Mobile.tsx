@@ -13,7 +13,7 @@ import { t } from '../../i18n';
 
 const SHEET_ORDER: UiState['sheet'][] = ['collapsed', 'medium', 'expanded'];
 
-/** bottom sheet (context panel): drag the grip up / down, or tap it for the next state */
+/** bottom sheet (context panel): drag the grip up / down (three states), or tap it to open half way / close */
 export function MobileSheet({ children }: { children: ReactNode }) {
   const sheet = useUi((s) => s.sheet), section = useUi((s) => s.section);
   // a selection with a card (walls, floor and ceiling have none — they are chosen in Arrange › Colours)
@@ -41,7 +41,8 @@ export function MobileSheet({ children }: { children: ReactNode }) {
           if (!d || d.id !== e.pointerId) return;
           const landscape = window.innerWidth > window.innerHeight;
           const delta = landscape ? d.x - e.clientX : d.y - e.clientY;           // up (portrait) / left (landscape) = larger sheet
-          if (Math.abs(delta) < 12) ui.set({ sheet: sheet === 'collapsed' ? 'medium' : sheet === 'medium' ? 'expanded' : 'collapsed' });
+          // a tap opens half way or closes; only a drag opens the whole screen (a tap on the title used to: usability issue B5)
+          if (Math.abs(delta) < 12) ui.set({ sheet: sheet === 'collapsed' ? 'medium' : 'collapsed' });
           else step(delta > 0 ? (Math.abs(delta) > 220 ? 2 : 1) : (Math.abs(delta) > 220 ? -2 : -1));
         }}
         onPointerCancel={() => { drag.current = null; }}>

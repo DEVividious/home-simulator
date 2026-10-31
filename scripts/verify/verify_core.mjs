@@ -208,7 +208,20 @@ async function runProject(F) {
     const back = await text(S.back);
     check(`[${tag}] click on the floor of "${R.name}" in the level section enters the room (Arrange, its furniture; the scene bar says where: "${back}")`,
       s.roomId === R.id && s.section === 'arrange' && back?.includes(R.name) && s.arrangement?.furniture.length > 0 && (await exists(S.arrangeTab('furniture'))) && s.selection === null, `room ${s.roomId}; back "${back}"; furniture ${s.arrangement?.furniture.length}; selection ${JSON.stringify(s.selection)}`);
-    if (s.roomId !== R.id) { await uiSet({ roomId: R.id, level: R.level, section: 'arrange', houseView: 'interior' }); await sleep(1200); await still(); }
+    // usability issue B1: entering a room from Look keeps Look (the furniture list was not what a person going in expected)
+    await uiSet({ roomId: null, selection: null, section: 'look', houseView: 'interior', level: R.level }); await sleep(1200); await still();
+    let q = await s3('screenOfRoom', R.id);
+    if (!(await onCanvas(q))) {
+      for (const [dx, dy] of [[0.25, 0.25], [-0.25, 0.25], [0.25, -0.25], [-0.25, -0.25]]) {
+        const c = await s3('screenOfFloor', R.id, R.bbox[0] + (R.bbox[2] - R.bbox[0]) * (0.5 + dx), R.bbox[1] + (R.bbox[3] - R.bbox[1]) * (0.5 + dy));
+        if (await onCanvas(c)) { q = c; break; }
+      }
+    }
+    await clickAt(q, 1500); await still();
+    const sl = await st();
+    check(`[${tag}] click on "${R.name}" with "${EN['steps.look']}" open: the room is entered and the step stays "${EN['steps.look']}"`,
+      sl.roomId === R.id && sl.section === 'look' && (await exists(T('section-look'))), `room ${sl.roomId}; section ${sl.section}`);
+    await uiSet({ roomId: R.id, level: R.level, section: 'arrange', houseView: 'interior', selection: null }); await sleep(1200); await still();
   });
 
   // ---------------------------------------------------------------- furniture: select / move / rotate / delete / undo
@@ -335,6 +348,11 @@ async function runProject(F) {
     await shot(`${tag}_06_walk`);
     check(`[${tag}] walk: "${EN['steps.walk']}" in the scene bar → eye-level walk mode, the place is shown; W walks forward`, (await st()).houseView === 'walk' && !!w0 && Math.hypot(w1.p[0] - p0[0], w1.p[1] - p0[1]) > 0.3 && !!(await text(T('walk-place'))),
       `start ${w0?.place} (${p0}) → ${w1.place} (${w1.p}); viewpoints ${vps.join(',')}`);
+    // usability issue B4: a mouse drag of 200 px turns about 29° (it used to turn about 52°)
+    const y0 = (await s3('walk')).yaw, mid0 = await page.evaluate(() => [innerWidth * 0.6, innerHeight * 0.5]);
+    await dragPath([mid0, [mid0[0] + 200, mid0[1]]]);
+    const turned = Math.abs((await s3('walk')).yaw - y0) * 180 / Math.PI;
+    check(`[${tag}] walk: a 200 px mouse drag turns the view about 29° (not half way round)`, turned > 20 && turned < 38, `${turned.toFixed(1)}°`);
     // walking to a pose: walkGo command, keys held until a condition holds (or a timeout)
     const goTo = async (p, z, yaw) => {
       await page.evaluate((go) => window.__home.ui({ walkGo: go }), { pose: { p, z, yaw, pitch: 0 }, n: Date.now() });
@@ -551,6 +569,17 @@ try {
     await shot('lang_pl');
     check(`language switch (Settings → Language: two buttons → Polski): the page reloads in Polish — "${PL['steps.arrange']}", "${PL['steps.look']}", "${PL['steps.save.saved']}"`,
       pl.lang === 'pl' && pl.a === PL['steps.arrange'] && pl.l === PL['steps.look'] && pl.save === PL['steps.save.saved'] && PL['steps.arrange'] !== EN['steps.arrange'], JSON.stringify(pl));
+    // usability issue A3: the names of the package in the UI language (plan.json `names`): the house, levels, places, rooms
+    const SH = pkg('sample-house'), LK = SH.building.rooms.rooms.find((r) => r.tags?.includes('kitchen'));
+    await open('sample-house'); await click(S.step('look'), 600);
+    const levels = await page.$$eval(`${T('level')} button`, (b) => b.map((x) => x.textContent.trim()));   // the level chips (not shown in a room)
+    await uiSet({ roomId: LK.id, level: LK.level, houseView: 'interior', selection: null }); await sleep(1200);
+    const nm = await page.evaluate((levels) => ({ title: document.title, levels,
+      places: [...document.querySelectorAll('[data-testid="places"] [data-testid^="place-vp"]')].map((b) => b.textContent.trim()), back: document.querySelector('[data-testid="scene-back"]')?.textContent.trim() ?? '' }), levels);
+    await shot('lang_pl_names');
+    check(`Polish UI: the package's Polish names — "${SH.manifest.names.pl}", ${SH.manifest.levels.map((l) => `"${l.names.pl}"`).join(', ')}, places ${SH.viewpoints.map((v) => `"${v.names.pl}"`).join(', ')}, room "${LK.names.pl}"`,
+      nm.title.startsWith(SH.manifest.names.pl) && SH.manifest.levels.every((l) => nm.levels.some((x) => x.includes(l.names.pl))) && SH.viewpoints.every((v) => nm.places.some((x) => x.includes(v.names.pl)))
+        && nm.back.includes(LK.names.pl) && !nm.places.some((x) => SH.viewpoints.some((v) => x.includes(v.name))), JSON.stringify(nm));
     await click(S.settings, 600);
     await Promise.all([page.waitForNavigation({ waitUntil: 'load', timeout: 60000 }), click(S.language('en'), 0)]);
     await ready(); await sleep(500);

@@ -27,6 +27,18 @@
      "name": {
       "type": "string"
      },
+     "names": {
+      "type": "object",
+      "propertyNames": {
+       "type": "string",
+       "pattern": "^[a-z]{2}$"
+      },
+      "additionalProperties": {
+       "type": "string",
+       "minLength": 1
+      },
+      "description": "the text in other languages: language code → text (the main field is in the package's language)"
+     },
      "description": {
       "type": "string"
      },

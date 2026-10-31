@@ -385,7 +385,7 @@ export function compilePlan(input: PlanInput | unknown, opts: CompileOptions): C
       if (usable === null || Math.abs(usable - r.areaPrinted) / r.areaPrinted > 0.1) warn('room.area', `room "${r.id}": computed area ${area} m²${usable !== null ? ` (usable under the roof ${usable} m²)` : ''} differs from the printed ${r.areaPrinted} m² by more than 10 %`);
     }
     return {
-      id: r.id, name: r.name, ...(r.label ? { label: r.label } : {}), level: r.level, floor_z: floorZ, area, area_data: r.areaPrinted ?? area, id_source: r.source ?? source,
+      id: r.id, name: r.name, ...(r.label ? { label: r.label } : {}), ...(r.names ? { names: r.names } : {}), level: r.level, floor_z: floorZ, area, area_data: r.areaPrinted ?? area, id_source: r.source ?? source,
       bbox: bb, polygon: poly, rectangular: poly.length === 4, ceiling: ce.json,
       stair_opening: stairOpenings.get(r.id) ?? null, doors: gaps.get(r.id) ?? [], openings: windows.get(r.id) ?? [], roof_windows: roofWindows.get(r.id) ?? [], kind: r.kind, tags: r.tags ?? [],
     } as RoomJson;
@@ -477,8 +477,19 @@ export function compilePlan(input: PlanInput | unknown, opts: CompileOptions): C
   const sun = plan.sun ? { lat: plan.sun.lat, lon: plan.sun.lon, gridAzimuthX: plan.sun.northAzimuthX, convergence: 0, trueAzimuthX: plan.sun.northAzimuthX, confidence: plan.sun.confidence, uncertaintyDeg: plan.sun.confidence === 'confirmed' ? 2 : 15, timeZone: plan.sun.timeZone, ...(plan.sun.placeName ? { placeName: plan.sun.placeName } : {}) } : undefined;
   if (sun) { try { new Intl.DateTimeFormat('en-US', { timeZone: sun.timeZone }); } catch { err('sun.timeZone', `unknown IANA time zone "${sun.timeZone}"`); } }
 
+  // ---- names in other languages: a language some names have, every name should have (the app shows a mix otherwise)
+  {
+    const named: [string, Record<string, string> | undefined][] = [[`project`, plan.project.names], ...plan.levels.map((l) => [`level "${l.id}"`, l.names] as [string, Record<string, string> | undefined]),
+      ...plan.rooms.map((r) => [`room "${r.id}"`, r.names] as [string, Record<string, string> | undefined]), ...plan.viewpoints.map((v) => [`viewpoint "${v.id}"`, v.names] as [string, Record<string, string> | undefined])];
+    for (const l of new Set(named.flatMap(([, n]) => Object.keys(n ?? {})))) {
+      const missing = named.filter(([, n]) => !n?.[l]).map(([w]) => w);
+      if (l === plan.project.language) warn('names.language', `names in "${l}" repeat the language the names are written in (project.language) — leave them out`);
+      else if (missing.length) warn('names.missing', `names in "${l}" are missing for ${missing.slice(0, 6).join(', ')}${missing.length > 6 ? ` and ${missing.length - 6} more` : ''} — the app would mix languages`);
+    }
+  }
+
   // ---- viewpoints
-  const viewpoints: Viewpoint[] = plan.viewpoints.map((v) => { const lv = v.level === 'SITE' ? lowest.id : v.level, p = P(v.at, lv), look = P([v.look[0], v.look[1]], lv); return { id: v.id, name: v.name, p, level: v.level, look: [look[0], look[1], v.look[2]], fov: v.fov, hint: v.hint }; });
+  const viewpoints: Viewpoint[] = plan.viewpoints.map((v) => { const lv = v.level === 'SITE' ? lowest.id : v.level, p = P(v.at, lv), look = P([v.look[0], v.look[1]], lv); return { id: v.id, name: v.name, ...(v.names ? { names: v.names } : {}), p, level: v.level, look: [look[0], look[1], v.look[2]], fov: v.fov, hint: v.hint, ...(v.hints ? { hints: v.hints } : {}) }; });
 
   // ---- manifest
   const modules: ProjectModule[] = [...(site ? ['site' as const] : []), ...(plan.assets?.environment ? ['environment' as const] : []), ...(sun ? ['sun' as const] : []), ...(stairs.length ? ['stairs' as const] : [])];
@@ -487,13 +498,13 @@ export function compilePlan(input: PlanInput | unknown, opts: CompileOptions): C
   const project: ProjectPackage = {
     schema: 'home-simulator/project', version: 1,
     manifest: {
-      projectId: plan.project.id, name: plan.project.name,
+      projectId: plan.project.id, name: plan.project.name, ...(plan.project.names ? { names: plan.project.names } : {}),
       ...(plan.project.description ? { description: plan.project.description } : {}), ...(plan.project.documentTitle ? { documentTitle: plan.project.documentTitle } : {}),
       ...(plan.project.language ? { language: plan.project.language } : {}),
       units: 'm',
       coordinateSystem: { name: 'LCS', description: plan.project.origin ?? 'origin at the outer corner of the building (bottom-left of the plan); +X right on the plan, +Y up on the plan, +Z up; Z = 0 is the finished floor of the lowest level', up: 'Z', handedness: 'right' },
       buildingType: plan.project.buildingType,
-      levels: sortedLevels.map((l) => ({ id: l.id, name: l.name, floorZ: l.floorZ })),
+      levels: sortedLevels.map((l) => ({ id: l.id, name: l.name, ...(l.names ? { names: l.names } : {}), floorZ: l.floorZ })),
       dataSources: plan.dataSources ?? { rooms: source, doors: source, interiors: source, electrical: source },
       modules, capabilities: plan.capabilities ?? ['interiors', 'electrical', 'variants', 'walk'],
       defaultView: { levelId: dv?.level ?? lowest.id, roomId: dv?.room ?? null, view: dv?.view ?? (plan.project.buildingType === 'apartment' ? 'interior' : 'exterior') },

@@ -5,6 +5,9 @@
  "manifest": {
   "projectId": "demo-apartment",
   "name": "Demo apartment",
+  "names": {
+   "pl": "Przykładowe mieszkanie"
+  },
   "description": "example project · synthetic data",
   "documentTitle": "Demo apartment (synthetic data)",
   "language": "en",
@@ -20,6 +23,9 @@
    {
     "id": "L1",
     "name": "Apartment",
+    "names": {
+     "pl": "Mieszkanie"
+    },
     "floorZ": 0
    }
   ],
@@ -59,6 +65,9 @@
     {
      "id": "R1",
      "name": "Living room with kitchenette",
+     "names": {
+      "pl": "Salon z aneksem kuchennym"
+     },
      "level": "L1",
      "floor_z": 0,
      "area": 22.25,
@@ -153,6 +162,9 @@
     {
      "id": "R2",
      "name": "Bedroom",
+     "names": {
+      "pl": "Sypialnia"
+     },
      "level": "L1",
      "floor_z": 0,
      "area": 16.56,
@@ -222,6 +234,9 @@
     {
      "id": "R3",
      "name": "Bathroom",
+     "names": {
+      "pl": "Łazienka"
+     },
      "level": "L1",
      "floor_z": 0,
      "area": 7.73,
@@ -291,6 +306,9 @@
     {
      "id": "R4",
      "name": "Hallway",
+     "names": {
+      "pl": "Przedpokój"
+     },
      "level": "L1",
      "floor_z": 0,
      "area": 5.46,
@@ -1014,6 +1032,9 @@
   {
    "id": "vp-entry",
    "name": "Entrance",
+   "names": {
+    "pl": "Wejście"
+   },
    "p": [
     0.9,
     1.8
@@ -1025,11 +1046,17 @@
     1.5
    ],
    "fov": 70,
-   "hint": "just inside the entrance door"
+   "hint": "just inside the entrance door",
+   "hints": {
+    "pl": "zaraz za drzwiami wejściowymi"
+   }
   },
   {
    "id": "vp-sofa",
    "name": "From the sofa",
+   "names": {
+    "pl": "Z kanapy"
+   },
    "p": [
     6.3,
     1.5
@@ -1041,11 +1068,17 @@
     1.4
    ],
    "fov": 70,
-   "hint": "facing the TV"
+   "hint": "facing the TV",
+   "hints": {
+    "pl": "przodem do telewizora"
+   }
   },
   {
    "id": "vp-bed",
    "name": "Bedroom",
+   "names": {
+    "pl": "Sypialnia"
+   },
    "p": [
     4,
     5.3
@@ -1057,7 +1090,10 @@
     1.2
    ],
    "fov": 70,
-   "hint": "from the door towards the bed"
+   "hint": "from the door towards the bed",
+   "hints": {
+    "pl": "od drzwi w stronę łóżka"
+   }
   }
  ]
 }

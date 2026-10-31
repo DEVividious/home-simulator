@@ -5,6 +5,7 @@
  "project": {
   "id": "sample-house",
   "name": "Sample house",
+  "names": { "pl": "Przykładowy dom" },
   "description": "example project · two storeys, stairs, plot · synthetic data",
   "documentTitle": "Sample house (synthetic data)",
   "language": "en",
@@ -15,18 +16,18 @@
  "units": "m",
  "source": "sample-house package (synthetic data)",
  "levels": [
-  { "id": "L0", "name": "Ground floor", "floorZ": 0, "ceiling": 2.7 },
-  { "id": "L1", "name": "First floor", "floorZ": 2.95, "ceiling": 2.6 }
+  { "id": "L0", "name": "Ground floor", "names": { "pl": "Parter" }, "floorZ": 0, "ceiling": 2.7 },
+  { "id": "L1", "name": "First floor", "names": { "pl": "Piętro" }, "floorZ": 2.95, "ceiling": 2.6 }
  ],
  "rooms": [
-  { "id": "H0", "name": "Hall", "level": "L0", "kind": "hall", "rect": [0.3, 0.3, 3.3, 5.0] },
-  { "id": "B0", "name": "Bathroom", "level": "L0", "kind": "bath", "rect": [0.3, 5.12, 3.3, 7.7] },
-  { "id": "LK", "name": "Living room with kitchen", "level": "L0", "kind": "living", "tags": ["kitchen"], "rect": [3.42, 0.3, 9.7, 7.7] },
-  { "id": "H1", "name": "Landing", "level": "L1", "kind": "hall", "rect": [0.3, 0.3, 3.3, 5.0] },
-  { "id": "O1", "name": "Office", "level": "L1", "kind": "office", "rect": [0.3, 5.12, 3.3, 7.7] },
-  { "id": "BR2", "name": "Bedroom 2", "level": "L1", "kind": "bed", "rect": [3.42, 0.3, 6.5, 3.8] },
-  { "id": "B1", "name": "Bathroom (first floor)", "level": "L1", "kind": "bath", "rect": [6.62, 0.3, 9.7, 3.8] },
-  { "id": "BR1", "name": "Main bedroom", "level": "L1", "kind": "bed", "rect": [3.42, 3.92, 9.7, 7.7] }
+  { "id": "H0", "name": "Hall", "names": { "pl": "Hol" }, "level": "L0", "kind": "hall", "rect": [0.3, 0.3, 3.3, 5.0] },
+  { "id": "B0", "name": "Bathroom", "names": { "pl": "Łazienka" }, "level": "L0", "kind": "bath", "rect": [0.3, 5.12, 3.3, 7.7] },
+  { "id": "LK", "name": "Living room with kitchen", "names": { "pl": "Salon z kuchnią" }, "level": "L0", "kind": "living", "tags": ["kitchen"], "rect": [3.42, 0.3, 9.7, 7.7] },
+  { "id": "H1", "name": "Landing", "names": { "pl": "Korytarz" }, "level": "L1", "kind": "hall", "rect": [0.3, 0.3, 3.3, 5.0] },
+  { "id": "O1", "name": "Office", "names": { "pl": "Gabinet" }, "level": "L1", "kind": "office", "rect": [0.3, 5.12, 3.3, 7.7] },
+  { "id": "BR2", "name": "Bedroom 2", "names": { "pl": "Sypialnia 2" }, "level": "L1", "kind": "bed", "rect": [3.42, 0.3, 6.5, 3.8] },
+  { "id": "B1", "name": "Bathroom (first floor)", "names": { "pl": "Łazienka na piętrze" }, "level": "L1", "kind": "bath", "rect": [6.62, 0.3, 9.7, 3.8] },
+  { "id": "BR1", "name": "Main bedroom", "names": { "pl": "Główna sypialnia" }, "level": "L1", "kind": "bed", "rect": [3.42, 3.92, 9.7, 7.7] }
  ],
  "doors": [
   { "id": "D0", "between": ["H0", "exterior"], "at": [0.15, 4.2], "width": 1.0, "swingInto": "H0", "hinge": "right" },
@@ -116,9 +117,10 @@
  "site": { "margin": 8, "groundLevel": -0.15 },
  "sun": { "lat": 50.0, "lon": 8.0, "timeZone": "Europe/Berlin", "northAzimuthX": 90, "confidence": "probable", "placeName": "Example town" },
  "viewpoints": [
-  { "id": "vp-front", "name": "Front door", "level": "SITE", "at": [-2.5, 4.2], "look": [1.0, 4.2, 1.6], "hint": "outside the entrance" },
-  { "id": "vp-garden", "name": "Garden", "level": "SITE", "at": [14.0, 3.5], "look": [9.7, 3.5, 1.4], "hint": "from the garden towards the terrace door" },
-  { "id": "vp-living", "name": "Living room", "level": "L0", "at": [8.6, 1.2], "look": [4.0, 5.5, 1.2], "hint": "from the window towards the kitchen" },
-  { "id": "vp-bedroom", "name": "Main bedroom", "level": "L1", "at": [4.6, 4.6], "look": [9.0, 6.8, 1.2], "hint": "from the door" }
+  { "id": "vp-front", "name": "Front door", "names": { "pl": "Drzwi wejściowe" }, "level": "SITE", "at": [-2.5, 4.2], "look": [1.0, 4.2, 1.6], "hint": "outside the entrance", "hints": { "pl": "przed wejściem" } },
+  { "id": "vp-garden", "name": "Garden", "names": { "pl": "Ogród" }, "level": "SITE", "at": [14.0, 3.5], "look": [9.7, 3.5, 1.4], "hint": "from the garden towards the terrace door", "hints": { "pl": "z ogrodu w stronę drzwi tarasowych" } },
+  { "id": "vp-living", "name": "Living room", "names": { "pl": "Salon" }, "level": "L0", "at": [8.6, 1.2], "look": [4.0, 5.5, 1.2], "hint": "from the window towards the kitchen", "hints": { "pl": "od okna w stronę kuchni" } },
+  { "id": "vp-kitchen", "name": "Kitchen", "names": { "pl": "Kuchnia" }, "level": "L0", "at": [7.5, 5.6], "look": [7.5, 7.7, 1.0], "hint": "towards the kitchen units", "hints": { "pl": "w stronę szafek kuchennych" } },
+  { "id": "vp-bedroom", "name": "Main bedroom", "names": { "pl": "Główna sypialnia" }, "level": "L1", "at": [4.6, 4.6], "look": [9.0, 6.8, 1.2], "hint": "from the door", "hints": { "pl": "od drzwi" } }
  ]
 }

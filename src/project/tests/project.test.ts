@@ -217,7 +217,7 @@ describe('project directories and the project index', () => {
       schema: 'home-simulator/projects-index', version: 1, default: 'broken',
       projects: [
         { id: 'broken', name: 'broken', dir: 'projects/broken/' },                // unreadable package: listed, reported at load time
-        { id: 'demo-apartment', name: 'Demo apartment', description: 'example project · synthetic data', dir: 'projects/demo-apartment/' },
+        { id: 'demo-apartment', name: 'Demo apartment', names: demo.manifest.names, description: 'example project · synthetic data', dir: 'projects/demo-apartment/' },
         { id: 'zeta-house', name: 'Zeta house', description: 'two storeys', dir: 'projects/zeta-house/' },
       ],
     });

@@ -38,10 +38,12 @@ multiple-choice question tool when the host has one, otherwise ask in the conver
 
 ## Language
 
-Talk to the user in the language they write in, from the first reply on. The script prints in English; `--lang pl` makes
-the preview labels Polish (`preview`, `print`). Translate only labels and descriptions when you show the script's output:
-keep every number, unit, file name, id and command exactly as printed (switch only the decimal separator to the user's
-convention). Room names in `plan.json` stay as printed on the drawing.
+Talk to the user in the language they write in, from the first reply on — every sentence of every reply, also the first
+one after a long run of tools (your notes to yourself and the script's output are English; the user's reply is not). The
+script prints in English; `--lang pl` makes the preview labels Polish (`preview`, `print`). Translate only labels and
+descriptions when you show the script's output: keep every number, unit, file name, id and command exactly as printed
+(switch only the decimal separator to the user's convention). Room names in `plan.json` stay as printed on the drawing; the
+translations in `names` (`references/authoring-conventions.md`) are for the Home Simulator app — the print does not need them.
 
 ## Workflow
 
