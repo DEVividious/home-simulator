@@ -12,6 +12,7 @@ import { canonicalDir, lineC, lineFrame, linePt, lineT, type LineAxis, type Line
 import { areaBelow, atticPlanes, surfaceFacets, type RoofPiece } from '../model/roof.ts';
 import type { ArchitectItem, DoorDef, FreeWallJson, ElectricalDefaults, ProjectModule, ProjectPackage, Rect, RoomJson, StairDef, Vec2, Viewpoint } from '../package/types.ts';
 import { PlanSchema, type Plan, type PlanInput } from './plan.ts';
+import { outOfRange, rangeMessage } from '../package/range.ts';
 import { compileRoof } from './roof.ts';
 
 export interface Issue { level: 'error' | 'warning'; code: string; message: string }
@@ -608,6 +609,9 @@ export function compilePlan(input: PlanInput | unknown, opts: CompileOptions): C
     ...(plan.views ? { views: plan.views } : {}),
     ...(viewpoints.length ? { viewpoints } : {}),
   };
+  // a coordinate far from the origin (a px plan without calibration, a typo of a few zeros) stops the solid kernel
+  const far = outOfRange(project);
+  if (far.length) err('plan.range', rangeMessage(far));
   return { project: issues.some((i) => i.level === 'error') ? null : project, issues, adjustments };
 }
 

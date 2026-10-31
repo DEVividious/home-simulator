@@ -2,6 +2,7 @@
 // as a readable list, not as an exception deep inside the scene. Pure TS on the package data (no active project).
 // Structure (types, required fields) is checked by the zod schema (./schema); this file checks meaning: an enabled module
 // MUST have its data; cross references (room ↔ level, door ↔ rooms, furniture ↔ room) must resolve.
+import { outOfRange, rangeMessage } from '@home-sim/core/package/range';
 import { PROJECT_CAPABILITIES, type ProjectModule, type ProjectPackage } from './types';
 
 const AXIS_TOL = 1e-6;
@@ -57,6 +58,9 @@ export function validateProject(p: ProjectPackage, catalogIds?: ReadonlySet<stri
   // level section, plan and camera framing are computed from the room outlines of a level — an empty level shows nothing
   else for (const id of levelIds) if (!data.rooms.some((r) => r.level === id)) e.push(`level "${id}": no rooms (every level needs at least one)`);
   if (m.defaultView.roomId && !roomIds.has(m.defaultView.roomId)) e.push(`manifest.defaultView: unknown room "${m.defaultView.roomId}"`);
+  // --- numbers: plain metres near the origin (the solid kernel stops on a coordinate of 1e30, the camera framing breaks)
+  const far = outOfRange(p);
+  if (far.length) e.push(rangeMessage(far));
   // --- shell: without a file-based model the engine builds it from the outlines — walls along the axes or at 45°
   if (!p.assets?.model && !orthogonal) e.push('a project without a building model file (assets.model) needs room walls along the plan axes or at 45° to them — the generated shell does not build other angles');
   // --- doors

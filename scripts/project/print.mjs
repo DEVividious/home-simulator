@@ -27,6 +27,7 @@ import { profileOf } from '@home-sim/core/print/profiles';
 import { encodePng } from '@home-sim/core/print/raster';
 import { parseScale, scaleLabel, scaleTag } from '@home-sim/core/print/scale';
 import { kernelMessage, loadGeometry } from '@home-sim/core/solid/wasm';
+import { outOfRange, rangeMessage } from '@home-sim/core/package/range';
 
 const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..', '..');
 const USAGE = 'usage: npm run project:print -- <projects/<id> | plan.json | project.json> --bed "<printer>"|WxD[xH] [--scale auto|1:N] [--nozzle 0.4|0.6|resin] [--min-wall mm] [--margin 10] [--eaves keep|trim] [--joints on|off] [--scales] [--dry-run] [--out DIR] [--lang en|pl]';
@@ -63,6 +64,8 @@ if (json?.schema === 'home-simulator/plan') {
 } else if (json?.building?.rooms) {
   data = json.building; name = json.manifest?.projectId ?? path.basename(path.dirname(file));
 } else fail(`${file}: neither a plan.json (schema home-simulator/plan) nor a project.json`);
+const far = outOfRange({ building: data });
+if (far.length) fail(`${file}: ${rangeMessage(far)}`);
 const projectDir = path.basename(path.dirname(file)) === 'source' ? path.dirname(path.dirname(file)) : path.dirname(file);
 
 // ---- options

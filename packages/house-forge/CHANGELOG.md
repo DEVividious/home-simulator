@@ -21,6 +21,8 @@
 - A straight flight ending at a wall with a short landing printed with an open ground-floor part; the landing now runs into the
   walls around it.
 - When the solid kernel stops on a geometry, the error says so in a sentence instead of a bare number.
+- A number of the building more than 10 km from the origin (a px plan without calibration, a few zeros too many) is an error
+  (`plan.range`) that names it, instead of a solid the kernel stops on.
 
 ## 0.1.1
 

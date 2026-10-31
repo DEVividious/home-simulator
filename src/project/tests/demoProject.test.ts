@@ -200,6 +200,14 @@ describe('level without rooms', () => {
     expect(validateProject(demo)).toEqual([]); expect(validateProject(house)).toEqual([]);
     expect(validateProject(twoLevels)).toEqual(['level "L2": no rooms (every level needs at least one)']);
   });
+  it('package validation: a room far from the origin (1e30 m) is an error naming it — before it reaches the solid kernel', () => {
+    const far: ProjectPackage = structuredClone(demo), r = far.building.rooms.rooms[1];
+    r.polygon = r.polygon.map(([x, y]) => [x + 1e30, y]);
+    const e = validateProject(far);
+    expect(e).toHaveLength(1);
+    expect(e[0]).toMatch(/^coordinates and sizes must be finite and within 10 km of the project origin \(metres\): /);
+    expect(e[0]).toContain(`building.rooms.rooms[${r.id}].polygon[0][0] = 1e+30`);
+  });
   it('section framing: a level without rooms (or outside the project) — the building outline at its height, the camera always finite', () => {
     const bounds = { min: [0, 0, -0.25] as Vec3, max: [9, 7, 2.85] as Vec3 };
     const numbers = (g: ReturnType<typeof presetGoal>) => [...g.pos.toArray(), ...g.target.toArray(), g.fov ?? 0];
