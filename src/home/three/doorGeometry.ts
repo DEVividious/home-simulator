@@ -2,6 +2,7 @@
 // A hinged leaf rotates about the HINGE AXIS: the origin of the leaf's local frame lies on the hinge, not in the leaf centre.
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import { gapFrame, linePt } from '@home-sim/core/model/wallLine';
 import { doorLeaves, LEAF_T, leafCount, leafWidthOf, type DoorDef } from '../model/doors';
 
 const LEAF_COLOR = new THREE.Color('#f2f0ea'), HANDLE_COLOR = new THREE.Color('#33363b');
@@ -23,10 +24,12 @@ export function frameGeometry(d: DoorDef): THREE.BufferGeometry | null {
   if (side < 0.01 && top < 0.01) return null;
   const out = d.flush ? -0.001 : 0.01;
   const lo = Math.min(...o.faces) - out, hi = Math.max(...o.faces) + out, parts: THREE.BufferGeometry[] = [];
+  const f = gapFrame(o);
   const box = (a0: number, a1: number, z0: number, z1: number) => {
     // a — along the wall, c — across it (lo…hi); LCS (x, y, z) → three (x, z, −y)
-    const g = o.along === 'X' ? new THREE.BoxGeometry(a1 - a0, z1 - z0, hi - lo) : new THREE.BoxGeometry(hi - lo, z1 - z0, a1 - a0);
-    const ac = (a0 + a1) / 2, cc = (lo + hi) / 2, x = o.along === 'X' ? ac : cc, y = o.along === 'X' ? cc : ac;
+    const ac = (a0 + a1) / 2, cc = (lo + hi) / 2, [x, y] = linePt(f, ac, cc);
+    const g = o.along === 'X' ? new THREE.BoxGeometry(a1 - a0, z1 - z0, hi - lo) : o.along === 'Y' ? new THREE.BoxGeometry(hi - lo, z1 - z0, a1 - a0)
+      : new THREE.BoxGeometry(a1 - a0, z1 - z0, hi - lo).rotateY(Math.atan2(f.dir[1], f.dir[0]));   // a slanted wall: the box turned to it
     g.translate(x, d.floorZ + (z0 + z1) / 2, -y);
     parts.push(g);
   };

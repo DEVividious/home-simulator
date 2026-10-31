@@ -40,8 +40,12 @@ export interface FurniturePlacement {
 }
 
 // ------------------------------------------------------------------ rooms
-export interface DoorJson { along: 'X' | 'Y'; from_: number; to: number; across: number[]; width: number; door_id: string | null; leaf: number | null; height: number | null }
-export interface OpeningJson { id: string; kind: string; plane_axis: 'X' | 'Y'; inner: number; from_: number; to: number; sill_z?: number; head_z?: number; polygon_YZ?: number[][] }
+/** a door or passage gap in a room: the wall line (along X: from / to are x, the faces `across` are y; along Y the other way;
+ *  "D" — a slanted wall with unit direction `dir`: from / to = p · dir, across = p · n, n = (−dir.y, dir.x); model/wallLine.ts) */
+export interface DoorJson { along: 'X' | 'Y' | 'D'; dir?: Vec2; from_: number; to: number; across: number[]; width: number; door_id: string | null; leaf: number | null; height: number | null }
+/** a window: plane_axis — the axis constant along the face (X: a wall along Y, inner = its x), "D" — a slanted wall with unit
+ *  direction `dir` (inner = p · n, from / to = p · dir) */
+export interface OpeningJson { id: string; kind: string; plane_axis: 'X' | 'Y' | 'D'; dir?: Vec2; inner: number; from_: number; to: number; sill_z?: number; head_z?: number; polygon_YZ?: number[][] }
 /** flat: at height z. roof: under the roof of the room's level (building.roof) — the underside of the roof structure, capped by
  *  the flat top flat_z (collar ties). attic (written before the roof existed): the ridge runs along X at y = ridge_y, or along Y at
  *  x = ridge_x; the ceiling falls by `slope` per metre away from it, capped by flat_z — a gable roof is derived from it at load */
@@ -76,7 +80,7 @@ export interface DoorDef {
   rooms: [string, string];
   floorZ: number;
   /** wall opening: wall axis, range along the axis, wall faces (cross coordinate), clear width and height of the masonry opening */
-  opening: { along: 'X' | 'Y'; from: number; to: number; faces: number[]; width: number; height: number };
+  opening: { along: 'X' | 'Y' | 'D'; dir?: Vec2; from: number; to: number; faces: number[]; width: number; height: number };
   /** leaf width [m] — of all the leaves together (a double door, a bifold) */
   leafWidth: number;
   /** leaf height [m] */

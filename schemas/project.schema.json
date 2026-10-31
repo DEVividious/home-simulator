@@ -379,8 +379,25 @@
              "type": "string",
              "enum": [
               "X",
-              "Y"
-             ]
+              "Y",
+              "D"
+             ],
+             "description": "wall line: along X (from / to are x, across are y), along Y, or D — slanted, with `dir`"
+            },
+            "dir": {
+             "description": "slanted wall: unit direction along it; from / to = p · dir, across = p · n, n = (−dir.y, dir.x)",
+             "type": "array",
+             "prefixItems": [
+              {
+               "type": "number"
+              },
+              {
+               "type": "number"
+              }
+             ],
+             "items": false,
+             "minItems": 2,
+             "maxItems": 2
             },
             "from_": {
              "type": "number"
@@ -448,9 +465,25 @@
              "type": "string",
              "enum": [
               "X",
-              "Y"
+              "Y",
+              "D"
              ],
-             "description": "axis whose coordinate is constant along the wall face"
+             "description": "axis whose coordinate is constant along the wall face; D — a slanted wall, with `dir`"
+            },
+            "dir": {
+             "description": "slanted wall: unit direction along it; from / to = p · dir, inner = p · n, n = (−dir.y, dir.x)",
+             "type": "array",
+             "prefixItems": [
+              {
+               "type": "number"
+              },
+              {
+               "type": "number"
+              }
+             ],
+             "items": false,
+             "minItems": 2,
+             "maxItems": 2
             },
             "inner": {
              "type": "number",
@@ -601,8 +634,23 @@
           "type": "string",
           "enum": [
            "X",
-           "Y"
+           "Y",
+           "D"
           ]
+         },
+         "dir": {
+          "type": "array",
+          "prefixItems": [
+           {
+            "type": "number"
+           },
+           {
+            "type": "number"
+           }
+          ],
+          "items": false,
+          "minItems": 2,
+          "maxItems": 2
          },
          "from": {
           "type": "number"

@@ -49,15 +49,16 @@ export function validateProject(p: ProjectPackage, catalogIds?: ReadonlySet<stri
     roomIds.add(r.id);
     if (!levelIds.has(r.level)) e.push(`room "${r.id}": unknown level "${r.level}"`);
     if (r.polygon.length < 3) e.push(`room "${r.id}": outline has fewer than 3 points`);
-    r.polygon.forEach((a, i) => { const b = r.polygon[(i + 1) % r.polygon.length]; if (Math.abs(a[0] - b[0]) > AXIS_TOL && Math.abs(a[1] - b[1]) > AXIS_TOL) orthogonal = false; });
+    // walls along the plan axes or at 45° to them (within 1.5°)
+    r.polygon.forEach((a, i) => { const b = r.polygon[(i + 1) % r.polygon.length], dx = b[0] - a[0], dy = b[1] - a[1]; if (Math.abs(dx) > AXIS_TOL && Math.abs(dy) > AXIS_TOL && Math.abs(Math.abs(Math.atan2(Math.abs(dy), Math.abs(dx))) - Math.PI / 4) > (1.5 * Math.PI) / 180) orthogonal = false; });
     for (const o of r.openings) { if (openingIds.has(o.id)) e.push(`room "${r.id}": window "${o.id}" — repeated id`); openingIds.add(o.id); }
   }
   if (!data.rooms.length) e.push('package without rooms');
   // level section, plan and camera framing are computed from the room outlines of a level — an empty level shows nothing
   else for (const id of levelIds) if (!data.rooms.some((r) => r.level === id)) e.push(`level "${id}": no rooms (every level needs at least one)`);
   if (m.defaultView.roomId && !roomIds.has(m.defaultView.roomId)) e.push(`manifest.defaultView: unknown room "${m.defaultView.roomId}"`);
-  // --- shell: without a file-based model the engine builds it from the outlines — orthogonal plans only
-  if (!p.assets?.model && !orthogonal) e.push('a project without a building model file (assets.model) needs orthogonal room outlines — the generated shell does not support slanted walls');
+  // --- shell: without a file-based model the engine builds it from the outlines — walls along the axes or at 45°
+  if (!p.assets?.model && !orthogonal) e.push('a project without a building model file (assets.model) needs room walls along the plan axes or at 45° to them — the generated shell does not build other angles');
   // --- doors
   const doorIds = new Set<string>();
   for (const d of p.building.doors) {

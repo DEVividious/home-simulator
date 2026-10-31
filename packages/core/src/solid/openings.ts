@@ -101,8 +101,9 @@ export function levelOpenings(rooms: Room[], mass: PlanMass, wallTop: number): {
         const c = [at(h.t0, -PROUD), at(h.t1, -PROUD), at(h.t0, depth + PROUD), at(h.t1, depth + PROUD)];
         box = [Math.min(...c.map((q) => q[0])), Math.min(...c.map((q) => q[1])), Math.max(...c.map((q) => q[0])), Math.max(...c.map((q) => q[1]))];
       }
-      // the same opening registered by both rooms it joins: one cutter
-      const key = box ? `${box.join(',')}|${z0},${z1}` : `${room.id}|${h.id}`;
+      // the same opening registered by both rooms it joins: one cutter (a slanted one: by the corners of its plan quadrilateral)
+      const corners = () => { const at = (t: number, d: number) => `${Math.round((w.a[0] + w.dir[0] * t + out[0] * d) * 1e3)},${Math.round((w.a[1] + w.dir[1] * t + out[1] * d) * 1e3)}`; return [at(h.t0, 0), at(h.t1, 0), at(h.t0, depth), at(h.t1, depth)].sort().join(';'); };
+      const key = box ? `${box.join(',')}|${z0},${z1}` : !h.polygon && h.kind !== 'window' && h.kind !== 'glazing' ? `${corners()}|${z0},${z1}` : `${room.id}|${h.id}`;
       if (!seenCut.has(key)) {
         seenCut.add(key);
         cuts.push({ id: h.id, roomId: room.id, wallId: w.id, kind: h.kind, a: [snap(w.a[0]), snap(w.a[1])], dir: w.dir, out, outline, depth, box, z0, z1 });

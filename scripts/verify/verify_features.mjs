@@ -4,7 +4,9 @@
 //     level (the level follows), and Download › Print model gives the STL of `npm run project:print` with the stairs in it;
 //   • exits in the walk (usability issue B8): a sign over the front door, a click on it opens the door and walks out;
 //   • double and folding doors: a click on the double door in the walk opens both leaves about their own hinges, the bifold
-//     folds, the double entrance door lets the walk out, and the print download works.
+//     folds, the double entrance door lets the walk out, and the print download works;
+//   • walls at 45°: the shell is built with the slanted walls (no grid fallback for them), a click on the door in the slanted
+//     partition opens it and the walk goes through into the room behind; the print download works.
 // Usage: node scripts/verify/verify_features.mjs [--no-build] [--only stairs-straight,stairs-l]
 //        HOME_SIM_BROWSER=auto|gpu|swiftshader. Output: reports/e2e/features/ (screenshots, features.json).
 import { execSync } from 'node:child_process';
@@ -28,7 +30,7 @@ const results = [];
 const check = (name, ok, detail = '') => { results.push({ name, status: ok ? 'PASS' : 'FAIL', detail: String(detail) }); console.log(`  ${ok ? 'PASS' : 'FAIL'} | ${name} | ${String(detail).replace(/\s+/g, ' ').slice(0, 400)}`); };
 
 // ------------------------------------------------------------------ temporary projects from the fixtures
-const FIXTURES = ['stairs-straight', 'stairs-l', 'doors'].filter((f) => !ONLY.length || ONLY.includes(f));
+const FIXTURES = ['stairs-straight', 'stairs-l', 'doors', 'walls-45'].filter((f) => !ONLY.length || ONLY.includes(f));
 const installed = [];
 function install(fixture) {
   const id = `e2e-${fixture}`, dir = resolve(ROOT, 'projects', id);
@@ -153,6 +155,32 @@ try {
       check(`[${tag}] the bifold ${fold.id} opened: two panels, the first about the hinge, the second from the fold back to the wall by the hinge`,
         panels.every(Boolean) && Math.hypot(panels[0].x - h[0], panels[0].y - h[1]) < 0.05 && !!end && Math.hypot(end[0] - h[0], end[1] - h[1]) < 0.3, JSON.stringify(panels));
       await page.evaluate((id) => window.__home.doors.open(id, 0), fold.id);
+    });
+
+    // ---------------------------------------------------------------- walls at 45°
+    const slanted = F.p.building.doors.find((d) => d.opening.along === 'D');
+    if (slanted) await stage(`[${tag}] slanted walls`, async () => {
+      // from outside: the chamfered corner, and the walls of the level section
+      await page.evaluate(() => window.__home.ui({ houseView: 'exterior' })); await sleep(1500);
+      await shot(`${tag}_09_exterior`);
+      const sh = await s3('shell');
+      check(`[${tag}] the generated shell is built with the walls at 45° (the solid kernel, not the grid)`, sh.status === 'ready' && sh.kind === 'core', JSON.stringify(sh));
+      if (!(await s3('walk')).on) { await click(S.view('walk'), 2500); await waitFor(async () => { const w = await s3('walk'); return w.on && w.place ? w : null; }, 20000); }
+      // in the room the door does not open into, 2.2 m from the door, facing it across the slanted wall
+      const o = slanted.opening, n = [-o.dir[1], o.dir[0]], t = (o.from + o.to) / 2, c = (o.faces[0] + o.faces[1]) / 2;
+      const mid = [o.dir[0] * t + n[0] * c, o.dir[1] * t + n[1] * c], into = slanted.openDir, stand = [mid[0] - into[0] * 2.2, mid[1] - into[1] * 2.2];
+      const yaw = Math.atan2(-into[0], into[1]);
+      await goTo(stand, 0, yaw, -0.1); await sleep(700);
+      await shot(`${tag}_10_slanted_door`);
+      let q = null;
+      for (const [h, al] of [[1.2, 0.5], [1.5, 0.4], [0.9, 0.6]]) { q = await s3('screenOfDoor', slanted.id, 0, h, al); if (await onCanvas(q)) break; q = null; }
+      if (q) await clickAt(q, 200);
+      const opened = await page.waitForFunction((id) => (window.__home3d.doors().motion[id] ?? 0) > 0.99, { timeout: 15000, polling: 100 }, slanted.id).then(() => true).catch(() => false);
+      const behind = slanted.swingInto, through = await hold('KeyW', `window.__home3d.walk().roomId === ${JSON.stringify(behind)}`, 15000);
+      await sleep(400);
+      const w = await s3('walk');
+      await shot(`${tag}_11_through`);
+      check(`[${tag}] walk: a click on the door ${slanted.id} in the slanted wall opens it, and the walk goes through into ${behind}`, !!q && opened && through && w.roomId === behind, `${w.place} (${w.roomId})`);
     });
 
     // ---------------------------------------------------------------- exits (usability issue B8)

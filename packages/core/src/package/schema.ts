@@ -15,16 +15,21 @@ export const NamesSchema = z.record(z.string().regex(/^[a-z]{2}$/, 'a two-letter
 
 export const RoomKindSchema = z.enum(['bath', 'kitchen', 'garage', 'tech', 'hall', 'bed', 'living', 'office', 'storage', 'room']);
 
+const slanted = (d: { dir?: unknown }, kind: string) => kind !== 'D' || Array.isArray(d.dir);
 const DoorGapSchema = z.looseObject({
-  along: z.enum(['X', 'Y']), from_: num, to: num, across: z.array(num).length(2), width: num,
+  along: z.enum(['X', 'Y', 'D']).describe('wall line: along X (from / to are x, across are y), along Y, or D — slanted, with `dir`'),
+  dir: vec2.optional().describe('slanted wall: unit direction along it; from / to = p · dir, across = p · n, n = (−dir.y, dir.x)'),
+  from_: num, to: num, across: z.array(num).length(2), width: num,
   door_id: z.string().nullable(), leaf: num.nullable(), height: num.nullable(),
-}).describe('door gap or passage in a room wall; the same gap appears in the rooms on both sides');
+}).refine((g) => slanted(g, g.along), 'a gap in a slanted wall (along "D") needs "dir"')
+  .describe('door gap or passage in a room wall; the same gap appears in the rooms on both sides');
 
 const WindowSchema = z.looseObject({
-  id, kind: z.string(), plane_axis: z.enum(['X', 'Y']).describe('axis whose coordinate is constant along the wall face'),
+  id, kind: z.string(), plane_axis: z.enum(['X', 'Y', 'D']).describe('axis whose coordinate is constant along the wall face; D — a slanted wall, with `dir`'),
+  dir: vec2.optional().describe('slanted wall: unit direction along it; from / to = p · dir, inner = p · n, n = (−dir.y, dir.x)'),
   inner: num.describe('coordinate of the room-side wall face'), from_: num, to: num,
   sill_z: num.optional(), head_z: num.optional(), polygon_YZ: z.array(z.array(num)).optional(),
-});
+}).refine((o) => slanted(o, o.plane_axis), 'a window in a slanted wall (plane_axis "D") needs "dir"');
 
 /** flat: absolute height z; roof: under the roof of the room's level, capped by the flat top flat_z; attic (sloped, written before
  *  the roof): flat top flat_z, ridge along X at y = ridge_y or along Y at x = ridge_x, height z_at_ridge on the ridge line, fall
@@ -48,7 +53,8 @@ export const RoomSchema = z.looseObject({
 
 export const DoorSchema = z.looseObject({
   id, level: id, rooms: z.tuple([id, id]), floorZ: num,
-  opening: z.looseObject({ along: z.enum(['X', 'Y']), from: num, to: num, faces: z.array(num).length(2), width: num, height: num }),
+  opening: z.looseObject({ along: z.enum(['X', 'Y', 'D']), dir: vec2.optional(), from: num, to: num, faces: z.array(num).length(2), width: num, height: num })
+    .refine((o) => slanted(o, o.along), 'an opening in a slanted wall (along "D") needs "dir"'),
   leafWidth: num, height: num, type: z.enum(['hinged-single', 'hinged-double', 'folding', 'sliding', 'pocket']),
   hinge: vec2.nullable(), closedDir: vec2.nullable(), openDir: vec2.nullable(),
   hingeSide: z.enum(['left', 'right']).nullable(), swingInto: z.string().nullable(), openAngle: num.nullable(),

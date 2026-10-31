@@ -15,6 +15,8 @@ import { launch, ROOT, sleep, startServer, waitForApp } from '../verify/browser.
 import { building } from '@home-sim/core/model/building';
 import { doorLeaves, swingArcs } from '@home-sim/core/model/doors';
 import { stairDrawing } from '@home-sim/core/model/stairs';
+import { offsetPolygon } from '@home-sim/core/model/geom2d';
+import { gapFrame, lineC, linePt, windowFrame } from '@home-sim/core/model/wallLine';
 import { contourOf, planeZ, regionBox, regionPolygon, surfaceAt, surfaceFacets } from '@home-sim/core/model/roof';
 
 const args = process.argv.slice(2).filter((a) => a !== '--'), dir = args.find((a) => !a.startsWith('--'));
@@ -26,12 +28,8 @@ fs.mkdirSync(out, { recursive: true });
 const cat = Object.fromEntries(JSON.parse(fs.readFileSync(path.join(ROOT, 'data/furnitureCatalog.json'), 'utf8')).items.map((i) => [i.id, i]));
 const B = building(pkg.building);
 
-/** orthogonal outline (counter-clockwise or not) grown outwards by d — each vertex moves along both adjacent edge normals */
-function grow(poly, d) {
-  const n = poly.length, area2 = poly.reduce((s, a, i) => { const b = poly[(i + 1) % n]; return s + a[0] * b[1] - b[0] * a[1]; }, 0), k = area2 >= 0 ? 1 : -1;
-  const normal = (a, b) => { const dx = b[0] - a[0], dy = b[1] - a[1], l = Math.hypot(dx, dy) || 1; return [(k * dy) / l, (-k * dx) / l]; };
-  return poly.map((p, i) => { const n0 = normal(poly[(i - 1 + n) % n], p), n1 = normal(p, poly[(i + 1) % n]); return [p[0] + d * (n0[0] + n1[0]), p[1] + d * (n0[1] + n1[1])]; });
-}
+/** an outline grown outwards by d (mitred corners, as the generated shell grows the rooms) */
+const grow = (poly, d) => offsetPolygon(poly, d);
 const inside = (p, poly) => { let c = false; for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) { const a = poly[i], b = poly[j]; if ((a[1] > p[1]) !== (b[1] > p[1]) && p[0] < ((b[0] - a[0]) * (p[1] - a[1])) / (b[1] - a[1]) + a[0]) c = !c; } return c; };
 /** a label point inside the room: centre of the widest rectangle of its outline grid (the centroid may fall outside an L) */
 function labelPoint(poly) {
@@ -65,14 +63,13 @@ function planSvg(levelId) {
   // door gaps (cut through the wall mass) and windows
   for (const r of rooms) {
     for (const d of r.doors) {
-      const [a, b] = d.across;
-      const poly = d.along === 'X' ? [[d.from_, a], [d.to, a], [d.to, b], [d.from_, b]] : [[a, d.from_], [b, d.from_], [b, d.to], [a, d.to]];
-      g += `<polygon points="${pts(poly)}" fill="#ffffff"/>`;
+      const [a, b] = d.across, f = gapFrame(d);
+      g += `<polygon points="${pts([linePt(f, d.from_, a), linePt(f, d.to, a), linePt(f, d.to, b), linePt(f, d.from_, b)])}" fill="#ffffff"/>`;
     }
     for (const w of r.openings) {
-      const t = 0.18, inner = w.inner, out = r.polygon.some((p) => (w.plane_axis === 'Y' ? p[1] : p[0]) > inner + 0.01) ? -1 : 1;
-      const poly = w.plane_axis === 'Y' ? [[w.from_, inner], [w.to, inner], [w.to, inner + out * t], [w.from_, inner + out * t]] : [[inner, w.from_], [inner, w.to], [inner + out * t, w.to], [inner + out * t, w.from_]];
-      g += `<polygon points="${pts(poly)}" fill="${w.sill_z < 0.05 ? '#93c5fd' : '#bfdbfe'}" stroke="#2563eb"/><text x="${X(w.plane_axis === 'Y' ? (w.from_ + w.to) / 2 : inner)}" y="${Y(w.plane_axis === 'Y' ? inner : (w.from_ + w.to) / 2)}" font-size="11" fill="#1d4ed8" text-anchor="middle" dy="${out > 0 ? -4 : 12}">${esc(w.id)}</text>`;
+      const f = windowFrame(w), t = 0.18, inner = w.inner, out = r.polygon.some((p) => lineC(f, p) > inner + 0.01) ? -1 : 1, at = linePt(f, (w.from_ + w.to) / 2, inner);
+      const poly = [linePt(f, w.from_, inner), linePt(f, w.to, inner), linePt(f, w.to, inner + out * t), linePt(f, w.from_, inner + out * t)];
+      g += `<polygon points="${pts(poly)}" fill="${w.sill_z < 0.05 ? '#93c5fd' : '#bfdbfe'}" stroke="#2563eb"/><text x="${X(at[0])}" y="${Y(at[1])}" font-size="11" fill="#1d4ed8" text-anchor="middle" dy="${out > 0 ? -4 : 12}">${esc(w.id)}</text>`;
     }
   }
   // stairs: the outline, tread lines, the partition of a U-turn and the walking line with its arrow (core model/stairs.ts)

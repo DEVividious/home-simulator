@@ -2,6 +2,7 @@
 // area at the cut height, the bounds (±1 mm), the window ids and the reveal depths — on both examples and the fixtures, each
 // without its roof (the grid shell has none: its levels are boxes up to the highest ceiling; the roof is tested in roof.test.ts).
 // The one intended difference: glazing with a polygonal outline is cut to its outline, where the grid cut its bounding rectangle.
+// Plans with walls at 45° have no grid shell (it builds walls along the axes only): they are left out here (walls45.test.ts).
 import { beforeAll, describe, expect, it } from 'vitest';
 import { building, roomsOfLevel, type Building } from '@home-sim/core/model/building';
 import { gridLevelShell, gridShellBounds, type ShellQuad } from '@home-sim/core/model/gridShell';
@@ -9,7 +10,7 @@ import { levelSolid, shellBounds, shellMeshes } from '@home-sim/core/solid/level
 import { scoped } from '@home-sim/core/solid/scope';
 import { sectionAt } from '@home-sim/core/solid/slice';
 import { loadGeometry, type Geometry } from '@home-sim/core/solid/wasm';
-import { PACKAGES } from './packages';
+import { PACKAGES, WALL_FIXTURES } from './packages';
 
 /** volume enclosed by closed axis-aligned quads (divergence theorem) */
 const quadVolume = (qs: ShellQuad[]) => qs.reduce((s, q) => {
@@ -36,7 +37,7 @@ let geo: Geometry;
 beforeAll(async () => { geo = await loadGeometry(); });
 
 describe('manifold shell vs grid shell', () => {
-  for (const [id, data] of Object.entries(PACKAGES)) {
+  for (const [id, data] of Object.entries(PACKAGES).filter(([id]) => !WALL_FIXTURES.includes(id))) {
     describe(id, () => {
       it('wall volume per level within 0.5 %, the same section area at the cut height', () => {
         const b = noRoof(building(data())), rect = rectangular(b);

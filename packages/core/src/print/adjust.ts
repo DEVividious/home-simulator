@@ -11,6 +11,7 @@
 // The input and the output are the package's `building` block (JSON); the derived building is built from the result.
 import { building, DEFAULT_DOOR_HEIGHT, SHELL_DEFAULTS, type BuildingData } from '../model/building.ts';
 import { offsetPolygon, signedArea } from '../model/geom2d.ts';
+import { canonicalDir, gapFrame, lineC, lineFrame, lineT, windowFrame, type LineFrame } from '../model/wallLine.ts';
 import type { DoorJson, LevelId, OpeningJson, Rect, RoomJson, Vec2 } from '../package/types.ts';
 import { levelFrame } from '../solid/levels.ts';
 import { builtLevels, splitHeight, type EavesMode } from './parts.ts';
@@ -42,20 +43,19 @@ const r4 = (x: number) => Math.round(x * 1e4) / 1e4 + 0;
 const r6 = (x: number) => Math.round(x * 1e6) / 1e6 + 0;
 const r2 = (x: number) => Math.round(x * 100) / 100 + 0;
 const EPS = 1e-9;
-const other = (a: 'X' | 'Y'): 'X' | 'Y' => (a === 'X' ? 'Y' : 'X');
-
-/** an axis-aligned edge of a room outline: the line it lies on (plane axis X: x = c) and its range along the other axis */
-interface Edge { i: number; a: Vec2; b: Vec2; axis: 'X' | 'Y' | null; c: number; lo: number; hi: number }
+/** an edge of a room outline: its wall line frame (model/wallLine.ts), the face coordinate c on it and its range along it */
+interface Edge { i: number; a: Vec2; b: Vec2; f: LineFrame; c: number; lo: number; hi: number }
 function edgesOf(poly: Vec2[]): Edge[] {
   return poly.map((a, i) => {
-    const b = poly[(i + 1) % poly.length];
-    if (Math.abs(a[0] - b[0]) < 1e-6) return { i, a, b, axis: 'X', c: a[0], lo: Math.min(a[1], b[1]), hi: Math.max(a[1], b[1]) };
-    if (Math.abs(a[1] - b[1]) < 1e-6) return { i, a, b, axis: 'Y', c: a[1], lo: Math.min(a[0], b[0]), hi: Math.max(a[0], b[0]) };
-    return { i, a, b, axis: null, c: 0, lo: 0, hi: 0 };
+    const b = poly[(i + 1) % poly.length], d: Vec2 = [b[0] - a[0], b[1] - a[1]];
+    const f = Math.abs(d[0]) < 1e-6 ? lineFrame('Y') : Math.abs(d[1]) < 1e-6 ? lineFrame('X') : lineFrame('D', canonicalDir(d));
+    const ta = lineT(f, a), tb = lineT(f, b);
+    return { i, a, b, f, c: lineC(f, a), lo: Math.min(ta, tb), hi: Math.max(ta, tb) };
   });
 }
-/** the edge of a room on the wall plane `axis = c` that holds the span [s0, s1] */
-const edgeAt = (edges: Edge[], axis: 'X' | 'Y', c: number, s0: number, s1: number) => edges.find((e) => e.axis === axis && Math.abs(e.c - c) < 2e-3 && (s0 + s1) / 2 > e.lo - 1e-6 && (s0 + s1) / 2 < e.hi + 1e-6) ?? null;
+/** the edge of a room on the wall line c of frame f that holds the span [s0, s1] */
+const edgeAt = (edges: Edge[], f: LineFrame, c: number, s0: number, s1: number) => edges.find((e) => Math.abs(e.f.dir[0] * f.dir[1] - e.f.dir[1] * f.dir[0]) < 1e-6 && e.f.dir[0] * f.dir[0] + e.f.dir[1] * f.dir[1] > 0
+  && Math.abs(e.c - c) < 2e-3 && (s0 + s1) / 2 > e.lo - 1e-6 && (s0 + s1) / 2 < e.hi + 1e-6) ?? null;
 
 /** distance along the ray p + s·d to the nearest edge of the loops, and the loop hit */
 function rayHit(p: Vec2, d: Vec2, loops: Vec2[][]): { s: number; loop: number } | null {
@@ -154,12 +154,12 @@ export function adjustForPrint(data: BuildingData, n: number, profile: PrintProf
     rs.forEach((r, ri) => {
       if (!moves[ri].some((m) => m > 0)) return;
       const before = edgesOf(polys[ri]), after = offsetEdges(polys[ri], moves[ri]), moved = edgesOf(after);
-      const shift = (axis: 'X' | 'Y', c: number, s0: number, s1: number): number | null => {
-        const e = edgeAt(before, axis, c, s0, s1);
-        return e && moves[ri][e.i] > 0 ? moved[e.i].c : null;
+      const shift = (f: LineFrame, c: number, s0: number, s1: number): number | null => {
+        const e = edgeAt(before, f, c, s0, s1);
+        return e && moves[ri][e.i] > 0 ? r6(lineC(f, moved[e.i].a)) : null;
       };
-      for (const o of r.openings) { const c = shift(o.plane_axis, o.inner, Math.min(o.from_, o.to), Math.max(o.from_, o.to)); if (c !== null) o.inner = c; }
-      for (const dj of r.doors) dj.across = dj.across.map((c) => shift(other(dj.along), c, dj.from_, dj.to) ?? c);
+      for (const o of r.openings) { const c = shift(windowFrame(o), o.inner, Math.min(o.from_, o.to), Math.max(o.from_, o.to)); if (c !== null) o.inner = c; }
+      for (const dj of r.doors) dj.across = dj.across.map((c) => shift(gapFrame(dj), c, dj.from_, dj.to) ?? c);
       r.polygon = after.map((p) => [p[0], p[1]]);
       const xs = after.map((p) => p[0]), ys = after.map((p) => p[1]);
       r.bbox = [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)];
@@ -179,7 +179,7 @@ export function adjustForPrint(data: BuildingData, n: number, profile: PrintProf
     // too narrow or too low: grow about the middle within the wall, close when the wall has no room
     r.openings = r.openings.filter((o) => {
       if (o.polygon_YZ) return true;
-      const e = edgeAt(edges, o.plane_axis, o.inner, Math.min(o.from_, o.to), Math.max(o.from_, o.to));
+      const e = edgeAt(edges, windowFrame(o), o.inner, Math.min(o.from_, o.to), Math.max(o.from_, o.to));
       let s0 = Math.min(o.from_, o.to), s1 = Math.max(o.from_, o.to), z0 = o.sill_z ?? floor, z1 = o.head_z ?? floor + 2.4;
       /** a span grown to H about its middle and kept within [lo, hi]; null when [lo, hi] is shorter than H */
       const grow = (a: number, c: number, lo: number, hi: number): [number, number] | null => {
@@ -236,10 +236,10 @@ export function adjustForPrint(data: BuildingData, n: number, profile: PrintProf
       const holes: { e: Edge; h: Hole }[] = [];
       for (const o of r.openings) {
         if (o.polygon_YZ) continue;
-        const s0 = Math.min(o.from_, o.to), s1 = Math.max(o.from_, o.to), e = edgeAt(edges, o.plane_axis, o.inner, s0, s1);
+        const s0 = Math.min(o.from_, o.to), s1 = Math.max(o.from_, o.to), e = edgeAt(edges, windowFrame(o), o.inner, s0, s1);
         if (e) holes.push({ e, h: { kind: 'window', o, s0, s1 } });
       }
-      for (const dj of r.doors) for (const c of dj.across) { const e = edgeAt(edges, other(dj.along), c, dj.from_, dj.to); if (e) { holes.push({ e, h: { kind: 'door', o: dj, s0: dj.from_, s1: dj.to } }); break; } }
+      for (const dj of r.doors) for (const c of dj.across) { const e = edgeAt(edges, gapFrame(dj), c, dj.from_, dj.to); if (e) { holes.push({ e, h: { kind: 'door', o: dj, s0: dj.from_, s1: dj.to } }); break; } }
       let changed = false;
       for (const e of edges) {
         const on = holes.filter((x) => x.e === e).map((x) => x.h).sort((p, q) => p.s0 - q.s0);

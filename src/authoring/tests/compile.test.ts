@@ -55,11 +55,13 @@ describe('outlines', () => {
     (p.rooms as { rect: number[] }[])[1].rect = [4.0, 0.3, 7.7, 3.3];
     expect(errors(compile(p))).toContain('room.overlap');
   });
-  it('a slanted edge is an error (generated shell needs orthogonal plans)', () => {
+  it('an edge at another angle than 45° is an error (the generated shell builds walls along the axes and at 45°)', () => {
     const p = base();
     (p.rooms as Record<string, unknown>[])[1] = { id: 'R2', name: 'Bedroom', level: 'L1', kind: 'bed', polygon: [[4.42, 0.3], [7.7, 0.3], [7.7, 3.3], [5, 3.3]] };
     p.doors = [];
-    expect(errors(compile(p))).toContain('room.orthogonal');
+    expect(errors(compile(p))).toContain('room.angle');
+    (p.rooms as Record<string, unknown>[])[1] = { id: 'R2', name: 'Bedroom', level: 'L1', kind: 'bed', polygon: [[4.42, 0.3], [7.7, 0.3], [7.7, 2.3], [6.7, 3.3], [4.42, 3.3]] };
+    expect(errors(compile(p))).not.toContain('room.angle');
   });
 });
 

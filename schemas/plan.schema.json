@@ -447,8 +447,8 @@
       "maxItems": 4
      },
      "polygon": {
-      "description": "inner wall faces, axis-aligned edges, any order of corners along the outline",
-      "minItems": 4,
+      "description": "inner wall faces, edges along the plan axes or at 45° to them, corners in order along the outline",
+      "minItems": 3,
       "type": "array",
       "items": {
        "type": "array",

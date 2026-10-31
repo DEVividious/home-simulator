@@ -7,7 +7,7 @@
 | `schema` | a field is missing, misspelled or has the wrong type | compare with `schemas/plan.schema.json` / skills/home-from-plan/references/plan-schema.md |
 | `calibration` | `units: "px"` without a calibration block | run `tools/image/calibrate.py … summary` and paste its block |
 | `calibration.methods` / `calibration.agreement` (warning) | fewer than two scale estimates / they differ by > 5 % | add an independent estimate or ask the user for one real dimension |
-| `room.orthogonal` | an outline edge is slanted | make edges horizontal / vertical (the generated shell needs it) or provide a GLB model |
+| `room.angle` | an outline edge runs at another angle than 0°, 45° or 90° | the nearest of those angles (authoring-conventions.md § Walls that are not orthogonal) or a GLB model |
 | `room.overlap` | two rooms of a level overlap | outlines are inner faces — rooms must be separated by the wall |
 | `wall.thickness` (warning) | a shared wall is neither the interior nor the exterior thickness | align the faces if the drawing shows the standard thickness; if most interior walls have that thickness set `defaults.interiorWall`; a few thicker walls (load-bearing, installation walls) are fine as drawn — the generated shell fills the real gap; say so in the README |
 | `door.swingOverlap` (warning) | two door leaves sweep the same floor | re-read the arcs on the drawing (hinge side, which room); an entrance door drawn with its arc outside opens outwards: `"swingInto": "exterior"`; a real clash stays — note it in the README |
@@ -32,7 +32,7 @@
 | `level "X": no rooms` | every level needs at least one room |
 | `room "R": unknown level` / `door "D": unknown room` | ids must match exactly (case-sensitive) |
 | `room "R": door gap points to unknown door` | hand-written package: add the door to `building.doors` |
-| `a project without a building model file (assets.model) needs orthogonal room outlines` | as `room.orthogonal` |
+| `a project without a building model file (assets.model) needs room walls along the plan axes or at 45°` | as `room.angle` |
 | `module "site" requires …` | enabled module without its data — add the data or remove the module |
 | `view "v": needs a direction (dir) or a camera pose (pose)` | add one of them |
 | `furniture "k": unknown catalog item` | see catalog-ids.md |

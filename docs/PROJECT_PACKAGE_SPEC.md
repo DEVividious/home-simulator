@@ -45,9 +45,11 @@ Room: `id`, `name`, `label?`, `names?` (the name in other languages), `level`, `
 of the room's level — the underside of `building.roof` there, capped by the flat top `flat_z`; or, in packages written before the
 roof, `{ kind: "attic", flat_z, ridge_y | ridge_x, z_at_ridge, slope }` — ridge along X at `ridge_y` or along Y at `ridge_x`,
 absolute heights, `slope` in m per m; a level whose rooms all share one attic ceiling gets a gable roof with those planes at
-load), `doors[]` (gaps: `{ along: "X"|"Y", from_, to, across: [face, face], width, door_id | null, leaf, height }`
-— the same gap appears in both rooms; `door_id: null` = passage), `openings[]` (windows: `{ id, kind, plane_axis, inner, from_, to,
-sill_z, head_z }` — `plane_axis` is the axis whose coordinate is constant on the wall, `inner` the room-side face; `sill_z`,
+load), `doors[]` (gaps: `{ along: "X"|"Y"|"D", dir?, from_, to, across: [face, face], width, door_id | null, leaf, height }`
+— the same gap appears in both rooms; `door_id: null` = passage), `openings[]` (windows: `{ id, kind, plane_axis, dir?, inner,
+from_, to, sill_z, head_z }` — `plane_axis` is the axis whose coordinate is constant on the wall, `inner` the room-side face;
+a wall at 45° is `"D"` (along / plane_axis) with its unit direction `dir`: from / to are p · dir and the faces / inner p · n,
+n = (−dir.y, dir.x) (`packages/core/src/model/wallLine.ts`); `sill_z`,
 `head_z` and `polygon_YZ` heights are absolute project Z like `ceiling.z`, while door gap `height` is above the room floor),
 `stair_opening` (`[x0, y0, x1, y1]` or null), `roof_windows` (`[]`), `kind` (bath, kitchen, garage, tech, hall, bed, living,
 office, storage, room), `tags` (`kitchen`, `garage`).
@@ -57,7 +59,7 @@ Walls (`<room>-w<n>`, n = edge index of the outline in counter-clockwise order),
 (`ids.lock.json`).
 
 ## building.doors
-`{ id, level, rooms: [a, b | "exterior"], floorZ, opening: { along, from, to, faces, width, height }, leafWidth, height, type
+`{ id, level, rooms: [a, b | "exterior"], floorZ, opening: { along, dir?, from, to, faces, width, height }, leafWidth, height, type
 (hinged-single | hinged-double | folding | sliding | pocket), hinge, closedDir, openDir, hingeSide, swingInto, openAngle, slide
 ({ origin, dir, travel } | null), source[], confidence, notes?, flush? }`. Hinged doors rotate around `hinge` from `closedDir` to
 `openDir`; sliding doors move along `slide.dir`. `leafWidth` is all the leaves together: a `hinged-double` door has two half
@@ -136,5 +138,5 @@ name. The loader checks the files before the package, so default furniture may p
 
 ## Validation (summary)
 Format and version; levels consistent; every level has rooms; ids unique (rooms, doors, windows, furniture keys, points); every
-reference resolves; reserved ids unused; orthogonal outlines without a model; module data present; views have `dir` or `pose`;
+reference resolves; reserved ids unused; outlines with edges along the axes or at 45° without a model; module data present; views have `dir` or `pose`;
 catalog ids exist (engine or the package's own catalog files, which are checked first).

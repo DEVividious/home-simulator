@@ -6,6 +6,7 @@
 import { derived } from '../../project/active';
 import type { LevelId, Vec2 } from './types';
 import { doorLeaves, type LeafSegment } from '@home-sim/core/model/doors';
+import { gapFrame, lineC, linePt, lineT } from '@home-sim/core/model/wallLine';
 import type { DoorDef, DoorType } from '@home-sim/core/package/types';
 export type { DoorDef, DoorType } from '@home-sim/core/package/types';
 
@@ -52,13 +53,13 @@ export const leafSegment = (d: DoorDef, t: number): LeafSegment | null => doorLe
 /** opening centre in plan (on the wall axis) */
 export function doorCenter(d: DoorDef): Vec2 {
   const m = (d.opening.from + d.opening.to) / 2, c = d.opening.faces.reduce((s, v) => s + v, 0) / d.opening.faces.length;
-  return d.opening.along === 'X' ? [m, c] : [c, m];
+  return linePt(gapFrame(d.opening), m, c);
 }
 
 /** whether a point stands in the clear opening (with margin m along and across the wall) — closing a door "on a person" is blocked */
 export function inDoorway(d: DoorDef, p: Vec2, m = 0.3): boolean {
-  const ax = d.opening.along === 'X' ? 0 : 1, lo = Math.min(...d.opening.faces), hi = Math.max(...d.opening.faces);
-  return p[ax] > d.opening.from - 0.05 && p[ax] < d.opening.to + 0.05 && p[1 - ax] > lo - m && p[1 - ax] < hi + m;
+  const f = gapFrame(d.opening), t = lineT(f, p), c = lineC(f, p), lo = Math.min(...d.opening.faces), hi = Math.max(...d.opening.faces);
+  return t > d.opening.from - 0.05 && t < d.opening.to + 0.05 && c > lo - m && c < hi + m;
 }
 
 // ------------------------------------------------------------------ user state

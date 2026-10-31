@@ -8,6 +8,7 @@ import { building, type BuildingData } from '../model/building.ts';
 import { contourOf, planeZ, regionBox, regionPolygon, surfaceAt, surfaceFacets, type Plane, type Surface } from '../model/roof.ts';
 import { doorLeaves, swingArcs } from '../model/doors.ts';
 import { stairDrawing } from '../model/stairs.ts';
+import { gapFrame, lineC, linePt, windowFrame, type LineFrame } from '../model/wallLine.ts';
 import type { LevelId, Vec2 } from '../package/types.ts';
 import { fillPolygon, fillRect, image, line, polyline, shrink, text, textWidth, type Image, type RGB } from '../print/raster.ts';
 
@@ -139,17 +140,19 @@ export function planImage(data: BuildingData, levelId: LevelId, o: { name: strin
   for (const p of polys) { sh.poly(p, WHITE); sh.outline(p, INK); }
   // door gaps (cut through the wall mass) and windows
   for (const r of rooms) {
+    /** a band of a wall line: along it from t0 to t1, across it from c0 to c1 (an axis wall: the rectangle) */
+    const band = (f: LineFrame, t0: number, t1: number, c0: number, c1: number): Vec2[] => (f.dir[1] === 0 ? rect(t0, c0, t1, c1) : f.dir[0] === 0 ? rect(c0, t0, c1, t1) : [linePt(f, t0, c0), linePt(f, t1, c0), linePt(f, t1, c1), linePt(f, t0, c1)]);
     for (const d of r.doors) {
       const [a, b] = d.across;
-      sh.poly(d.along === 'X' ? rect(d.from_, Math.min(a, b), d.to, Math.max(a, b)) : rect(Math.min(a, b), d.from_, Math.max(a, b), d.to), WHITE);
+      sh.poly(band(gapFrame(d), d.from_, d.to, Math.min(a, b), Math.max(a, b)), WHITE);
     }
     for (const w of r.openings) {
-      const t = 0.18, inner = w.inner, out = r.polygon.some((p) => (w.plane_axis === 'Y' ? p[1] : p[0]) > inner + 0.01) ? -1 : 1;
+      const f = windowFrame(w), t = 0.18, inner = w.inner, out = r.polygon.some((p) => lineC(f, p) > inner + 0.01) ? -1 : 1;
       const lo = Math.min(w.from_, w.to), hi = Math.max(w.from_, w.to), e = inner + out * t;
-      const poly = w.plane_axis === 'Y' ? rect(lo, Math.min(inner, e), hi, Math.max(inner, e)) : rect(Math.min(inner, e), lo, Math.max(inner, e), hi);
+      const poly = band(f, lo, hi, Math.min(inner, e), Math.max(inner, e));
       sh.poly(poly, (w.sill_z ?? 0) < 0.05 ? GLASS_DOOR : GLASS);
       sh.outline(poly, BLUE);
-      const at: Vec2 = w.plane_axis === 'Y' ? [(lo + hi) / 2, inner] : [inner, (lo + hi) / 2];
+      const at = linePt(f, (lo + hi) / 2, inner);
       sh.label(at, w.id, 1, BLUE_TEXT, 'middle', 0, out > 0 ? -14 : 4);
     }
   }

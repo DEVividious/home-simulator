@@ -10,8 +10,8 @@ These rules make a package correct for the engine and stable for the user's save
 - Plans need not face north: north is `sun.northAzimuthX` (azimuth of +X, clockwise from north; 90 = +X points east).
 
 ## Rooms
-- Outline = **inner faces** of the walls (the clear floor area), axis-aligned edges only (the generated shell needs orthogonal
-  plans). Use `rect` for rectangles, `polygon` for L / U shapes. No holes.
+- Outline = **inner faces** of the walls (the clear floor area), edges along the plan axes or at 45° to them (§ Walls that are
+  not orthogonal). Use `rect` for rectangles, `polygon` for L / U shapes, chamfered corners and triangles. No holes.
 - Neighbouring rooms are separated by the wall thickness: interior 0.12 m, exterior 0.30 m (`defaults` if the building differs —
   record the source). Faces that should line up must have the same coordinate.
 - An open kitchen + living room is ONE room with `"tags": ["kitchen"]`, even when the plan numbers them separately; put the
@@ -70,9 +70,16 @@ These rules make a package correct for the engine and stable for the user's save
   the README.
 
 ## Walls that are not orthogonal
-- The generated shell needs axis-aligned walls. A 45° corner (a chamfered hall, a wall under the stairs) becomes a right angle:
-  keep the room's area close (cut the corner at its middle) and move a door in such a wall onto the nearest orthogonal wall.
-  List every such change in the README.
+- Walls at 45° (a chamfered corner, a bay, a slanted partition, a wall under the stairs) are modelled as drawn: the room
+  `polygon` has the slanted edge, with its corners read on the inner faces. The two rooms of a slanted partition have parallel
+  faces one wall thickness apart, measured square to the wall (0.12 m interior: the corners differ by 0.17 m along x or y).
+- Doors and windows in a slanted wall work like any other: `at` in the middle of the opening on (or in) the wall, `width`
+  along the wall; `hinge` left / right as seen from the room the door opens into.
+- Other angles (30°, 60°, curves): the nearest of 0°, 45°, 90° keeping the room's area close; the compiler rejects them
+  (`room.angle`). A wall bending through a curve: a few 45° segments. List every such change in the README.
+- Furniture or electrical points against a slanted wall: `at` + `rot` (a multiple of 45°) — `wall: N | S | E | W` finds walls
+  along the axes only. A pitched roof needs a rectangle: over a chamfered corner give the part `rect` of the walls' bounding
+  rectangle only when the drawing shows the roof running over it (a flat roof part needs edges along the axes).
 
 ## Provenance
 - `source` (plan-level default) says where the facts come from; per item `source` when it differs.

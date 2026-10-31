@@ -25,7 +25,7 @@ export const CalibrationSchema = z.strictObject({
 const RoomSchema = z.strictObject({
   id, name: z.string().min(1), names: NamesSchema.optional().describe('the name in other languages (language code → name), e.g. {"en": "Kitchen"} next to a Polish name'), level: id, kind: RoomKindSchema, tags: z.array(z.string()).optional(), label: z.string().optional(),
   rect: z.tuple([num, num, num, num]).optional().describe('[x0, y0, x1, y1] of the inner wall faces'),
-  polygon: z.array(pt).min(4).optional().describe('inner wall faces, axis-aligned edges, any order of corners along the outline'),
+  polygon: z.array(pt).min(3).optional().describe('inner wall faces, edges along the plan axes or at 45° to them, corners in order along the outline'),
   ceiling: num.positive().optional().describe('ceiling height above this room floor [m]; default: level ceiling'),
   areaPrinted: num.positive().optional().describe('area printed on the plan [m²] (checked against the computed area)'),
   source: z.string().optional(),

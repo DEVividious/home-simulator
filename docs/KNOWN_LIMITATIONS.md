@@ -5,17 +5,26 @@ the behaviour is named in brackets. When a limit is lifted, remove it here in th
 
 ## Geometry and project package
 
-- **Generated walls need an orthogonal plan.** A project without a building model file gets its shell computed from the room
-  outlines. Every room edge must run along X or Y: doors and windows are placed on walls along the plan axes, the compiler
-  rejects a slanted edge (`room.orthogonal`), and validation rejects a package without `assets.model` whose outlines are not
-  axis-aligned (`packages/core/src/model/building.ts`, `packages/core/src/authoring/compile.ts`, `src/project/validate.ts`).
+- **Generated walls run along the plan axes or at 45°.** A project without a building model file gets its shell computed from
+  the room outlines. Every room edge must run along X, along Y or at 45° to them (within 1.5°): the compiler rejects other
+  angles (`room.angle`) and validation rejects a package without `assets.model` that has them; with a model any outline is
+  allowed (`packages/core/src/authoring/compile.ts`, `src/project/validate.ts`). Doors and windows sit in slanted walls like in
+  any other; a glazed opening with a polygonal outline (`polygon_YZ`) only in walls along the axes. Furniture and electrical
+  points placed with `wall: N | S | E | W` find walls along the axes only — against a slanted wall give `at` and `rot`.
+  Raster regularisation keeps the corners of slanted walls where they were read (`regularize`), and `dxf_walls.py` proposes
+  orthogonal rooms only.
+- **The grid shell builds walls along the axes only.** A plan with walls at 45° always uses the solid kernel; when the kernel
+  cannot run, the grid shell shown instead leaves the slanted walls out, and the plan views draw its wall mass from the level
+  footprint (`packages/core/src/model/gridShell.ts`, `outline.ts`).
 - **Roofs are unions of rectangular wings.** A generated building is one closed solid per level (the room outlines grown by
   the exterior wall, minus the rooms, the openings and the stair shaft) and one roof solid per level with roof parts
   (`packages/core/src/solid/levels.ts`, `roofSolid.ts`). A pitched part (gable, hip, shed) covers one axis-aligned rectangle;
   only a flat part may cover a polygon. L-, T- and U-shaped roofs are several wings; a wing whose end meets a crossing wing is
   carried into it up to its ridge — joins between parallel wings, or of a shed with another wing, are not resolved (they meet as
   given). Different overhangs of two joined wings (eaves 0.5 against a verge 0.3) leave a small step at the outer corner. No
-  roof follows a slanted outline (no straight skeleton), and there are no mansard, gambrel, barrel or conical roofs. Dormers are
+  roof follows a slanted outline (no straight skeleton; a flat part's polygon has edges along the axes), and there are no
+  mansard, gambrel, barrel or conical roofs — a building with walls at 45° gets a pitched roof only over a rectangle of them
+  (or a flat top slab). Dormers are
   gable or shed boxes on one plane; eyebrow, hipped and wall dormers are not supported. Chimneys are boxes from the slab of the
   lowest level they stand in (inside a room they stand there as a column).
 - **The grid fallback has no roof.** With `?shell=grid`, or when the solid kernel cannot run, the shell is the older grid of

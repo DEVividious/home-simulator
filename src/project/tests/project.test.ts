@@ -172,11 +172,14 @@ describe('package validation', () => {
     expect(validateProject(v)).toEqual([`viewpoint "${v.viewpoints[0].id}": the project has no site`]);
   });
 
-  it('a project without a building model file needs an orthogonal plan (generated shell); with a model a slanted wall is allowed', () => {
+  it('a project without a building model file needs walls along the axes or at 45° (generated shell); with a model any angle', () => {
     const p = clone(demo);
-    p.building.rooms.rooms[0].polygon = [[2.52, 0.3], [8.7, 0.3], [8.0, 3.9], [2.52, 3.9]];   // slanted east wall
-    expect(validateProject(p)).toEqual(['a project without a building model file (assets.model) needs orthogonal room outlines — the generated shell does not support slanted walls']);
+    p.building.rooms.rooms[0].polygon = [[2.52, 0.3], [8.7, 0.3], [8.0, 3.9], [2.52, 3.9]];   // slanted east wall (about 79°)
+    expect(validateProject(p)).toEqual(['a project without a building model file (assets.model) needs room walls along the plan axes or at 45° to them — the generated shell does not build other angles']);
     expect(validateProject({ ...p, assets: { model: 'model/building.glb' } })).toEqual([]);
+    const q = clone(demo);
+    q.building.rooms.rooms[0].polygon = [[2.52, 0.3], [8.7, 0.3], [8.7, 3.0], [7.8, 3.9], [2.52, 3.9]];   // a 45° corner
+    expect(validateProject(q)).toEqual([]);
   });
 
   it('unknown capability is a package error; capabilities drive the UI steps (Electrical and Expert only in advanced mode)', () => {

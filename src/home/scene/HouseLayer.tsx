@@ -12,6 +12,7 @@ import { CoreShellLayer } from './CoreShellLayer';
 import { requestedShell, shellStatus } from '../three/coreShell';
 import { enterRoom, ui, useUi, type Selection } from '../store/ui';
 import { roomById } from '../model/rooms';
+import { orthogonalPlan } from '../model/shell';
 import { setSection } from '../three/cutaway';
 import { useSides } from '../store/sides';
 import { patchTreeMaterials, seeUniforms, setSeeThroughTarget } from '../three/seeThrough';
@@ -86,7 +87,7 @@ export function HouseLayer({ data, mode }: { data: SceneData; mode: SceneMode })
       {/* architecture (cut away above the room in Room Mode) */}
       <group name="HOME_ARCH">
         {/* shell: the project's model file, or walls, slabs and windows computed from the rooms */}
-        {model ? <ModelLayer url={model} settings={settings} onPick={onPick} /> : requestedShell() === 'grid' ? <GridShell mode={mode} /> : <CoreShellLayer mode={mode} />}
+        {model ? <ModelLayer url={model} settings={settings} onPick={onPick} /> : requestedShell() === 'grid' && orthogonalPlan() ? <GridShell mode={mode} /> : <CoreShellLayer mode={mode} />}
         <StairsMesh config={sides[0].variant.stairs} walking={walking} selected={selection?.kind === 'stairs'} />
         <DoorsLayer mode={mode} />
         {siteOn && <ExitSigns walking={walking} />}

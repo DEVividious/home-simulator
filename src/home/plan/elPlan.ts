@@ -3,7 +3,8 @@
 // is vector-based and matches what the app shows. "Paper" sizes (line width, text height, symbol size) are given in
 // millimetres of the printout and converted with the scale denominator `den`: 1 mm of paper = den / 1000 m.
 // Symbols: a readable custom legend modelled on installation symbols (shape = layer, letter code = type). Pure TS.
-import { hasGeneratedShell, levelShell } from '../model/shell';
+import { hasGeneratedShell, levelShell, orthogonalPlan, shellSpec } from '../model/shell';
+import { outerOutline } from '@home-sim/core/model/outline';
 import { allDoors, doorLeaves, swingArcs } from '../model/doors';
 import {
   EL_LAYERS, EL_TYPES, elRooms, EXT, hasSite, houseFootprint, layerOf, measure, plotBoundary, siteLevelId, wallRuns, type ElectricalPlan, type ElLayer, type ElPoint, type ElRoom, type ElType,
@@ -146,7 +147,9 @@ export function buildPlan(o: PlanOptions): PlanDrawing {
   // ---- wall mass: shell generated from rooms — exactly its walls; model from a file — building outline (level at
   //      ground) + rooms widened by half the wall thickness
   if (hasGeneratedShell()) {
-    if (o.view !== 'SITE') for (const [x0, y0, x1, y1] of levelShell(level).mass) prims.push({ k: 'poly', pts: [[x0, y0], [x1, y0], [x1, y1], [x0, y1]], fill: WALL, close: true });
+    // walls at 45°: the level's footprint (the rooms grown by the exterior wall), the rooms drawn over it leave the walls
+    if (o.view !== 'SITE' && !orthogonalPlan(rooms)) prims.push({ k: 'poly', pts: outerOutline(rooms.map((r) => r.polygon), shellSpec().exteriorWall), fill: WALL, close: true });
+    else if (o.view !== 'SITE') for (const [x0, y0, x1, y1] of levelShell(level).mass) prims.push({ k: 'poly', pts: [[x0, y0], [x1, y0], [x1, y1], [x0, y1]], fill: WALL, close: true });
   } else {
     if (atGround) prims.push({ k: 'poly', pts: houseFootprint(), fill: WALL, close: true });
     if (o.view !== 'SITE') for (const r of rooms) prims.push({ k: 'poly', pts: offsetPolygon(r.polygon, levelById(level)?.planWallOffset ?? DEFAULT_PLAN_WALL_OFFSET), fill: WALL, close: true });

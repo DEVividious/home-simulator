@@ -5,6 +5,7 @@
 import { flatCeiling, roofCeiling, type CeilingProfile } from './ceiling.ts';
 import { ccw, centroid, dist, norm, pointInPolygon, round, segDist, sub } from './geom2d.ts';
 import { stairOutline } from './stairs.ts';
+import { gapFrame, lineC, linePt, windowFrame, type LineFrame } from './wallLine.ts';
 import { atticPlanes, roofFromAttic, roofModel, type RoofModel, type RoofPiece } from './roof.ts';
 import type { DoorDef, LevelId, ProjectPackage, Rect, RoomJson, RoomKind, ShellSpec, StairDef, Vec2 } from '../package/types.ts';
 
@@ -95,8 +96,6 @@ export interface Building {
   roof: RoofModel | null;
 }
 
-/** whether edge (a → b) lies on the line X = c / Y = c */
-const onLine = (a: Vec2, b: Vec2, axis: 'X' | 'Y', c: number, tol = 2e-3) => (axis === 'X' ? Math.abs(a[0] - c) < tol && Math.abs(b[0] - c) < tol : Math.abs(a[1] - c) < tol && Math.abs(b[1] - c) < tol);
 
 const EVERYWHERE: Rect = [-1e6, -1e6, 1e6, 1e6];
 /** the ceiling profile of a room: flat; under the roof of its level; or an attic ceiling (its own two planes — the single-ridge formula of packages written before the roof) */
@@ -118,19 +117,22 @@ function buildRoom(r: RoomJson, roof: RoofModel | null, stairs: StairDef[]): Roo
     return { id: `${r.id}-w${i + 1}`, index: i + 1, roomId: r.id, a, b, length: round(dist(a, b), 4), dir: d, inward: [-d[1], d[0]] as Vec2, holes: [] };
   });
   const tOn = (w: RoomWall, p: Vec2) => (p[0] - w.a[0]) * w.dir[0] + (p[1] - w.a[1]) * w.dir[1];
-  const span = (w: RoomWall, axis: 'X' | 'Y', s0: number, s1: number): [number, number] | null => {
-    const pa: Vec2 = axis === 'X' ? [s0, w.a[1]] : [w.a[0], s0], pb: Vec2 = axis === 'X' ? [s1, w.a[1]] : [w.a[0], s1];
-    const t0 = Math.max(0, Math.min(tOn(w, pa), tOn(w, pb))), t1 = Math.min(w.length, Math.max(tOn(w, pa), tOn(w, pb)));
+  /** whether the wall lies on the line c of a frame (both ends, 2 mm) */
+  const onLine = (w: RoomWall, f: LineFrame, c: number, tol = 2e-3) => Math.abs(lineC(f, w.a) - c) < tol && Math.abs(lineC(f, w.b) - c) < tol;
+  /** the part of the wall between the line parameters s0, s1 of the frame, in wall coordinates */
+  const span = (w: RoomWall, f: LineFrame, s0: number, s1: number): [number, number] | null => {
+    const c = lineC(f, w.a), ta = tOn(w, linePt(f, s0, c)), tb = tOn(w, linePt(f, s1, c));
+    const t0 = Math.max(0, Math.min(ta, tb)), t1 = Math.min(w.length, Math.max(ta, tb));
     return t1 - t0 > 0.02 ? [round(t0), round(t1)] : null;
   };
   const doors: Room['doors'] = [];
   for (const d of r.doors) {
-    // the room edge crosses the door gap: a segment along axis `along` on one of the `across` lines
+    // the room edge crosses the door gap: a segment along the gap's wall line on one of the `across` lines
+    const f = gapFrame(d);
     for (const w of walls) {
-      const along = d.along, other = along === 'X' ? 'Y' : 'X';
-      const hit = d.across.find((c) => onLine(w.a, w.b, other, c));
+      const hit = d.across.find((c) => onLine(w, f, c));
       if (hit === undefined) continue;
-      const s = span(w, along, d.from_, d.to);
+      const s = span(w, f, d.from_, d.to);
       if (!s) continue;
       const passage = !d.door_id;
       // passage without a door: height from the data, otherwise up to the ceiling at the wall; door: height from the data or the typical 2.05 m
@@ -142,14 +144,14 @@ function buildRoom(r: RoomJson, roof: RoofModel | null, stairs: StairDef[]): Roo
   }
   const windows: Room['windows'] = [];
   for (const o of r.openings) {
+    const f = windowFrame(o);
     for (const w of walls) {
-      if (!onLine(w.a, w.b, o.plane_axis, o.inner)) continue;
-      const along = o.plane_axis === 'X' ? 'Y' : 'X';
-      const s = span(w, along, Math.min(o.from_, o.to), Math.max(o.from_, o.to));
+      if (!onLine(w, f, o.inner)) continue;
+      const s = span(w, f, Math.min(o.from_, o.to), Math.max(o.from_, o.to));
       if (!s) continue;
       if (o.polygon_YZ) {
-        // glazing with a polygonal outline: outline (Y, Z) → (t, z above the floor), clipped to the wall
-        const pts = o.polygon_YZ.map((q) => [round(Math.min(w.length, Math.max(0, tOn(w, [w.a[0], q[0]])))), round(q[1] - r.floor_z)] as Vec2);
+        // glazing with a polygonal outline: outline (along, Z) → (t, z above the floor), clipped to the wall
+        const pts = o.polygon_YZ.map((q) => [round(Math.min(w.length, Math.max(0, tOn(w, linePt(f, q[0], o.inner))))), round(q[1] - r.floor_z)] as Vec2);
         const z0 = Math.min(...pts.map((p) => p[1])), z1 = Math.max(...pts.map((p) => p[1]));
         w.holes.push({ id: o.id, kind: 'glazing', t0: s[0], t1: s[1], z0, z1, polygon: pts });
         windows.push({ id: o.id, wallId: w.id, t0: s[0], t1: s[1], sill: z0, head: z1, kind: 'glazing' });
