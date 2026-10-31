@@ -23,13 +23,13 @@ The compiler (`packages/core/src/authoring/compile.ts`) validates the time zone 
 | `trueAzimuthX` | **geographic** azimuth of the +X axis, clockwise from north = grid + convergence (90 = +X points east) |
 | `confidence`, `uncertaintyDeg` | orientation confidence; `confirmed` removes the "Approximate north" badge (compiled: ±2° confirmed, ±15° otherwise) |
 | `timeZone` | IANA time zone, e.g. `Europe/Berlin`, `America/New_York` |
-| `placeName` | place name shown in the sun panel |
+| `placeName` | place name shown with the time of day (advanced mode) |
 
 Directions in LCS: `northEastLcs(trueAzimuthX)` gives north = `(cos A, sin A)` and east = `(sin A, −cos A)`.
 
 **A project without sun data** (e.g. an apartment with no position): the scene is still lit by a simulated sun, from
 `unknownSite()` — the **device's time zone**, a longitude matching its current UTC offset (`offset in minutes / 4`), latitude
-50°, +Y = north, confidence `assumed`. The sun panel, the stored time of day of variants and the sun line in screenshots exist
+50°, +Y = north, confidence `assumed`. The time of day in Look, the stored time of day of versions and the sun line in screenshots exist
 only in projects with the `sun` module.
 
 **Date and time:** today at 14:00 by default; `?date=YYYY-MM-DD&time=HH:MM` override (only with the `sun` module).

@@ -8,7 +8,7 @@ mouse look or a touch joystick, without teleporting. The walk model is pure Type
 | Walk | Started from | Covers |
 |---|---|---|
 | **Building walk** | Building → "Walk" (or an eye-level viewpoint, or a bookmark saved in a walk) | every level, the stairs, passable exterior doors and the plot (project with a site) |
-| **Room walk** | the Walk button of the room view (3D · Top · Walk) | the current arrangement, including a live preview of edits; doors between rooms of the level switch the room in the panel |
+| **Room walk** | **Walk** in the scene bar inside a room (Around · From above · Walk) | the current arrangement, including a live preview of edits; doors between rooms of the level switch the room in the panel |
 
 A room walk **hands over seamlessly to the building walk** — same position and view direction — when the camera comes within
 25 cm of the stair outline or stands in the threshold of an open exterior door (`CameraController.tsx`). From there the stairs,
@@ -112,7 +112,8 @@ The structure — number and size of steps, landing, outline — is package data
 | balustrade | none · bars · glass · solid; height 0.90–1.20 m; finish — divider between flights, open side of the lower flight and landing, railing around the stair opening on the upper level |
 
 Presets: "Concrete", "Oak + wall handrail", "Oak + black steel", "Ash + glass", "Walnut + solid balustrade". The stairs card opens
-by clicking / tapping the stairs in the section or a room, from the Interiors panel, or by a long press in walk mode. Every change
+by clicking / tapping the stairs in the section or a room, with **Stairs** next to the rooms in Arrange, or by a long press in
+walk mode. Every change
 is one history entry and is saved and exported with the variant. Cladding does not change the step levels (the concrete under
 it is lower by its thickness), so the walking surface stays the same. Geometry: `src/home/three/stairGeometry.ts` (at most six
 meshes merged by material).

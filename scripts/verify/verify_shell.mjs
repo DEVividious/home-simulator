@@ -78,15 +78,15 @@ async function views(F, shell) {
   await open(F.id, shell);
   const out = {}, state = await shellState();
   out.start = await capture(`${F.id}_start_${shell}.png`);
-  await click('cam-top');
+  await click('view-above');
   out.top = await capture(`${F.id}_top_${shell}.png`);
   for (const l of F.levels) {
-    await uiSet({ section: 'interiors', houseView: 'interior', roomId: null, level: l });
+    await uiSet({ section: 'arrange', houseView: 'interior', roomId: null, level: l });
     out[`section-${l}`] = await capture(`${F.id}_section-${l}_${shell}.png`);
   }
-  await uiSet({ section: 'interiors', houseView: 'interior', level: F.room.level, roomId: F.room.id });
+  await uiSet({ section: 'arrange', houseView: 'interior', level: F.room.level, roomId: F.room.id });
   out.room = await capture(`${F.id}_room_${shell}.png`);
-  await uiSet({ roomId: null, section: 'building', houseView: 'exterior' });
+  await uiSet({ roomId: null, section: 'look', houseView: 'exterior' });
   return { views: out, state };
 }
 

@@ -355,7 +355,7 @@ describe('sample house', () => {
       expect(backStep()).toBe(true); expect(ui.get().elPanel).toBeNull();
       expect(backStep()).toBe(true); expect(ui.get().selection).toBeNull();
       expect(backStep()).toBe(true); expect(ui.get().roomId).toBeNull();
-      expect(backStep()).toBe(true); expect(ui.get().section).toBe('building');
+      expect(backStep()).toBe(true); expect(ui.get().section).toBe('look');
       expect(elWall('LK', 'LK-w1')!.roomId).toBe('LK');
     });
   });

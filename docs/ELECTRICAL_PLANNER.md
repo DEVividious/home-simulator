@@ -6,7 +6,8 @@ level, store their exact position (room, wall, distance from a corner, height) a
 > **A design and coordination aid — NOT an electrical installation design.** The app does not size cables, protective
 > devices, circuits, cross-sections or loads, and does not check compliance with regulations.
 
-The planner is a project capability (`electrical`); it shows up as the **Electrical** section. Wall placement and dragging
+The planner is a project capability (`electrical`); it shows up as the **Electrical** step in advanced mode (Settings →
+Advanced mode, or `?mode=advanced`). Wall placement and dragging
 use the shared mount engine — [WALL_MOUNTED_OBJECT_PLACEMENT.md](WALL_MOUNTED_OBJECT_PLACEMENT.md).
 
 ## 1. Layers of the implementation
@@ -105,21 +106,21 @@ definition.
 
 The user never sees wall or room ids, coordinates, normals or internal type names. Everywhere in Home mode there are catalog
 names ("Double socket"), the room name, the distance from the nearer wall corner and the height above the floor. Technical data
-is available only in Expert mode (card → More → technical data, with LCS coordinates and the JSON record).
+(card → More → technical data, with LCS coordinates and the JSON record) is in the card's technical box.
 
 ### 5.1 Screen
 
-On entering **Electrical**, the home UI gives way to the electrical workspace (`ElWorkspace`): the sun panel, the view bar
+On entering **Electrical**, the home UI gives way to the electrical workspace (`ElWorkspace`): the scene bar, the object bar
 and scene hints disappear, and on a phone also the regular drawer — the scene fills the space between the top bar and the
-navigation. Device symbols are drawn in 3D in every section (they are part of the home, subject to the layer switches);
+steps. Device symbols are drawn in 3D in every section (they are part of the home, subject to the layer switches);
 selecting, moving and adding work only in this section.
 
 | Element | Content |
 |---|---|
-| toolbar | **+ Add** · Layers · snapping (off / 1 cm / 5 cm / 10 cm) · Undo · Redo · Export. Desktop: above the scene; phone: bottom bar, every button ≥ 48 px |
+| toolbar | **+ Add** · Layers · Export (undo / redo are in the top bar, snapping off / 1 / 5 / 10 cm in Layers — one place each). Desktop: above the scene; phone: bottom bar, every button ≥ 48 px |
 | top of the scene | level (and **Site** in a project with a site) **or**, with a focused room, "‹ Room · Whole home"; view: **Plan · 3D · Eye level** |
 | device card | after selection: desktop — right panel; phone — a low bottom card **instead of** the toolbar (the scene ends above it, so the device stays visible) |
-| left panel (desktop) | "Add device", level thumbnail (click a room = focus it), named device list, items "to check" |
+| left panel (desktop) | level thumbnail (click a room = focus it), named device list, items "to check" |
 
 Start view: **Plan** on first use (easiest for many points), then the last used one (Plan / 3D; eye level is not resumed).
 `?elview=2d|3d` forces the view (tests).
@@ -243,7 +244,7 @@ control, garden lighting) — the purpose field has ready suggestions.
 ### 5.8 First entry, back and keys
 
 On first entry one card shows three tips ("+ Add…", "Drag…", "Tap a device…") with a "Got it" button. The phone's back button
-closes in turn: placing → panel → selection → eye-level view → focused room → leaves the mode to the Building section
+closes in turn: placing → panel → selection → eye-level view → focused room → leaves the mode to the Look step
 (`src/home/backNav.ts`). Keys: Esc — cancel placing / panel, then deselect, at eye level — back to the 3D view of the mode,
 with a focused room — whole home; Delete — remove the selected device; Ctrl + D — duplicate; Alt during a move — no snapping.
 The room view keys 1 / 2 / 3 of other sections are inactive here; the Plan | 3D | Eye level switch selects the view.

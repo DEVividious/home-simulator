@@ -10,7 +10,6 @@ import { exportProject, useDesign, variantOf } from '../store/design';
 import { ui, useUi, type UiState } from '../store/ui';
 import { cutUniforms } from '../three/cutaway';
 import { Block, Seg, Toggle } from './controls';
-import { DoorsPanelToggle } from './DoorsToggle';
 import { fmtNum, t } from '../../i18n';
 
 type Tab = UiState['expert']['tab'];
@@ -57,7 +56,6 @@ export function ExpertPanel() {
       <Seg wide value={ex.tab} options={[['layers', t('expertUi.tabLayers')], ['config', t('expertUi.tabConfig')], ['perf', t('expertUi.tabPerf')]] as [Tab, string][]} onChange={(tab) => set({ tab })} testid="expert-tabs" />
       {ex.tab === 'layers' && (
         <Block title={t('expertUi.geometryHelpers')}>
-          <DoorsPanelToggle testid="ex-doors" />
           <Toggle on={ex.axes} label={t('expertUi.axes')} onChange={(v) => set({ axes: v })} testid="ex-axes" />
           <Toggle on={ex.grid} label={t('expertUi.grid')} onChange={(v) => set({ grid: v })} testid="ex-grid" />
           <Toggle on={ex.wireframe} label={t('expertUi.wireframe')} onChange={(v) => set({ wireframe: v })} testid="ex-wire" />

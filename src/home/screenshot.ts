@@ -12,6 +12,7 @@ import { docOf, design } from './store/design';
 import { sidesOf } from './store/sides';
 import { toast, ui } from './store/ui';
 import type * as THREE from 'three';
+import { crc32 } from './zip';
 
 export interface ScreenshotMeta {
   app: 'home-simulator';
@@ -23,14 +24,6 @@ export interface ScreenshotMeta {
   view: { mode: string; room: string | null; camera: { position: number[]; target: number[] | null; fov: number | null } | null; environment: boolean | null; quality: string; profile?: string };
   sun: { date: string; time: string; azimuth: number; elevation: number } | null;
   image: { width: number; height: number };
-}
-
-let CRC: Uint32Array | null = null;
-function crc32(b: Uint8Array): number {
-  if (!CRC) { CRC = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1; CRC[n] = c >>> 0; } }
-  let c = 0xffffffff;
-  for (let i = 0; i < b.length; i++) c = CRC[(c ^ b[i]) & 0xff] ^ (c >>> 8);
-  return (c ^ 0xffffffff) >>> 0;
 }
 
 /** inserts an iTXt chunk (UTF-8) after the IHDR header of a PNG file */

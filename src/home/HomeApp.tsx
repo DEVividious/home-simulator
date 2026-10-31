@@ -1,9 +1,10 @@
-// Home Configurator — the app for a non-technical user: the 3D scene takes most of the screen, section navigation (Building,
-// Interiors, Materials, Furniture, Electrical, Variants), the section panel on the left, the context panel of the selection on
-// the right. Single sources of truth: PROJECT DATA (project package — rooms, doors, optional model files), USER DESIGN STATE
-// (ConfiguratorDoc, design store), RUNTIME SCENE (derived). Home mode by default; Expert mode — in the settings.
+// Home Configurator — the app for everyone (ADR 0036): the 3D scene takes most of the screen; the top bar with the three steps
+// Look · Arrange · Versions (+ Electrical and Expert in advanced mode), the step's panel on the left (a sheet on a phone), the
+// scene bar under the scene (the only camera control), the object bar for the selected furniture and the card of the selection
+// on the right. Every action has one place (ui/registry.ts). Single sources of truth: PROJECT DATA (project package), USER DESIGN
+// STATE (ConfiguratorDoc, design store), RUNTIME SCENE (derived). Simple mode by default; advanced mode — in the settings.
 import { t } from '../i18n';
-import { hasModule, project } from '../project/active';
+import { project } from '../project/active';
 import { allLevels, allRooms } from './model/rooms';
 import { mountedNow } from './scene/interaction';
 import { MountTip } from './ui/MountTip';
@@ -16,30 +17,30 @@ import { ElWorkspace, SectionElectrical } from './ui/ElectricalPanels';
 import { planPerf } from './ui/ElectricalPlan';
 import { furnitureOpen, isFurnitureOpen, toggleFurnitureOpen } from './store/furnitureOpen';
 import { useEffect, useMemo } from 'react';
-import { deleteFurniture, duplicateSelected, goPreset } from './actions';
+import { goPreset } from './actions';
 import { resolveDims } from './catalog/furniture';
 import { itemById } from './catalog/providers';
 import { furnitureById } from './model/interiors';
-import { nudge, rotateBy } from './scene/interaction';
+import { nudge } from './scene/interaction';
 import { HomeCanvas } from './scene/HomeCanvas';
 import { sceneDataOf } from './scene/sceneData';
 import { sceneApi } from './scene/sceneApi';
-import { arrangementOf, design, docOf, interiorOfRoom, isDirty, loadDesign, redo, refreshFromFile, save, setNotifier, undo, useDesign, variantOf } from './store/design';
+import { arrangementOf, design, docOf, interiorOfRoom, isDirty, loadDesign, refreshFromFile, save, setNotifier, useDesign, variantOf } from './store/design';
 import { startAutosave } from './store/autosave';
 import { drag } from './store/drag';
-import { exitRoom, exitWalk, isWalking, toast, ui, useUi } from './store/ui';
+import { exitWalk, isWalking, toast, ui, useUi } from './store/ui';
 import { ExpertPanel } from './ui/ExpertPanel';
 import { Inspector } from './ui/Inspector';
-import { SectionFurniture } from './ui/SectionFurniture';
-import { SectionHouse } from './ui/SectionHouse';
-import { SectionInteriors } from './ui/SectionInteriors';
-import { SectionMaterials } from './ui/SectionMaterials';
+import { SectionArrange } from './ui/SectionArrange';
+import { SectionLook } from './ui/SectionLook';
 import { SectionVariants } from './ui/SectionVariants';
-import { SunPanel } from './ui/SunPanel';
-import { BottomBar, CatalogGhost, Hint, MouseLegend, Onboarding, Settings, Toasts, TopBar } from './ui/Shell';
-import { FurnitureQuickBar, MobileNav, MobileSheet, useBackGuard, WalkPad } from './ui/Mobile';
+import { CatalogGhost, Hint, Onboarding, Toasts } from './ui/Shell';
+import { Settings } from './ui/Settings';
+import { TopBar } from './ui/TopBar';
+import { ObjectBar, SceneBar } from './ui/SceneBar';
+import { MobileSheet, useBackGuard, WalkPad } from './ui/Mobile';
+import { runAction } from './ui/registry';
 import { useLayout } from './store/layout';
-import { DoorsButton } from './ui/DoorsToggle';
 import { openDoor, setAllDoorsOpen, setShowDoors } from './store/doors';
 import { ProjectConflict, PwaUpdateBanner } from '../pwa/PwaUi';
 import { homeViewId } from './model/views';
@@ -64,23 +65,19 @@ function useShortcuts() {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const mod = e.ctrlKey || e.metaKey, k = e.key.toLowerCase();
-      if (mod && k === 's') { e.preventDefault(); void save(); return; }
+      if (mod && k === 's') { e.preventDefault(); void save(); return; }       // saving is automatic; Ctrl+S saves now
       if (typing(e.target)) return;
       // Undo / Redo are ignored while dragging: undoing the addition of the item being dragged would remove it from under the
       // pointer and leave a selection of a non-existent item (Esc and Delete have the same guard)
       const dragging = sceneApi.locked || !!drag.get().catalog;
-      if (mod && k === 'z') { e.preventDefault(); if (dragging) return; if (e.shiftKey) redo(); else undo(); return; }
-      if (mod && k === 'y') { e.preventDefault(); if (!dragging) redo(); return; }
+      if (mod && k === 'z') { e.preventDefault(); if (dragging) return; runAction(e.shiftKey ? 'redo' : 'undo'); return; }
+      if (mod && k === 'y') { e.preventDefault(); if (!dragging) runAction('redo'); return; }
       const s = ui.get(), sel = s.selection;
       if (e.key === 'Escape') {
         if (dragging) return;
-        // the sun panel is a pinned tool (it stays open while working in the scene), so it closes last — unless the user is
-        // working in it right now (focus in the panel). The VISIBLE panel is checked: the "expanded" state is a remembered
-        // preference that must not change in modes without the panel (Electrical, Expert, screenshot).
-        const sun = document.querySelector('.hm-sun-panel');
         if (s.settingsOpen) ui.set({ settingsOpen: false });
         else if (!s.onboardingDone) ui.set({ onboardingDone: true });
-        else if (sun?.contains(document.activeElement)) ui.set({ sunPanel: false });
+        else if (s.menu) ui.set({ menu: null });
         else if (s.compare) ui.set({ compare: null });
         // the selection closes first — also in a home walk (Esc does not end the walk while something is selected)
         else if (sel) ui.set({ selection: null });
@@ -88,8 +85,7 @@ function useShortcuts() {
         // generic walk exit would show the home from outside while the mode switch still says "eye level"
         else if (s.section === 'electrical' && s.elView === 'walk') setElView('3d');
         else if (s.houseView === 'walk' && !s.roomId) exitWalk();
-        else if (s.roomId) exitRoom();
-        else if (sun) ui.set({ sunPanel: false });
+        else if (s.roomId) runAction('scene-back');
         return;
       }
       // room views 1 / 2 / 3 — not in ELECTRICAL mode: there the view is chosen by the Plan | 3D | eye level switch, and the key
@@ -106,12 +102,12 @@ function useShortcuts() {
       }
       if (sel?.kind !== 'furniture' || sceneApi.locked) return;
       const walk = isWalking(s);                                                // walk: arrows walk, they do not move the item
-      if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); deleteFurniture(sel.roomId, sel.id); return; }
-      if (mod && k === 'd') { e.preventDefault(); duplicateSelected(sel.roomId, sel.id); return; }
+      if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); runAction('obj-delete'); return; }
+      if (mod && k === 'd') { e.preventDefault(); runAction('obj-copy'); return; }
       if (mod) return;
-      if (k === 'q') { rotateBy(sel.roomId, sel.id, e.shiftKey ? 45 : 15); return; }
-      if (k === 'e') { rotateBy(sel.roomId, sel.id, e.shiftKey ? -45 : -15); return; }
-      if (k === 'r') { rotateBy(sel.roomId, sel.id, -90); return; }
+      if (k === 'q') { runAction('obj-rotate-left', e.shiftKey ? 45 : 15); return; }
+      if (k === 'e') { runAction('obj-rotate-right', e.shiftKey ? 45 : 15); return; }
+      if (k === 'r') { runAction('obj-rotate-right', 90); return; }
       if (!walk && e.key.startsWith('Arrow')) {
         // arrows on a slider (or in a radio group) belong to it — they must not move the selected item
         if (ownsArrows(e.target)) return;
@@ -194,6 +190,8 @@ function useTestHook() {
         };
       },
       furniture: (roomId: string, id: string) => furnitureById(arrangementOf(design.get(), roomId), id),
+      /** the effective furniture and finishes of any room (also one the user is not in) */
+      room: (roomId: string) => { const a = arrangementOf(design.get(), roomId); return { furniture: a.furniture.map((f) => ({ id: f.id, catalogId: f.catalogId })), finishes: a.finishes }; },
       /** project rooms and the position of a wall-mounted object on its mounting surface */
       rooms: () => allRooms().map((r) => r.id),
       project: () => ({ id: project().manifest.projectId, name: project().manifest.name, modules: project().manifest.modules, levels: allLevels().map((l) => l.id) }),
@@ -214,12 +212,10 @@ function LeftPanel() {
   const section = useUi((s) => s.section);
   return (
     <aside className="hm-side" data-testid="side">
-      {section === 'building' && <SectionHouse />}
-      {section === 'interiors' && <SectionInteriors />}
-      {section === 'materials' && <SectionMaterials />}
-      {section === 'furniture' && <SectionFurniture />}
-      {section === 'electrical' && <SectionElectrical />}
+      {section === 'look' && <SectionLook />}
+      {section === 'arrange' && <SectionArrange />}
       {section === 'variants' && <SectionVariants />}
+      {section === 'electrical' && <SectionElectrical />}
       {section === 'expert' && <ExpertPanel />}
     </aside>
   );
@@ -227,7 +223,7 @@ function LeftPanel() {
 
 /** error boundary escape: the exterior building view without selection, comparison and open dialogs — nothing of the view in which the error occurred */
 function toHomeView() {
-  ui.set({ selection: null, compare: null, settingsOpen: false, section: 'building' });
+  ui.set({ selection: null, compare: null, settingsOpen: false, menu: null, section: 'look' });
   goPreset(homeViewId());
 }
 
@@ -240,7 +236,7 @@ function Home() {
   // scene data: the project's model files or — when the project has none — the outline of the shell generated from the rooms
   const data = useMemo(() => sceneDataOf(), []);
   const loaded = useDesignLoaded();
-  const mode = useUi((s) => s.mode), sunOn = hasModule('sun');
+  const mode = useUi((s) => s.mode);
   // ELECTRICAL mode has its own UI in the scene area (the rest of the home configurator is hidden meanwhile)
   const el = useUi((s) => s.section === 'electrical' && !s.compare), elView = useUi((s) => s.elView);
   // mobile layout (phone) — the same set of panels, arranged differently: full-width scene, panel in the bottom drawer
@@ -260,22 +256,16 @@ function Home() {
         <main className="hm-stage">
           <HomeCanvas data={data} />
           {el ? <ElWorkspace /> : <>
-            {/* sun panel — only for a project with a geographic location (sun module) */}
-            {mode === 'home' && sunOn && <SunPanel />}
-            {/* Expert mode or a project without the sun panel: the doors switch in the same place */}
-            {(mode !== 'home' || !sunOn) && mobile && <div className="hm-sun"><div className="hm-sun-bar"><DoorsButton /></div></div>}
             <Hint />
             <MountTip />
-            <MouseLegend />
-            <BottomBar />
-            {mobile && <FurnitureQuickBar />}
+            <ObjectBar />
+            <SceneBar />
           </>}
           {coarse && <WalkPad />}
           <Toasts />
         </main>
         {mobile ? (el ? null : <MobileSheet><Inspector /><LeftPanel /></MobileSheet>) : <Inspector />}
       </div>
-      {mobile && <MobileNav />}
       <Settings />
       <Onboarding />
       <PwaUpdateBanner />

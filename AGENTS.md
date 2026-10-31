@@ -17,4 +17,8 @@ Rules:
   three.js, React, Node built-ins or `t()` there; the app adapts it through `derived()`.
 - The Claude Code plugin `house-forge` is built here (`packages/house-forge`, `npm run plugin:build`, docs/HOUSE_FORGE.md); its
   references are generated from `skills/home-from-plan` — change them there.
-- Checks before finishing a code change: `npm run typecheck && npm test && npm run audit:genericity && npm run audit:i18n && npm run audit:core`.
+- Checks before finishing a code change: `npm run typecheck && npm test && npm run audit:genericity && npm run audit:i18n && npm run audit:core &&
+  npm run audit:ui`.
+- UI: every button is a registry action in `src/home/ui/registry.ts` with exactly one place,
+  rendered through `<ActionButton id>` / `useActionSlot(id)`; UI text goes into `src/i18n/{en,pl}/steps.json` and follows the
+  language rules in `src/home/ui/language.json` (`npm run audit:ui` checks both and writes `reports/ui/actions.md`).

@@ -1,6 +1,6 @@
-// UI state (transient, not part of the project): section, Home / Expert mode, level, room (Room Mode) and view
-// (3D / TOP / WALK), selection, camera commands, catalog drag, snap lines, toasts.
-// Preferences (mode, snapping, onboarding, surroundings) — localStorage.
+// UI state (transient, not part of the project): step (Look · Arrange · Versions, plus Electrical and Expert in advanced mode),
+// simple / advanced mode, level, room (Room Mode) and view (3D / TOP / WALK), selection, camera commands, catalog drag, snap
+// lines, toasts. Preferences (mode, snapping, onboarding, surroundings) — localStorage.
 import { t } from '../../i18n';
 import { hasCapability, hasModule, project } from '../../project/active';
 import type { ProjectCapability } from '../../project/types';
@@ -15,15 +15,27 @@ import { classifyMobileGpu, defaultTier, detectPlatform, deviceClass, forDevice,
  /** graphics quality: high — 2048 px shadows, glass with transmission, PBR maps; medium — 1024 px shadows; low — no shadows or maps */
 export type Quality = Tier;
 
-export type Section = 'building' | 'interiors' | 'materials' | 'furniture' | 'electrical' | 'variants' | 'expert';
-const ALL_SECTIONS: { id: Section; capability?: ProjectCapability }[] = [
-  { id: 'building' }, { id: 'interiors', capability: 'interiors' }, { id: 'materials', capability: 'interiors' }, { id: 'furniture', capability: 'interiors' },
-  { id: 'electrical', capability: 'electrical' }, { id: 'variants', capability: 'variants' },
+/** the steps of the app (ADR 0036): Look · Arrange · Versions for everyone, Electrical and Expert in advanced mode (ADR 0038) */
+export type Section = 'look' | 'arrange' | 'variants' | 'electrical' | 'expert';
+export type Mode = 'simple' | 'advanced';
+const ALL_SECTIONS: { id: Section; capability?: ProjectCapability; advanced?: boolean }[] = [
+  { id: 'look' }, { id: 'arrange', capability: 'interiors' }, { id: 'variants', capability: 'variants' },
+  { id: 'electrical', capability: 'electrical', advanced: true }, { id: 'expert', advanced: true },
 ];
-/** navigation sections of the active project (Expert — additionally, only in expert mode): a capability section is there when
- *  the project uses the capability; the first section is named after the building type */
-export const sections = (): { id: Section; label: string }[] => ALL_SECTIONS.filter((x) => !x.capability || hasCapability(x.capability))
-  .map((x) => ({ id: x.id, label: x.id === 'building' ? t(`section.building.${project().manifest.buildingType}`) : t(`section.${x.id}`) }));
+/** steps of the active project in a mode: a capability step is there when the project uses the capability */
+export const sections = (mode: Mode = ui.get().mode): { id: Section; label: string }[] => ALL_SECTIONS
+  .filter((x) => (!x.capability || hasCapability(x.capability)) && (!x.advanced || mode === 'advanced'))
+  .map((x) => ({ id: x.id, label: t(`steps.${x.id}`) }));
+/** links and saved states from before the three steps: the old section names lead to the step that holds them now */
+const OLD_SECTION: Record<string, Section> = { building: 'look', interiors: 'arrange', materials: 'arrange', furniture: 'arrange' };
+/** a step from a link: a known step the project has in that mode, or an old section name */
+export function sectionFrom(id: string | null, mode: Mode): Section | null {
+  const s = (id && OLD_SECTION[id]) ?? id;
+  return sections(mode).find((x) => x.id === s)?.id ?? null;
+}
+/** the mode from a link (?mode=advanced, the old ?mode=expert, ?mode=simple) or a stored preference (old 'home' / 'expert') */
+export const modeFrom = (q: string | null, stored: string | undefined): Mode =>
+  q === 'advanced' || q === 'expert' ? 'advanced' : q === 'simple' ? 'simple' : stored === 'advanced' || stored === 'expert' ? 'advanced' : 'simple';
 
 export type Selection =
   | { kind: 'furniture'; roomId: string; id: string }
@@ -56,8 +68,16 @@ export interface WalkGo { viewpointId?: string | null; pose?: { p: Vec2; z: numb
 export type CameraPresetId = string;
 
 export interface UiState {
-  mode: 'home' | 'expert';
+  mode: Mode;
   section: Section;
+  /** Arrange step in a room: furniture or colours */
+  arrangeTab: 'furniture' | 'colours';
+  /** an open top-bar menu */
+  menu: 'download' | null;
+  /** the "Add your own" dialog (furniture model import) */
+  importOpen: boolean;
+  /** Versions with more than two: "Compare" waits for the card of the second version */
+  comparePick: boolean;
   houseView: HouseView;
   level: LevelId;
   roomId: string | null;
@@ -99,8 +119,6 @@ export interface UiState {
   walkGo: WalkGo;
   /** date (YYYY-MM-DD) and time (minutes from local midnight) of the sun simulation */
   sun: { date: string; minutes: number };
-  /** sun panel expanded */
-  sunPanel: boolean;
   /** A/B comparison (split screen) — two home variants or two room arrangements; null — no comparison */
   compare: Compare;
   /** "add point" tool (type) — clicking a wall / ceiling / plan adds a point; null — none */
@@ -145,9 +163,10 @@ function prefs(): Partial<UiState> {
 const p = typeof window !== 'undefined' ? prefs() : {};
 const q = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : new URLSearchParams();
 
-// deep links: /?section=interiors&room=<id>
+// deep links: /?section=arrange&room=<id> (old names: building, interiors, materials, furniture)
 // (ids only — labels are not computed at module load, before the UI language is set)
-const qSection = ALL_SECTIONS.find((x) => x.id === q.get('section') && (!x.capability || hasCapability(x.capability)))?.id ?? null;
+const startMode = modeFrom(q.get('mode'), p.mode as string | undefined);
+const qSection = (() => { const s = q.get('section'); const id = (s && OLD_SECTION[s]) ?? s; const x = ALL_SECTIONS.find((a) => a.id === id); return x && (!x.capability || hasCapability(x.capability)) && (!x.advanced || startMode === 'advanced') ? x.id : null; })();
 // room from the URL — only one that exists in the project; starting level: the room's or the project default
 const qRoom = roomById(q.get('room'))?.id ?? null;
 const startLevel = roomById(qRoom)?.level ?? levelById(project().manifest.defaultView.levelId)?.id ?? baseLevel().id;
@@ -161,13 +180,17 @@ if (qPlatform === 'mobile' && typeof navigator !== 'undefined') {
   const forced = q.get('gpuclass');
   deviceClass.gpu = forced === 'flagship' || forced === 'standard' ? forced : classifyMobileGpu(deviceClass.renderer, (navigator as Navigator & { deviceMemory?: number }).deviceMemory ?? null);
 }
-if (typeof window !== 'undefined' && (q.has('section') || q.has('room'))) {
-  const u = new URL(window.location.href); ['section', 'room'].forEach((k) => u.searchParams.delete(k)); window.history.replaceState(null, '', u);
+if (typeof window !== 'undefined' && (q.has('section') || q.has('room') || q.has('mode'))) {
+  const u = new URL(window.location.href); ['section', 'room', 'mode'].forEach((k) => u.searchParams.delete(k)); window.history.replaceState(null, '', u);
 }
 
 export const ui = createStore<UiState>({
-  mode: q.get('mode') === 'expert' ? 'expert' : (p.mode ?? 'home'),
-  section: qSection ?? 'building',
+  mode: startMode,
+  section: qSection ?? (qRoom && hasCapability('interiors') ? 'arrange' : 'look'),
+  arrangeTab: q.get('section') === 'materials' ? 'colours' : 'furniture',
+  menu: null,
+  importOpen: false,
+  comparePick: false,
   houseView: qRoom ? 'interior' : project().manifest.defaultView.view ?? 'exterior',
   level: startLevel,
   roomId: qRoom,
@@ -198,7 +221,6 @@ export const ui = createStore<UiState>({
   // default: today, 14:00 (afternoon); ?date=YYYY-MM-DD&time=HH:MM
   // a project without the sun module: always the default light and no panel — the URL and the device preference do not apply
   sun: { date: (hasModule('sun') ? qDate : null) ?? todayIso(), minutes: (hasModule('sun') ? qTime : null) ?? 14 * 60 },
-  sunPanel: hasModule('sun') && (q.get('sun') === 'open' ? true : (p.sunPanel ?? false)),
   compare: null,
   elTool: null,
   elLayers: { sockets: true, lights: true, smart: true, data: true, sensors: true, boards: true, ...(p.elLayers ?? {}) },
@@ -217,10 +239,10 @@ export const ui = createStore<UiState>({
 
 ui.subscribe(() => {
   const s = ui.get();
-  // preferences of modules the project lacks (surroundings, sun panel) are not saved: the device keeps the values from a project
-  // that has the module (read just before writing — another tab may have changed them)
-  const env = hasModule('environment'), sun = hasModule('sun'), kept: Partial<UiState> = env && sun ? {} : prefs();
-  try { window.localStorage.setItem(LS, JSON.stringify({ batterySaver: s.batterySaver, mode: s.mode, snap: s.snap, onboardingDone: s.onboardingDone, environment: env ? s.environment : kept.environment, autosave: s.autosave, eyeHeight: s.eyeHeight, recentColors: s.recentColors, quality: s.quality, platform: s.platform, platformAuto: s.platformAuto, neutralInterior: s.neutralInterior, sunPanel: sun ? s.sunPanel : kept.sunPanel, elLayers: s.elLayers, elSnap: s.elSnap, elPlanFurniture: s.elPlanFurniture, elView: s.elView === 'walk' ? '3d' : s.elView, elLabels: s.elLabels, elMulti: s.elMulti, elHeights: s.elHeights, elTipsDone: s.elTipsDone })); } catch { /* private window */ }
+  // preferences of modules the project lacks (surroundings) are not saved: the device keeps the values from a project that has
+  // the module (read just before writing — another tab may have changed them)
+  const env = hasModule('environment'), kept: Partial<UiState> = env ? {} : prefs();
+  try { window.localStorage.setItem(LS, JSON.stringify({ batterySaver: s.batterySaver, mode: s.mode, snap: s.snap, onboardingDone: s.onboardingDone, environment: env ? s.environment : kept.environment, autosave: s.autosave, eyeHeight: s.eyeHeight, recentColors: s.recentColors, quality: s.quality, platform: s.platform, platformAuto: s.platformAuto, neutralInterior: s.neutralInterior, elLayers: s.elLayers, elSnap: s.elSnap, elPlanFurniture: s.elPlanFurniture, elView: s.elView === 'walk' ? '3d' : s.elView, elLabels: s.elLabels, elMulti: s.elMulti, elHeights: s.elHeights, elTipsDone: s.elTipsDone })); } catch { /* private window */ }
 });
 
 export const useUi = <T,>(sel: (s: UiState) => T) => useStore(ui, sel);
@@ -231,12 +253,13 @@ export const selectedWallIds = (s: Selection): string[] => (s?.kind === 'wall' ?
 /**
  * Click on a room surface (wall / floor / ceiling):
  * — a click on an already selected surface — deselect;
- * — outside the Materials section, when another element (e.g. furniture) is selected — deselect only (the next click picks the surface);
- * — a wall with Ctrl / Shift — add to / remove from a multi-wall selection.
+ * — outside the Colours tab, when another element (e.g. furniture) is selected — deselect only (the next click picks the surface);
+ * — a wall with Ctrl / Shift — add to / remove from a multi-wall selection (advanced mode);
+ * — otherwise the surface is chosen and the Colours tab shows it: a wall alone ("this wall"), the floor, the ceiling.
  */
 export function clickSurface(roomId: string, target: { kind: 'wall'; wallId: string } | { kind: 'floor' } | { kind: 'ceiling' }, mods: { add: boolean }) {
   const s = ui.get(), cur = s.selection;
-  if (target.kind === 'wall' && mods.add && cur?.kind === 'wall' && cur.roomId === roomId) {
+  if (target.kind === 'wall' && mods.add && s.mode === 'advanced' && cur?.kind === 'wall' && cur.roomId === roomId) {
     const ids = selectedWallIds(cur), has = ids.includes(target.wallId);
     const next = has ? ids.filter((x) => x !== target.wallId) : [...ids, target.wallId];
     ui.set({ selection: next.length ? { kind: 'wall', roomId, wallId: next[next.length - 1], wallIds: next } : null, wallScope: 'one' });
@@ -244,17 +267,21 @@ export function clickSurface(roomId: string, target: { kind: 'wall'; wallId: str
   }
   const same = cur && 'roomId' in cur && cur.roomId === roomId && cur.kind === target.kind && (target.kind !== 'wall' || selectedWallIds(cur).length === 1 && (cur as { wallId: string }).wallId === target.wallId);
   if (same) { ui.set({ selection: null }); return; }
-  if (cur && s.section !== 'materials' && !(cur.kind === 'wall' || cur.kind === 'floor' || cur.kind === 'ceiling')) { ui.set({ selection: null }); return; }
-  ui.set({ selection: target.kind === 'wall' ? { kind: 'wall', roomId, wallId: target.wallId } : { kind: target.kind, roomId }, ...(target.kind === 'wall' && s.wallScope === 'house' ? {} : target.kind === 'wall' ? { wallScope: 'one' as const } : {}) });
+  const colours = s.section === 'arrange' && s.arrangeTab === 'colours';
+  if (cur && !colours && !(cur.kind === 'wall' || cur.kind === 'floor' || cur.kind === 'ceiling')) { ui.set({ selection: null }); return; }
+  ui.set({ selection: target.kind === 'wall' ? { kind: 'wall', roomId, wallId: target.wallId } : { kind: target.kind, roomId }, ...(target.kind === 'wall' && s.wallScope === 'house' ? {} : target.kind === 'wall' ? { wallScope: 'one' as const } : {}),
+    ...(s.section === 'arrange' ? { arrangeTab: 'colours' as const } : {}) });
 }
 
 let toastN = 0;
 export const toast = (text: string, level: 'info' | 'warn' | 'error' = 'info') => ui.set({ toast: { text, level, n: ++toastN } });
 export const cameraTo = (preset: UiState['camera']['preset'], bookmarkId?: string) => ui.set((s) => ({ camera: { preset, n: s.camera.n + 1, bookmarkId } }));
 
+/** in a room the Arrange step is the one that works with it (Look and Versions lead there); Electrical and Expert stay */
+const arrangeOr = (s: Section): Section => (s === 'look' || s === 'variants') && hasCapability('interiors') ? 'arrange' : s;
 /** entering a room (Room Mode) */
 export function enterRoom(roomId: string, level: LevelId) {
-  ui.set((s) => ({ roomId, level, selection: null, section: s.section === 'building' || s.section === 'variants' ? 'interiors' : s.section, camera: { preset: 'room', n: s.camera.n + 1 } }));
+  ui.set((s) => ({ roomId, level, selection: null, section: arrangeOr(s.section), camera: { preset: 'room', n: s.camera.n + 1 } }));
 }
 export function exitRoom() {
   ui.set((s) => ({ roomId: null, selection: null, houseView: 'interior', roomView: '3d', camera: { preset: 'interior', n: s.camera.n + 1 } }));
@@ -266,14 +293,14 @@ export function startWalk(go: Omit<WalkGo, 'n'> = {}) {
 }
 /**
  * End of a home walk. A walk started in a room (walkGo.from) returns to the 3D view of the room the user stands in — and from
- * the stairs or the site to the room it left; touring from the Home section — to the building view. The room view goes back to
+ * the stairs or the site to the room it left; touring from the Look step — to the building view. The room view goes back to
  * 3D: the next room entry does not start with a walk.
  */
 export function exitWalk() {
   const from = ui.get().walkGo.from, room = from ? roomById(walkHud.get().roomId) ?? roomById(from.roomId) : null;
   if (room) {
     ui.set((s) => ({ roomId: room.id, level: room.level, houseView: 'interior', roomView: '3d', selection: null, hoverRoom: null, walkGo: { n: s.walkGo.n },
-      section: s.section === 'building' || s.section === 'variants' ? 'interiors' : s.section, camera: { preset: 'room', n: s.camera.n + 1 } }));
+      section: arrangeOr(s.section), camera: { preset: 'room', n: s.camera.n + 1 } }));
     return;
   }
   ui.set((s) => ({ houseView: 'exterior', roomView: '3d', selection: null, camera: { preset: homeViewId(), n: s.camera.n + 1 } }));

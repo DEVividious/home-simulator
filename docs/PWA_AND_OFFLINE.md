@@ -9,7 +9,7 @@ app from this computer over USB; installing and updating it on a phone is descri
 
 | Part | Where | Description |
 |---|---|---|
-| manifest | `/manifest.webmanifest` (source: `MANIFEST` in `src/pwa/build.ts`) | "Home Simulator", `display: standalone`, `start_url` and `scope` `/`, colours, shortcut "Electrical plan" (`/?section=electrical`) |
+| manifest | `/manifest.webmanifest` (source: `MANIFEST` in `src/pwa/build.ts`) | "Home Simulator", `display: standalone`, `start_url` and `scope` `/`, colours, shortcut "Electrical plan" (`/?section=electrical&mode=advanced` — Electrical is a step of advanced mode) |
 | icons | `/icons/*` (source: `src/pwa/icons/`) | 192 / 512 regular and maskable |
 | service worker | `/sw.js` (source: `src/pwa/sw.ts`, rules: `src/pwa/routes.ts`) | complete offline cache per version, user files from the device, controlled updates |
 | build plugin | `src/pwa/build.ts` (in `vite.config.ts`) | version file list, version id, building `sw.js`, `pwa-build.json` |

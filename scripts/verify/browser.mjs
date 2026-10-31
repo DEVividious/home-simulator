@@ -77,10 +77,11 @@ export async function launch({ viewport = { width: 1400, height: 900 } } = {}) {
   return { browser: b, renderer: await rendererOf(b), profile: 'swiftshader' };
 }
 
-/** starts the app server (vite dev by default, `preview` for the built app) on a port; HOME_SIM_USERDATA isolates documents */
-export async function startServer({ port, mode = 'dev', userdata, env = {} }) {
+/** starts the app server (vite dev by default, `preview` for the built app — from `outDir`, default dist/) on a port;
+ *  HOME_SIM_USERDATA isolates documents */
+export async function startServer({ port, mode = 'dev', userdata, env = {}, outDir = null }) {
   const bin = join(ROOT, 'node_modules', '.bin', 'vite');
-  const args = mode === 'preview' ? ['preview', '--port', String(port), '--strictPort'] : ['--port', String(port), '--strictPort'];
+  const args = mode === 'preview' ? ['preview', '--port', String(port), '--strictPort', ...(outDir ? ['--outDir', outDir] : [])] : ['--port', String(port), '--strictPort'];
   const proc = spawn(bin, args, { cwd: ROOT, detached: process.platform !== 'win32', stdio: 'ignore', env: { ...process.env, ...(userdata ? { HOME_SIM_USERDATA: userdata } : {}), ...env } });
   for (let i = 0; i < 160; i++) { try { if ((await fetch(`http://127.0.0.1:${port}/`)).ok) break; } catch { /* starting */ } await sleep(250); }
   const stop = () => { try { process.kill(-proc.pid, 'SIGTERM'); } catch { try { proc.kill(); } catch { /* gone */ } } };

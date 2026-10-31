@@ -75,7 +75,7 @@ async function runProject(PROJECT) {
   page.on('framenavigated', (f) => { if (f === page.mainFrame() && !navigating) consoleErrors.push(`unexpected page reload: ${f.url()} (was dist/ rebuilt during the run?)`); });
   page.on('response', (r) => { if (r.status() >= 400 && !/favicon/.test(r.url())) consoleErrors.push(`HTTP ${r.status()} ${r.url()}`); });
 
-  const URL = `${server.url}/?project=${PROJECT}&onboarding=off&lang=en&env=off&platform=desktop`;
+  const URL = `${server.url}/?mode=advanced&project=${PROJECT}&onboarding=off&lang=en&env=off&platform=desktop`;
   const T = (id) => `[data-testid="${id}"]`;
   const st = () => page.evaluate(() => window.__home.state());
   const s3 = (fn, ...a) => page.evaluate((fn, a) => window.__home3d[fn](...a), fn, a);
@@ -121,19 +121,26 @@ async function runProject(PROJECT) {
   };
 
   try {
-    navigating = true; await page.goto(URL, { waitUntil: 'load' }); navigating = false;
-    await waitForApp(page);
+    // the app drops ?mode= from the address once it has read it (history.replaceState) — part of the navigation
+    navigating = true; await page.goto(URL, { waitUntil: 'load' });
+    await waitForApp(page); navigating = false;
     const proj = await page.evaluate(() => window.__home.project());
     check('0. project loaded (levels, modules)', proj.id === PROJECT && JSON.stringify(proj.levels) === JSON.stringify(S.levels), `${proj.name}: levels ${proj.levels.join(', ')}; modules ${proj.modules.join(', ') || '—'}`);
 
     // ================================================================== 1. entering the mode, plan view
+    // Electrical is a step of advanced mode (ADR 0038): without it the step is not there; ?mode=advanced shows it
+    const simple = await browser.newPage();
+    await simple.goto(URL.replace('mode=advanced&', ''), { waitUntil: 'load' }); await waitForApp(simple);
+    const noStep = await simple.evaluate(() => ({ mode: window.__home.state().mode, step: !!document.querySelector('[data-testid="step-electrical"]'), steps: [...document.querySelectorAll('[data-testid^="step-"]')].map((b) => b.dataset.testid) }));
+    await simple.close(); await page.bringToFront();
+    check('0b. simple mode (the default): no Electrical step', noStep.mode === 'simple' && !noStep.step && noStep.steps.length === 3, JSON.stringify(noStep));
     const e0 = await el3();
-    check('1. outside the Electrical section the devices are part of the home, not editable; the navigation has "Electrical"', (await text(T('nav-electrical'))).includes('Electrical') && !e0?.on && !(await exists(T('el-workspace'))), `edit ${e0?.on}, shown ${e0?.show}`);
-    await click(T('nav-electrical'), 1200);
+    check('1. advanced mode: outside the Electrical step the devices are part of the home, not editable; the top bar has "Electrical"', (await text(T('step-electrical'))).includes('Electrical') && !e0?.on && !(await exists(T('el-workspace'))), `edit ${e0?.on}, shown ${e0?.show}`);
+    await click(T('step-electrical'), 1200);
     const tb = await page.$$eval(`${T('el-toolbar')} button`, (b) => b.map((x) => x.textContent.trim()));
     const ws = await elUi();
-    check('2. the electrical workspace: toolbar Add · Layers · snapping · Undo · Redo · Export; Plan | 3D | eye-level switch; side panel with the device list',
-      tb.length === 6 && tb[0] === 'Add' && tb[1] === 'Layers' && /cm|off/.test(tb[2]) && tb[3] === 'Undo' && tb[4] === 'Redo' && tb[5] === 'Export' && (await exists(T('el-view'))) && (await exists(T('section-electrical'))), tb.join(' · '));
+    check('2. the electrical workspace: toolbar Add · Layers · Export (undo / redo in the top bar, snapping in Layers); Plan | 3D | eye-level switch; side panel with the device list',
+      tb.length === 3 && tb[0] === 'Add' && tb[1] === 'Layers' && tb[2] === 'Export' && (await exists(T('el-view'))) && (await exists(T('section-electrical'))) && (await exists(T('undo'))), tb.join(' · '));
     const lvl = await st();
     const roomsShown = await page.$$eval(`${T('el-plan-rooms')} [data-room]`, (t) => t.map((x) => x.dataset.room));
     const p0 = await plan(), onLevel = p0.points.filter((p) => roomsShown.includes(p.roomId)).map((p) => p.id).sort();
@@ -197,10 +204,10 @@ async function runProject(PROJECT) {
     check('13. dragging into ANOTHER ROOM without delete + add: room, wall, distance and orientation follow; one history entry; still selected',
       a3.roomId === S.other.room && a3.wallId === S.other.wall && near(a3.heightAFFL, 0.3, 1e-6) && (await st()).past === pastD + 1 && (await sel())?.id === G1.id, `rooms on the way: ${rooms.join(' → ')}; ${a3.roomId} / ${a3.wallId}; badge "${tipRoom.replace(/\s+/g, ' ').slice(0, 80)}" (${otherName})`);
     await uiSet({ selection: null }); await sleep(250);
-    await click(T('el-tb-undo'), 350);
+    await click(T('undo'), 350);
     const u1 = await pt(G1.id);
-    await click(T('el-tb-redo'), 350);
-    check('14. "Undo" in the toolbar undoes the WHOLE drag (the device goes back to its room and wall), "Redo" restores it', u1.roomId === S.add.room && u1.wallId === S.corner.wall && (await pt(G1.id)).roomId === S.other.room, `${u1.roomId}/${u1.wallId} ↔ ${S.other.room}`);
+    await click(T('redo'), 350);
+    check('14. "Undo" in the top bar undoes the WHOLE drag (the device goes back to its room and wall), "Redo" restores it', u1.roomId === S.add.room && u1.wallId === S.corner.wall && (await pt(G1.id)).roomId === S.other.room, `${u1.roomId}/${u1.wallId} ↔ ${S.other.room}`);
 
     // ================================================================== 15–17. invalid spots, coordination warnings, delete
     from = await symAt(G1.id);
@@ -294,8 +301,10 @@ async function runProject(PROJECT) {
       sockN > 0 && sockN2 === 0 && symN2 === symN - sockN && symN3 === symN && txt0 === 0 && txt1.includes(G1.id) && txt2.length > txt1.join(' ').length,
       `symbols ${symN} → ${symN2} → ${symN3} (sockets ${sockN} → ${sockN2}); labels ${txt0} → ${txt1.length} ids → ${txt2.length} chars`);
     const snaps = [];
-    for (let i = 0; i < 4; i++) { await click(T('el-tb-snap'), 150); snaps.push((await text(T('el-tb-snap-value'))).trim()); }
-    check('22. snapping from the toolbar: 5 cm → 10 cm → off → 1 cm → 5 cm', snaps.join('|') === '10 cm|off|1 cm|5 cm', snaps.join(' → '));
+    await click(T('el-tb-layers'), 300);
+    for (const v of ['0.1', '0', '0.01', '0.05']) { await click(`${T('el-snap')} [data-value="${v}"]`, 150); snaps.push(await page.evaluate(() => document.querySelector('[data-testid="el-snap"] .on')?.textContent.trim())); }
+    await click(T('el-panel-close'), 200);
+    check('22. snapping in Layers (one place): 10 cm → off → 1 cm → 5 cm', snaps.join('|') === '10 cm|off|1 cm|5 cm', snaps.join(' → '));
 
     // ================================================================== 23. focus on a room, empty room
     // the room is made empty first (its points removed — one history entry each, undone afterwards)
@@ -347,20 +356,19 @@ async function runProject(PROJECT) {
     check('27. eye-level view starts in the current room; back to the plan returns to that room', vw.el === 'walk' && stW.houseView === 'walk' && vb.el === '2d' && stB.houseView === 'interior' && stB.roomId === W.room && (await exists(T('el-plan-svg'))), `${vw.el} (${stW.houseView}) → ${vb.el}; room ${stB.roomId}`);
     await click(T('el-whole-house'), 400);
 
-    // ================================================================== 28–29. "More" form; technical data only in Expert mode
+    // ================================================================== 28–29. "More" form; technical data in a closed box
     await tap(await symAt(G1.id));
     await click(T('el-more'), 300);
-    const form = await text(T('el-form'));
+    const form = await page.$eval(T('el-form'), (e) => { const c = e.cloneNode(true); c.querySelector('[data-testid="expert-details"]')?.remove(); return c.textContent; });
     const setTxt = async (id, v) => { const el = await page.$(T(id)); await el.click({ count: 3 }); await page.keyboard.type(v); await page.keyboard.press('Enter'); await sleep(250); };
     await setTxt('el-label', 'by the desk'); await setTxt('el-circuit', 'C-04');
     const typed = await pt(G1.id);
     check('28. "More": type, label, Smart Home, circuit, notes, status — no technical fields; edits change the same device',
       /Type/.test(form) && /Label/.test(form) && /Smart Home/.test(form) && /Circuit/.test(form) && /Notes/.test(form) && !TECH.test(form) && typed.label === 'by the desk' && typed.circuitLabel === 'C-04' && typed.id === G1.id,
       `${JSON.stringify([typed.label, typed.circuitLabel])}; ${form.replace(/\s+/g, ' ').slice(0, 90)}`);
-    await uiSet({ mode: 'expert' }); await sleep(300);
+    const closed = await page.evaluate(() => document.querySelector('[data-testid="expert-details"]')?.open === false);
     const exJson = await page.evaluate(() => { const d = document.querySelector('[data-testid="expert-details"]'); if (d) d.open = true; return document.querySelector('[data-testid="el-json"]')?.textContent ?? ''; });
-    await uiSet({ mode: 'home' }); await sleep(300);
-    check('29. technical data (wallId, roomId, coordinates) only in Expert mode', /wallId/.test(exJson) && /lcs/.test(exJson) && !(await exists(T('el-json'))), exJson.replace(/\s+/g, ' ').slice(0, 80));
+    check('29. technical data (wallId, roomId, coordinates) in a closed "technical data" box of the card (Electrical is advanced mode)', closed && /wallId/.test(exJson) && /lcs/.test(exJson), exJson.replace(/\s+/g, ' ').slice(0, 80));
     await click(T('el-card-close'), 200);
 
     // ================================================================== 30. site plan (projects with a site only)

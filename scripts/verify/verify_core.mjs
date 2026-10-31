@@ -1,11 +1,13 @@
 // E2E — core flows of the configurator on BOTH example projects (demo-apartment: flat, one level; sample-house: two levels,
 // stairs, site). The same engine code runs both packages; nothing here branches on the project id except the expectations
 // read from the package itself (projects/<id>/project.json).
-// Per project: load via ?project=, generated shell, level section, views from the bottom bar, entering a room by clicking it in
-// the section, furniture select / move / rotate / delete / undo, wall finish, doors open / close, walk (sample-house: up the
-// stairs to the first floor and out of the front door onto the site), variants (new, rename, switch, compare), save → reload.
-// Across projects: isolation of documents and device keys, project switch from Settings, language switch (Polish and back),
-// the project index, a broken package (temporary directory projects/__e2e_broken/, removed in `finally`) → readable error.
+// Per project: load via ?project=, the steps Look · Arrange · Versions, generated shell, views from the scene bar (Around, From
+// above, level chips, places), entering a room by clicking it in the level section, furniture select / move / rotate / delete /
+// undo, colours (the whole room, then one wall), doors open / close, walk (sample-house: up the stairs to the first floor and out
+// of the front door onto the site), versions (new, rename, switch, compare), Download › Print model (the STL inside the zip are
+// the bytes of `npm run project:print`), save → reload. Across projects: isolation of documents and device keys, project switch
+// from the house name, language switch (Polish and back), the project index, a broken package (temporary directory
+// projects/__e2e_broken/, removed in `finally`) → readable error.
 // Both shells run the same scenario: by default the core's manifold solids, with --shell grid the grid shell (?shell=grid, the
 // fallback kept for one release — ADR 0026).
 // Usage: node scripts/verify/verify_core.mjs [--no-build] [--only demo-apartment,sample-house] [--shell core|grid]
@@ -17,6 +19,8 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { launch, ROOT, sleep, startServer, waitForApp } from './browser.mjs';
 import { appKeys, resetOrigin } from './app_data.mjs';
+import { S } from './selectors.mjs';
+import { zipFile, zipNames } from '../usability/lib.mjs';
 
 const arg = (k, d) => { const i = process.argv.indexOf(`--${k}`); return i > 0 ? process.argv[i + 1] : d; };
 const SHELL = arg('shell', 'core') === 'grid' ? 'grid' : 'core', SHELL_Q = SHELL === 'grid' ? '&shell=grid' : '';
@@ -126,19 +130,19 @@ async function runProject(F) {
     await open(F.id);
     page.off('request', onReq);
     const pr = await page.evaluate(() => window.__home.project()), s = await st();
-    const nav = await page.evaluate(() => [...document.querySelectorAll('.hm-nav [data-testid^="nav-"]')].map((b) => [b.dataset.testid.slice(4), b.textContent.trim()]));
+    const nav = await page.evaluate(() => [...document.querySelectorAll('[data-testid="steps"] [data-testid^="step-"]')].map((b) => [b.dataset.testid.slice(5), b.textContent.trim()]));
     check(`[${tag}] ?project=${F.id}: package loaded (id, levels), document title from the manifest`, pr.id === F.id && pr.levels.join() === F.levels.join() && (await page.title()) === `${F.name} — Home Simulator` && s.loaded && !s.dirty,
       `${JSON.stringify(pr)} · "${await page.title()}"`);
-    const wantNav = ['building', 'interiors', 'materials', 'furniture', 'electrical', 'variants'];
-    check(`[${tag}] section navigation from the package capabilities; first section named after the building type ("${EN[`section.building.${F.type}`]}")`,
-      nav.map((n) => n[0]).join() === wantNav.join() && nav[0][1] === EN[`section.building.${F.type}`] && nav[1][1] === EN['section.interiors'] && (await exists(T('section-building'))), nav.map((n) => n.join(':')).join(' '));
+    const wantNav = ['look', 'arrange', 'variants'];
+    check(`[${tag}] three steps from the package capabilities ("${EN['steps.look']}", "${EN['steps.arrange']}", "${EN['steps.variants']}"); Electrical and Expert only in advanced mode`,
+      nav.map((n) => n[0]).join() === wantNav.join() && nav.map((n) => n[1]).join() === wantNav.map((k) => EN[`steps.${k}`]).join() && (await exists(T('section-look'))) && s.mode === 'simple', nav.map((n) => n.join(':')).join(' '));
     const models = reqs.filter((u) => /\.(glb|gltf)$/i.test(u));
     check(`[${tag}] project without model files: no model (GLB) is requested; package fetched from /projects/${F.id}/project.json`, models.length === 0 && reqs.includes(`/projects/${F.id}/project.json`) && reqs.includes('/projects/index.json'), models.join(' ') || `${reqs.length} requests`);
   });
 
   // ---------------------------------------------------------------- generated shell
   await stage(`[${tag}] shell`, async () => {
-    await click(T('cam-overview'), 900); await still();
+    await click(S.view('around'), 900); await still();
     const parts = {};
     // core: one closed solid per level (walls and slabs); grid: walls and slabs as separate meshes
     for (const l of F.levels) parts[l] = SHELL === 'grid'
@@ -154,43 +158,43 @@ async function runProject(F) {
       `${shell.kind} ${shell.status}; ${F.levels.map((l) => `${l}: walls ${parts[l].wall?.tris} tris, frames ${parts[l].frames?.tris}`).join('; ')}; centre ${px.a} vs corner ${px.b}`);
   });
 
-  // ---------------------------------------------------------------- views from the bottom bar
-  await stage(`[${tag}] views`, async () => {
-    const presets = await page.evaluate(() => [...document.querySelectorAll('[data-testid="bottom-house"] [data-testid^="cam-"]')].map((b) => b.dataset.testid.slice(4)));
+  // ---------------------------------------------------------------- views from the scene bar and places in Look
+  await stage(`[${tag}] views and levels`, async () => {
     const cams = {};
-    for (const p of presets) { await click(T(`cam-${p}`), 900); await still(); cams[p] = { cam: await s3('camera'), view: (await st()).houseView, clip: await s3('clipping') }; }
-    const ext = presets.filter((p) => p !== 'interior');
-    const distinct = new Set(ext.map((p) => JSON.stringify(cams[p].cam.position))).size === ext.length;
-    const top = cams.top?.cam;
-    check(`[${tag}] bottom bar views (${presets.join(', ')}): each exterior view moves the camera, "top" looks down, "interior" opens the level section (cut plane)`,
-      presets.includes('interior') && ext.length >= 2 && distinct && ext.every((p) => cams[p].view === 'exterior' && cams[p].clip.length === 0) && (!top || top.dir[2] < -0.8) && cams.interior.view === 'interior' && cams.interior.clip.length === 1,
-      presets.map((p) => `${p}: ${cams[p].view} cam ${cams[p].cam.position} clip ${cams[p].clip}`).join(' · '));
+    const look = async (name) => { await still(); cams[name] = { cam: await s3('camera'), view: (await st()).houseView, clip: await s3('clipping'), level: (await st()).level }; };
+    await click(S.view('above'), 1200); await look('above');
+    await click(S.view('around'), 1200); await look('around');
+    const places = await page.$$eval(`${S.places} [data-testid^="place-"]`, (b) => b.map((x) => x.dataset.testid.slice(6)));
+    const view = places.find((id) => F.p.views?.presets?.some((v) => v.id === id) || ['opposite'].includes(id));
+    if (view) { await click(S.place(view), 1200); await look('place'); }
+    check(`[${tag}] scene bar: Around and From above look at the house from outside (From above looks down); a view in Look › Places moves the camera elsewhere`,
+      cams.around.view === 'exterior' && cams.above.view === 'exterior' && cams.above.cam.dir[2] < -0.8 && cams.around.clip.length === 0 && (!view || (cams.place.view === 'exterior' && JSON.stringify(cams.place.cam.position) !== JSON.stringify(cams.around.cam.position))),
+      Object.entries(cams).map(([k, c]) => `${k}: ${c.view} ${c.cam.position} dir ${c.cam.dir}`).join(' · ') + ` · places ${places.join(',')}`);
+    for (const l of F.levels) { await click(S.level(l), 1200); await look(`level ${l}`); }
+    const lv = F.levels.map((l) => cams[`level ${l}`]);
+    check(`[${tag}] level chips (${F.levels.join(', ')}): the level section of each level (cut plane rising with the level)`,
+      lv.every((c, i) => c.view === 'interior' && c.clip.length === 1 && c.level === F.levels[i] && (i === 0 || c.clip[0] > lv[i - 1].clip[0] + 1)), lv.map((c) => `${c.level}: ${c.view} cut ${c.clip}`).join(' · '));
+    await click(S.view('around'), 900); await still();
   });
 
-  // ---------------------------------------------------------------- level section
-  await stage(`[${tag}] level section`, async () => {
-    await click(T('nav-interiors'), 900); await still();
-    const s = await st(), listed = await page.$$eval(`${T('room-list')} button`, (b) => b.map((x) => x.dataset.testid.slice(5)));
-    const want = F.levelRooms(s.level).map((r) => r.id).sort();
-    const clip = await s3('clipping'), tag0 = await text(T('level-tag'));
+  // ---------------------------------------------------------------- Arrange: choose a room
+  await stage(`[${tag}] arrange`, async () => {
+    await click(S.step('arrange'), 900); await still();
+    const s = await st(), listed = await page.$$eval(`${S.roomPicker} [data-testid^="room-"]`, (b) => b.map((x) => x.dataset.testid.slice(5)).filter((x) => !x.startsWith('plan') && !x.startsWith('picker')));
+    const want = (F.levels.length <= 2 ? F.p.building.rooms.rooms : F.levelRooms(s.level)).map((r) => r.id).sort();
+    const clip = await s3('clipping');
     await shot(`${tag}_02_section`);
-    check(`[${tag}] Interiors: level section of ${s.level} (cut plane), the room list of the level, section tag`,
-      s.section === 'interiors' && s.houseView === 'interior' && (await exists(T('section-interiors'))) && clip.length === 1 && listed.slice().sort().join() === want.join() && !!tag0,
-      `level ${s.level}; cut ${clip}; rooms ${listed.join(',')}; tag "${tag0}"`);
-    if (F.levels.length > 1) {
-      const other = F.levels.find((l) => l !== s.level);
-      await click(`${T('bottom-level')} button[data-value="${other}"]`, 900); await still();
-      const s2 = await st(), listed2 = await page.$$eval(`${T('room-list')} button`, (b) => b.map((x) => x.dataset.testid.slice(5)));
-      const clip2 = await s3('clipping');
-      check(`[${tag}] level switch in the bottom bar: ${s.level} → ${other} — room list and cut height follow the level`,
-        s2.level === other && listed2.slice().sort().join() === F.levelRooms(other).map((r) => r.id).sort().join() && clip2[0] > clip[0] + 1, `cut ${clip} → ${clip2}; rooms ${listed2.join(',')}`);
-      await click(`${T('bottom-level')} button[data-value="${s.level}"]`, 900); await still();
-    }
+    check(`[${tag}] Arrange without a room: the level section (cut plane) and a big button for every room`,
+      s.section === 'arrange' && s.houseView === 'interior' && (await exists(T('section-arrange'))) && clip.length === 1 && listed.slice().sort().join() === want.join(),
+      `level ${s.level}; cut ${clip}; rooms ${listed.join(',')}`);
+    // the level of the room entered next (the level chips in the scene bar)
+    if (s.level !== F.room.level) { await click(S.level(F.room.level), 1200); await still(); }
   });
 
   // ---------------------------------------------------------------- enter a room by clicking it in the section
   await stage(`[${tag}] enter room`, async () => {
     const R = F.room;
+    // a tap on the room in the level section only enters it (also when it lands on furniture) — the next tap selects
     let p = await s3('screenOfRoom', R.id);
     if (!(await onCanvas(p))) { // a label may sit on the room centre: a point a little off the centre
       for (const [dx, dy] of [[0.25, 0.25], [-0.25, 0.25], [0.25, -0.25], [-0.25, -0.25]]) {
@@ -201,16 +205,16 @@ async function runProject(F) {
     await clickAt(p, 1500); await still();
     const s = await st();
     await shot(`${tag}_03_room`);
-    check(`[${tag}] click on the floor of "${R.name}" in the level section enters the room (Interiors, room view, its arrangement)`,
-      s.roomId === R.id && s.section === 'interiors' && (await text(T('room-title'))) === R.name && s.arrangement?.furniture.length > 0, `room ${s.roomId}; title "${await text(T('room-title'))}"; furniture ${s.arrangement?.furniture.length}`);
-    if (s.roomId !== R.id) { await uiSet({ roomId: R.id, level: R.level, section: 'interiors', houseView: 'interior' }); await sleep(1200); await still(); }
+    const back = await text(S.back);
+    check(`[${tag}] click on the floor of "${R.name}" in the level section enters the room (Arrange, its furniture; the scene bar says where: "${back}")`,
+      s.roomId === R.id && s.section === 'arrange' && back?.includes(R.name) && s.arrangement?.furniture.length > 0 && (await exists(S.arrangeTab('furniture'))) && s.selection === null, `room ${s.roomId}; back "${back}"; furniture ${s.arrangement?.furniture.length}; selection ${JSON.stringify(s.selection)}`);
+    if (s.roomId !== R.id) { await uiSet({ roomId: R.id, level: R.level, section: 'arrange', houseView: 'interior' }); await sleep(1200); await still(); }
   });
 
   // ---------------------------------------------------------------- furniture: select / move / rotate / delete / undo
   await stage(`[${tag}] furniture`, async () => {
     const R = F.room;
-    await click(T('nav-furniture'), 600);
-    await click(`${T('bottom-view')} button[data-value="top"]`, 1200); await still();
+    await click(S.view('above'), 1200); await still();
     const s0 = await st();
     // a free-standing item (not wall-mounted, not in a kitchen run) with its centre visible on the canvas
     const pick = ['coffee-table', 'dining-table', 'bed', 'sofa', 'desk'].map((c) => s0.arrangement.furniture.find((f) => f.catalogId === c)).filter(Boolean);
@@ -219,7 +223,7 @@ async function runProject(F) {
     if (!F0) throw new Error(`no free-standing item visible in ${R.id}: ${s0.arrangement.furniture.map((f) => f.catalogId).join(',')}`);
     await clickAt(at, 700);
     const sel = (await st()).selection;
-    check(`[${tag}] click on furniture (${F0.catalogId}) selects it — card in the panel`, sel?.kind === 'furniture' && sel.id === F0.id && (await exists(`${T('inspector')}[data-kind="furniture"]`)), JSON.stringify(sel));
+    check(`[${tag}] click on furniture (${F0.catalogId}) selects it — the card (properties) and the object bar (actions)`, sel?.kind === 'furniture' && sel.id === F0.id && (await exists(`${T('inspector')}[data-kind="furniture"]`)) && (await exists(S.objectBar)) && !(await exists(T('furniture-actions'))), JSON.stringify(sel));
     // move: drag 0.4 m along X of the room (screen vector of a floor step). The card opened with the selection narrows the
     // canvas — the item is located again once the camera has adapted
     await still(); await frames(3);
@@ -234,10 +238,10 @@ async function runProject(F) {
     if ((await st()).selection?.id !== F0.id) await uiSet({ selection: { kind: 'furniture', roomId: R.id, id: F0.id } });
     await key([], 'KeyR');
     const f2 = (await st()).arrangement.furniture.find((f) => f.id === F0.id);
-    await click(T('rot-left'), 400);
+    await click(S.obj('rotate-left'), 400);
     const f3 = (await st()).arrangement.furniture.find((f) => f.id === F0.id);
     const norm = (x) => ((x % 360) + 360) % 360;
-    check(`[${tag}] rotate: key R −90°, panel button +15°`, norm(f2.rot - f1.rot) === 270 && norm(f3.rot - f2.rot) === 15, `${f1.rot}° → ${f2.rot}° → ${f3.rot}°`);
+    check(`[${tag}] turn: key R −90°, object bar "${EN['steps.turnLeft']}" +90°`, norm(f2.rot - f1.rot) === 270 && norm(f3.rot - f2.rot) === 90, `${f1.rot}° → ${f2.rot}° → ${f3.rot}°`);
     const n0 = (await st()).arrangement.furniture.length;
     await key([], 'Delete');
     const s4 = await st();
@@ -246,32 +250,47 @@ async function runProject(F) {
     check(`[${tag}] Delete removes the selected item, Ctrl+Z brings it back where it was`, s4.arrangement.furniture.length === n0 - 1 && !s4.arrangement.furniture.some((f) => f.id === F0.id) && s4.selection === null
       && s5.arrangement.furniture.length === n0 && !!back && back.x === f3.x && back.y === f3.y && back.rot === f3.rot, `${n0} → ${s4.arrangement.furniture.length} → ${s5.arrangement.furniture.length}`);
     F.moved = { id: F0.id, x: f3.x, y: f3.y, rot: f3.rot };
-    await uiSet({ selection: null });
-    await click(`${T('bottom-view')} button[data-value="3d"]`, 1200); await still();
+    if (await exists(S.objectBar)) await click(S.obj('done'), 400); else await uiSet({ selection: null });
+    await click(S.view('around'), 1200); await still();
   });
 
-  // ---------------------------------------------------------------- wall finish (Materials)
-  await stage(`[${tag}] materials`, async () => {
-    await click(T('nav-materials'), 700);
-    const walls = await page.$$eval(`${T('section-materials')} button[data-testid^="wall-"]`, (b) => b.map((x) => x.dataset.testid).filter((x) => /^wall-\d+$/.test(x)));
-    await click(T(walls[0]), 600);
-    const sel = (await st()).selection;
-    const mats = await page.$$eval(`${T('inspector')} ${T('materials')} button`, (b) => b.map((x) => ({ id: x.dataset.testid, on: x.classList.contains('on') })));
-    const m = mats.find((x) => !x.on);
-    await click(T(m.id), 800);
-    const fin = (await st()).arrangement.finishes;
-    const want = m.id.slice(4);
-    check(`[${tag}] Materials: wall picked from the room's wall list, a material from the card is applied to that wall only`,
-      sel?.kind === 'wall' && fin.walls?.[sel.wallId]?.materialId === want && Object.keys(fin.walls).length === 1, `${walls.length} walls; ${sel?.wallId}: ${fin.walls?.[sel?.wallId]?.materialId} (picked ${want})`);
-    F.wall = { id: sel?.wallId, material: want };
+  // ---------------------------------------------------------------- colours: the whole room, then one wall
+  await stage(`[${tag}] colours`, async () => {
+    const R = F.room;
+    await click(S.arrangeTab('colours'), 700);
+    const s0 = await st();
+    const sw = await page.$$eval(`${S.palette} [data-testid="paint-colors"] button.hm-sw`, (b) => b.filter((x) => !x.classList.contains('on')).map((x) => x.dataset.hex));
+    await click(`${S.palette} [data-testid="paint-colors"] button[data-hex="${sw[1]}"]`, 800);
+    const fin0 = (await st()).arrangement.finishes;
+    check(`[${tag}] Colours: the tab opens on the walls of the whole room ("${EN['steps.walls']}"); a palette colour paints every wall of the room`,
+      s0.selection === null && (await text(T('surface-walls'))) === EN['steps.walls'] && Object.keys(fin0.walls).length >= 3 && Object.values(fin0.walls).every((f) => f.color?.toLowerCase() === sw[1].toLowerCase()), `${Object.keys(fin0.walls).length} walls ${Object.values(fin0.walls).map((f) => f.color).join(',')}`);
+    // one wall: a click on a wall in the scene chooses it ("This wall"), a material goes on that wall only
+    let picked = null;
+    for (const wallId of Object.keys(fin0.walls)) {
+      for (const [h, t] of [[1.3, 0.5], [1.0, 0.3], [1.6, 0.7]]) {
+        const q = await s3('screenOfWall', wallId, h, t);
+        if (!(await onCanvas(q))) continue;
+        await clickAt(q, 700);
+        const sel = (await st()).selection;
+        if (sel?.kind === 'wall' && (await text(`${T('surface-walls')}`)) === EN['steps.thisWall']) { picked = sel.wallId; break; }
+      }
+      if (picked) break;
+    }
+    if (!picked) { const w0 = Object.keys(fin0.walls)[0]; await uiSet({ selection: { kind: 'wall', roomId: R.id, wallId: w0 }, wallScope: 'one' }); picked = w0; await sleep(500); }
+    await click(T('mcat-wallpaper'), 500);
+    const mats = await page.$$eval(`${T('materials')} button[data-testid^="mat-"]`, (b) => b.map((x) => x.dataset.testid));
+    await click(T(mats[0]), 800);
+    const fin = (await st()).arrangement.finishes, want = mats[0].slice(4);
+    check(`[${tag}] Colours: a click on a wall in the scene chooses that wall ("${EN['steps.thisWall']}"); a wallpaper goes on that wall only`,
+      fin.walls?.[picked]?.materialId === want && Object.entries(fin.walls).filter(([id]) => id !== picked).every(([, f]) => f.color?.toLowerCase() === sw[1].toLowerCase()), `${picked}: ${fin.walls?.[picked]?.materialId} (picked ${want})`);
+    F.wall = { id: picked, material: want };
     await shot(`${tag}_04_wall`);
-    await uiSet({ selection: null });
+    await click(S.arrangeTab('furniture'), 500);
   });
 
   // ---------------------------------------------------------------- doors
   await stage(`[${tag}] doors`, async () => {
     const D = F.door, R = F.room;
-    await click(T('nav-interiors'), 500);
     // camera inside the room, looking at the door from 2.5 m
     const c = [(D.opening.along === 'Y' ? (D.opening.faces[0] + D.opening.faces[1]) / 2 : (D.opening.from + D.opening.to) / 2), (D.opening.along === 'Y' ? (D.opening.from + D.opening.to) / 2 : (D.opening.faces[0] + D.opening.faces[1]) / 2)];
     const rc = [(R.bbox[0] + R.bbox[2]) / 2, (R.bbox[1] + R.bbox[3]) / 2], dl = Math.hypot(rc[0] - c[0], rc[1] - c[1]);
@@ -303,9 +322,9 @@ async function runProject(F) {
   // ---------------------------------------------------------------- walk
   await stage(`[${tag}] walk`, async () => {
     await uiSet({ roomId: null, selection: null }); await sleep(500);
-    await click(T('nav-building'), 600);
-    const vps = await page.$$eval(`${T('viewpoints')} button`, (b) => b.map((x) => x.dataset.testid));
-    await click(T('walk-start'), 2500);
+    await click(S.step('look'), 600);
+    const vps = await page.$$eval(`${S.places} [data-testid^="place-vp"]`, (b) => b.map((x) => x.dataset.testid));
+    await click(S.view('walk'), 2500);
     const w0 = await waitFor(async () => { const w = await s3('walk'); return w.on && w.place ? w : null; }, 20000);
     const p0 = w0?.p;
     // W held until the walk has moved (frames are slower when several tests share the machine)
@@ -314,7 +333,7 @@ async function runProject(F) {
     await page.keyboard.up('KeyW'); await sleep(400);
     const w1 = await s3('walk');
     await shot(`${tag}_06_walk`);
-    check(`[${tag}] walk: "Start walk" → eye-level walk mode, the place is shown; W walks forward`, (await st()).houseView === 'walk' && !!w0 && Math.hypot(w1.p[0] - p0[0], w1.p[1] - p0[1]) > 0.3 && !!(await text(T('walk-place'))),
+    check(`[${tag}] walk: "${EN['steps.walk']}" in the scene bar → eye-level walk mode, the place is shown; W walks forward`, (await st()).houseView === 'walk' && !!w0 && Math.hypot(w1.p[0] - p0[0], w1.p[1] - p0[1]) > 0.3 && !!(await text(T('walk-place'))),
       `start ${w0?.place} (${p0}) → ${w1.place} (${w1.p}); viewpoints ${vps.join(',')}`);
     // walking to a pose: walkGo command, keys held until a condition holds (or a timeout)
     const goTo = async (p, z, yaw) => {
@@ -364,35 +383,63 @@ async function runProject(F) {
         await page.evaluate((id) => window.__home.doors.open(id, 0), D.id);
       }
     }
-    await click(T('bottom-walk-exit'), 1200);
-    check(`[${tag}] walk exit returns to the building view`, (await st()).houseView === 'exterior' && !(await s3('walk')).on, (await st()).houseView);
+    await click(S.view('around'), 1200);
+    check(`[${tag}] "${EN['steps.around']}" ends the walk: the house from outside`, (await st()).houseView === 'exterior' && !(await s3('walk')).on, (await st()).houseView);
+    if (vps.length) {
+      await click(T(vps[0]), 2500);
+      const w = await waitFor(async () => { const x = await s3('walk'); return x.on && x.place ? x : null; }, 20000);
+      check(`[${tag}] Look › Places: a walk place starts the walk there`, !!w && (await st()).houseView === 'walk', `${vps[0]} → ${w?.place}`);
+      await click(S.view('around'), 1200);
+    }
   });
 
-  // ---------------------------------------------------------------- variants
-  await stage(`[${tag}] variants`, async () => {
-    await click(T('nav-variants'), 700);
+  // ---------------------------------------------------------------- versions
+  await stage(`[${tag}] versions`, async () => {
+    await click(S.step('variants'), 700);
     const v0 = await page.evaluate(() => window.__home.variants());
-    await click(T('variant-new'), 400);
-    await page.type(T('variant-new-name'), 'Variant B'); await page.keyboard.press('Enter'); await sleep(1200);
+    check(`[${tag}] Versions: one card, no Save buttons (saved automatically), nothing to compare yet`, v0.list.length === 1 && (await exists(S.version(v0.list[0].name))) && !(await exists(T('variant-save'))) && !(await exists(S.compare)), v0.list.map((v) => v.name).join());
+    await click(S.versionNew, 1200);
     const v1 = await page.evaluate(() => window.__home.variants());
-    const nb = v1.list.find((v) => v.name === 'Variant B');
-    check(`[${tag}] variants: "New" creates a variant with the given name and makes it active`, v1.list.length === v0.list.length + 1 && !!nb && v1.active === nb.id, v1.list.map((v) => v.name).join(' / '));
-    await click(T('variant-rename'), 400);
-    await page.click(T('variant-name'), { count: 3 }); await page.keyboard.type('Variant B2'); await page.keyboard.press('Enter'); await sleep(800);
+    const nb = v1.list.find((v) => !v0.list.some((x) => x.id === v.id));
+    check(`[${tag}] "${EN['steps.newVersion']}" makes a copy named "${EN['actions.versionName'].replace('{n}', '2')}" and makes it active; the version left keeps its picture`,
+      v1.list.length === 2 && nb?.name === EN['actions.versionName'].replace('{n}', '2') && v1.active === nb.id && v1.list[0].thumb > 0, v1.list.map((v) => `${v.name} thumb ${v.thumb}`).join(' / '));
+    await click(S.versionMore(nb.name), 400);
+    await click(S.versionRename, 400);
+    await page.click(S.versionName, { count: 3 }); await page.keyboard.type('Version B2'); await page.keyboard.press('Enter'); await sleep(800);
     const v2 = await page.evaluate(() => window.__home.variants());
-    check(`[${tag}] rename: the active variant gets the new name`, v2.list.find((v) => v.id === nb?.id)?.name === 'Variant B2' && (await exists(T('variant-Variant B2'))), v2.list.map((v) => v.name).join(' / '));
+    check(`[${tag}] ⋯ › Rename: the version gets the new name`, v2.list.find((v) => v.id === nb?.id)?.name === 'Version B2' && (await exists(S.version('Version B2'))), v2.list.map((v) => v.name).join(' / '));
     const first = v2.list[0];
-    await click(T(`variant-${first.name}`), 1800); await still();
+    await click(S.version(first.name), 1800); await still();
     const v3 = await page.evaluate(() => window.__home.variants()), s3x = await st();
-    check(`[${tag}] switch: clicking the "${first.name}" card activates it (brand line shows its name)`, v3.active === first.id && s3x.variant === first.name, `active ${v3.active} (${s3x.variant})`);
-    await click(T('compare-start'), 2500);
+    check(`[${tag}] switch: clicking the "${first.name}" card activates it`, v3.active === first.id && s3x.variant === first.name, `active ${v3.active} (${s3x.variant})`);
+    await click(S.compare, 2500);
     const cmp = await page.evaluate(() => ({ c: window.__home.variants().compare, bar: !!document.querySelector('[data-testid="compare"], [data-testid="compare-bar"]'), sides: ['SIDE_A', 'SIDE_B'].map((n) => !!window.__homeScene.getObjectByName(n)) }));
     await shot(`${tag}_09_compare`);
-    const exitSel = (await exists(T('compare-exit'))) ? T('compare-exit') : T('compare-stop');
-    await click(exitSel, 1200);
+    await click(S.compareExit, 1200);
     const after = await page.evaluate(() => window.__home.variants().compare);
-    check(`[${tag}] compare A | B: two variants side by side (both sides in the scene), exit ends the comparison`, cmp.c?.kind === 'variants' && cmp.c.a !== cmp.c.b && cmp.bar && cmp.sides.every(Boolean) && after === null, JSON.stringify(cmp));
+    check(`[${tag}] "${EN['steps.compare']}" with two versions: both side by side (both sides in the scene), exit ends the comparison`, cmp.c?.kind === 'variants' && cmp.c.a !== cmp.c.b && cmp.bar && cmp.sides.every(Boolean) && after === null, JSON.stringify(cmp));
     F.variants = v3.list.map((v) => v.name);
+  });
+
+  // ---------------------------------------------------------------- Download › Print model: the CLI's STL bytes
+  await stage(`[${tag}] print model`, async () => {
+    const dl = mkdtempSync(join(tmpdir(), `home-sim-e2e-dl-${NAME}-`)), cli = mkdtempSync(join(tmpdir(), `home-sim-e2e-print-${NAME}-`));
+    try {
+      const cdp = await page.createCDPSession();
+      await cdp.send('Page.setDownloadBehavior', { behavior: 'allow', downloadPath: dl });
+      await click(S.download, 300);
+      const menu = await page.$$eval(`${T('download-menu')} button`, (b) => b.map((x) => x.dataset.testid));
+      await click(S.downloadPrint, 300);
+      const zip = await waitFor(async () => readdirSync(dl).find((f) => f.endsWith('.zip')), 120000, 500);
+      await sleep(500);
+      execSync(`node scripts/project/print.mjs projects/${F.id} --bed 220x220x250 --out ${JSON.stringify(cli)}`, { cwd: ROOT, stdio: 'ignore' });
+      const buf = zip ? readFileSync(join(dl, zip)) : Buffer.alloc(0), names = zip ? zipNames(buf) : [];
+      const stl = names.filter((n) => n.endsWith('.stl')), cliStl = readdirSync(cli).filter((f) => f.endsWith('.stl')).sort();
+      const same = stl.length > 0 && stl.slice().sort().join() === cliStl.join() && stl.every((n) => zipFile(buf, n).equals(readFileSync(join(cli, n))));
+      check(`[${tag}] Download menu (Picture, Print model; no project file in simple mode); "${EN['steps.downloadPrint']}" saves <project>-print-1to<N>.zip whose STL parts are the bytes of npm run project:print (220 × 220 × 250 mm)`,
+        menu.join() === 'download-picture,download-print' && !!zip && /-print-1to\d+\.zip$/.test(zip) && names.includes('print-report.json') && same,
+        `menu ${menu.join(',')}; ${zip}: ${names.join(', ')}; CLI ${cliStl.join(', ')}; same bytes ${same}`);
+    } finally { rmSync(dl, { recursive: true, force: true }); rmSync(cli, { recursive: true, force: true }); }
   });
 
   // ---------------------------------------------------------------- save → reload
@@ -405,17 +452,17 @@ async function runProject(F) {
     const v0 = doc?.variants?.find((v) => v.id === doc.activeVariantId) ?? doc?.variants?.[0];
     const fm = v0?.interiors?.[F.room.id]?.arrangements?.flatMap((a) => a.furniture ?? []).find((f) => f.id === F.moved?.id);
     check(`[${tag}] Ctrl+S: document saved to $userdata/${F.id}/document.json — project id, variants, moved furniture and wall finish; the other project's file untouched`,
-      doc?.projectId === F.id && doc.variants.map((v) => v.name).join() === F.variants.join() && !!fm && near(fm.x, F.moved.x, 1e-6) && fm.rot === F.moved.rot && sha(docFile(other)) === otherSha && (await text(T('save'))) === EN['shell.saved'],
-      `${docFile(F.id).replace(UD, '$userdata')}: ${doc?.projectId}, variants ${doc?.variants?.map((v) => v.name).join(' / ')}; furniture ${fm && `${fm.x};${fm.y} ${fm.rot}°`}; button "${await text(T('save'))}"`);
+      doc?.projectId === F.id && doc.variants.map((v) => v.name).join() === F.variants.join() && !!fm && near(fm.x, F.moved.x, 1e-6) && fm.rot === F.moved.rot && sha(docFile(other)) === otherSha && (await text(S.save)) === EN['steps.save.saved'],
+      `${docFile(F.id).replace(UD, '$userdata')}: ${doc?.projectId}, variants ${doc?.variants?.map((v) => v.name).join(' / ')}; furniture ${fm && `${fm.x};${fm.y} ${fm.rot}°`}; status "${await text(S.save)}"`);
     await open(F.id);
-    await uiSet({ roomId: F.room.id, level: F.room.level, section: 'interiors', houseView: 'interior' }); await sleep(1200);
+    await uiSet({ roomId: F.room.id, level: F.room.level, section: 'arrange', houseView: 'interior' }); await sleep(1200);
     const s = await st(), v = await page.evaluate(() => window.__home.variants());
     const f = s.arrangement.furniture.find((x) => x.id === F.moved?.id);
     check(`[${tag}] reload: variants, furniture position / rotation and the wall finish come back from the file; nothing unsaved`,
       v.list.map((x) => x.name).join() === F.variants.join() && !!f && f.x === F.moved.x && f.rot === F.moved.rot && s.arrangement.finishes.walls?.[F.wall?.id]?.materialId === F.wall?.material && !s.dirty,
       `variants ${v.list.map((x) => x.name).join(' / ')}; ${f && `${f.x};${f.y} ${f.rot}°`}; wall ${F.wall?.id} ${s.arrangement.finishes.walls?.[F.wall?.id]?.materialId}`);
     F.saved = sha(docFile(F.id));
-    await uiSet({ roomId: null, section: 'building' });
+    await uiSet({ roomId: null, section: 'look' });
   });
 }
 
@@ -438,21 +485,20 @@ try {
     const scopedA = keys.filter((k) => k.endsWith(`:${A.id}`)), scopedB = keys.filter((k) => k.endsWith(`:${B.id}`));
     const idb = await page.evaluate(() => new Promise((ok) => { const r = indexedDB.open('home-simulator'); r.onsuccess = () => { const db = r.result; try { const q = db.transaction('project').objectStore('project').getAllKeys(); q.onsuccess = () => { ok(q.result); db.close(); }; } catch { ok([]); db.close(); } }; r.onerror = () => ok(null); }));
     check('isolation: each project has its own document file (own project id, own variants); saving the second did not change the first',
-      docA?.projectId === A.id && docB?.projectId === B.id && sha(docFile(A.id)) === A.saved && !docB.variants.some((v) => v.name === 'Variant B2' && !B.variants.includes(v.name)) && JSON.stringify(Object.keys(docB.variants[0].interiors ?? {})).indexOf(A.room.id) < 0,
+      docA?.projectId === A.id && docB?.projectId === B.id && sha(docFile(A.id)) === A.saved && !docB.variants.some((v) => v.name === 'Version B2' && !B.variants.includes(v.name)) && JSON.stringify(Object.keys(docB.variants[0].interiors ?? {})).indexOf(A.room.id) < 0,
       `${A.id}: ${docA?.variants?.length} variants; ${B.id}: ${docB?.variants?.length} variants; first file unchanged: ${sha(docFile(A.id)) === A.saved}`);
     check('isolation: device storage keys are scoped by project (localStorage ":<id>", IndexedDB record per project)',
       scopedA.length > 0 && scopedB.length > 0 && Array.isArray(idb) && idb.some((k) => String(k).endsWith(`:${A.id}`)) && idb.some((k) => String(k).endsWith(`:${B.id}`)), `localStorage: ${keys.join(' ')}; IndexedDB: ${JSON.stringify(idb)}`);
   });
 
-  // ================================================================== project switch from Settings
+  // ================================================================== project switch from the house name
   await stage('project switch', async () => {
     await open('sample-house');
-    await click(T('settings'), 600);
-    const opts = await page.$$eval(`${T('project-select')} option`, (o) => o.map((x) => x.value));
-    await Promise.all([page.waitForNavigation({ waitUntil: 'load', timeout: 60000 }), page.select(T('project-select'), 'demo-apartment')]);
+    const opts = await page.$$eval(`${S.project} option`, (o) => o.map((x) => x.value));
+    await Promise.all([page.waitForNavigation({ waitUntil: 'load', timeout: 60000 }), page.select(S.project, 'demo-apartment')]);
     await ready(); await sleep(800);
     const pr = await page.evaluate(() => window.__home.project()), v = await page.evaluate(() => window.__home.variants());
-    check('Settings → Project: lists the installed projects; choosing another reloads the app on it (?project= in the URL) with its saved state',
+    check('the house name ▾ (more than one project installed): lists the installed projects; choosing another reloads the app on it (?project= in the URL) with its saved state',
       opts.includes('demo-apartment') && opts.includes('sample-house') && pr.id === 'demo-apartment' && new URL(page.url()).searchParams.get('project') === 'demo-apartment' && v.list.length === (readDoc('demo-apartment')?.variants.length ?? 1),
       `options ${opts.join(', ')} → ${pr.id}; ${page.url().replace(BASE, '')}; variants ${v.list.length}`);
     // a new tab without the parameter opens the project chosen last on the device
@@ -460,24 +506,24 @@ try {
     await tab.goto(`${BASE}/?onboarding=off`, { waitUntil: 'load' }); await ready(tab);
     const last = await tab.evaluate(() => window.__home.project().id);
     await tab.close(); await page.bringToFront();
-    check('the project chosen in Settings is remembered on the device (a new tab without ?project= opens it)', last === 'demo-apartment', last);
+    check('the project chosen is remembered on the device (a new tab without ?project= opens it)', last === 'demo-apartment', last);
   });
 
   // ================================================================== language
   await stage('language', async () => {
     await open('demo-apartment');
-    await click(T('settings'), 600);
-    await Promise.all([page.waitForNavigation({ waitUntil: 'load', timeout: 60000 }), page.select(T('language-select'), 'pl')]);
+    await click(S.settings, 600);
+    await Promise.all([page.waitForNavigation({ waitUntil: 'load', timeout: 60000 }), click(S.language('pl'), 0)]);
     await ready(); await sleep(800);
-    const pl = await page.evaluate(() => ({ lang: document.documentElement.lang, nav: document.querySelector('[data-testid="nav-interiors"]')?.textContent.trim(), b: document.querySelector('[data-testid="nav-building"]')?.textContent.trim(), save: document.querySelector('[data-testid="save"]')?.textContent.trim() }));
+    const pl = await page.evaluate(() => ({ lang: document.documentElement.lang, a: document.querySelector('[data-testid="step-arrange"]')?.textContent.trim(), l: document.querySelector('[data-testid="step-look"]')?.textContent.trim(), save: document.querySelector('[data-testid="save"]')?.textContent.trim() }));
     await shot('lang_pl');
-    check(`language switch (Settings → Language → Polski): the page reloads in Polish — "${PL['section.interiors']}", "${PL['section.building.apartment']}", "${PL['shell.saved']}"`,
-      pl.lang === 'pl' && pl.nav === PL['section.interiors'] && pl.b === PL['section.building.apartment'] && pl.save === PL['shell.saved'] && PL['section.interiors'] !== EN['section.interiors'], JSON.stringify(pl));
-    await click(T('settings'), 600);
-    await Promise.all([page.waitForNavigation({ waitUntil: 'load', timeout: 60000 }), page.select(T('language-select'), 'en')]);
+    check(`language switch (Settings → Language: two buttons → Polski): the page reloads in Polish — "${PL['steps.arrange']}", "${PL['steps.look']}", "${PL['steps.save.saved']}"`,
+      pl.lang === 'pl' && pl.a === PL['steps.arrange'] && pl.l === PL['steps.look'] && pl.save === PL['steps.save.saved'] && PL['steps.arrange'] !== EN['steps.arrange'], JSON.stringify(pl));
+    await click(S.settings, 600);
+    await Promise.all([page.waitForNavigation({ waitUntil: 'load', timeout: 60000 }), click(S.language('en'), 0)]);
     await ready(); await sleep(500);
-    const en = await page.evaluate(() => ({ lang: document.documentElement.lang, nav: document.querySelector('[data-testid="nav-interiors"]')?.textContent.trim() }));
-    check('…and back to English ("Interiors")', en.lang === 'en' && en.nav === EN['section.interiors'], JSON.stringify(en));
+    const en = await page.evaluate(() => ({ lang: document.documentElement.lang, a: document.querySelector('[data-testid="step-arrange"]')?.textContent.trim() }));
+    check(`…and back to English ("${EN['steps.arrange']}")`, en.lang === 'en' && en.a === EN['steps.arrange'], JSON.stringify(en));
   });
 
   // ================================================================== broken package → readable error

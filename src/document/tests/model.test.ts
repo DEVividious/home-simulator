@@ -22,7 +22,7 @@ const withRoom = (doc: ConfiguratorDoc): ConfiguratorDoc => {
 describe('variants', () => {
   it('createVariant: empty interiors (filled lazily per room), given id and name; default name translated', () => {
     expect(createVariant('Mine', 'v-1')).toEqual({ id: 'v-1', name: 'Mine', interiors: {} });
-    expect(createVariant().name).toBe('New variant');
+    expect(createVariant().name).toBe('New version');
     expect(createVariant().id).not.toBe(createVariant().id);
     expect(newVariantId()).toMatch(/^v-/);
   });
@@ -45,7 +45,7 @@ describe('document JSON', () => {
     const d = defaultDoc();
     expect([d.schema, d.version, d.projectId]).toEqual([DOC_SCHEMA, DOC_VERSION, 'demo-apartment']);
     expect([DOC_SCHEMA, DOC_VERSION]).toEqual(['home-simulator/document', 1]);
-    expect(d.variants.map((v) => [v.id, v.name])).toEqual([['v-default', 'Project defaults']]);
+    expect(d.variants.map((v) => [v.id, v.name])).toEqual([['v-default', 'Version 1']]);
     expect(d.activeVariantId).toBe('v-default');
     expect(docErrors(d)).toEqual([]);
   });

@@ -16,7 +16,9 @@ const SKIP_DIRS = new Set(['node_modules', 'dist', 'build', '.git', '__pycache__
 const TEXT = /\.(ts|tsx|js|mjs|cjs|json|webmanifest|svg|md|mdc|html|css|py|sh|txt|ya?ml|tsv)$|(^|\/)(LICENSE|\.gitignore)$/i;
 const SELF = path.relative(ROOT, new URL(import.meta.url).pathname);
 /** files allowed to contain Polish text */
-const POLISH_OK = (rel) => /^src\/i18n\/pl\/[^/]+\.json$/.test(rel);
+// beyond the dictionaries: the language rules (the Polish forbidden words) and the usability data (Polish personas and the
+// task goals in each persona's language) — language data by nature
+const POLISH_OK = (rel) => /^src\/i18n\/pl\/[^/]+\.json$/.test(rel) || ['src/home/ui/language.json', 'scripts/usability/personas.json', 'scripts/usability/tasks.json'].includes(rel);
 
 // Each rule: name, regex — generic shapes of the source building's identifiers (no facts about it).
 const RULES = [

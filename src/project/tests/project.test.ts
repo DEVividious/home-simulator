@@ -179,13 +179,15 @@ describe('package validation', () => {
     expect(validateProject({ ...p, assets: { model: 'model/building.glb' } })).toEqual([]);
   });
 
-  it('unknown capability is a package error; capabilities drive the UI sections', () => {
-    const ids = (p: ProjectPackage) => withProject(p, () => sections().map((x) => x.id));
-    expect(ids(demo)).toEqual(['building', 'interiors', 'materials', 'furniture', 'electrical', 'variants']);
-    expect(ids(house)).toEqual(['building', 'interiors', 'materials', 'furniture', 'electrical', 'variants']);
+  it('unknown capability is a package error; capabilities drive the UI steps (Electrical and Expert only in advanced mode)', () => {
+    const ids = (p: ProjectPackage, mode: 'simple' | 'advanced' = 'simple') => withProject(p, () => sections(mode).map((x) => x.id));
+    expect(ids(demo)).toEqual(['look', 'arrange', 'variants']);
+    expect(ids(house)).toEqual(['look', 'arrange', 'variants']);
+    expect(ids(house, 'advanced')).toEqual(['look', 'arrange', 'variants', 'electrical', 'expert']);
     const p = clone(demo);
     p.manifest.capabilities = ['interiors', 'walk'];
-    expect(ids(p)).toEqual(['building', 'interiors', 'materials', 'furniture']);
+    expect(ids(p)).toEqual(['look', 'arrange']);
+    expect(ids(p, 'advanced')).toEqual(['look', 'arrange', 'expert']);
     expect(withProject(p, () => [hasCapability('electrical'), hasCapability('walk')])).toEqual([false, true]);
     expect(withProject(p, () => sections()[0].label)).toBe(withProject(demo, () => sections()[0].label));
     p.manifest.capabilities = ['interiors', 'teleport' as never];

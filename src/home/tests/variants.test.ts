@@ -199,7 +199,7 @@ describe('A / B comparison sides', () => {
   });
   it('comparing variants: sides A and B with the data of the chosen variants; an unknown variant — no comparison', () => {
     const s = sidesOf(twoVariants(), { kind: 'variants', a: 'v-b', b: 'v-default' });
-    expect(s.map((x) => [x.id, x.variant.id, x.label])).toEqual([['A', 'v-b', 'Variant B'], ['B', 'v-default', 'Project defaults']]);
+    expect(s.map((x) => [x.id, x.variant.id, x.label])).toEqual([['A', 'v-b', 'Variant B'], ['B', 'v-default', 'Version 1']]);
     expect(s[0].interiors.R2.arrangements[0].name).toBe('Study B');
     expect(sidesOf(twoVariants(), { kind: 'variants', a: 'v-b', b: 'gone' }).map((x) => x.id)).toEqual(['A']);
   });

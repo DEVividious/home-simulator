@@ -58,7 +58,7 @@ export function HouseLayer({ data, mode }: { data: SceneData; mode: SceneMode })
   const { model, site, environment } = data.assets;
   useEffect(() => { if (model) shellStatus.set({ kind: 'model', status: 'ready', error: null }); }, [model]);
   const sides = useSides();
-  const isExpert = useUi((s) => s.mode === 'expert');
+  const isExpert = useUi((s) => s.mode === 'advanced');
   const envEnabled = useUi((s) => s.environment) || mode.environment;
   const ex = useUi((s) => s.expert);
   const selection = useUi((s) => s.selection);

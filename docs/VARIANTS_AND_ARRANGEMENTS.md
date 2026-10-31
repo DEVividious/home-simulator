@@ -1,7 +1,8 @@
 # Variants and arrangements
 
-A **variant** is a complete version of the user's design of a project; an **arrangement** is one furnishing of one room
-inside a variant. Both live in the user document (`home-simulator/document` v1, `userdata/<id>/document.json`) and
+A **variant** is a complete version of the user's design of a project — the UI calls it a **version** (the **Versions** step);
+an **arrangement** is one furnishing of one room inside a variant (advanced mode only — for everyone else the alternative is
+another version). Both live in the user document (`home-simulator/document` v1, `userdata/<id>/document.json`) and
 never change the project package: the building geometry, plot and surroundings are the same in every variant. Variants are a
 project capability (`variants`).
 
@@ -11,13 +12,13 @@ project capability (`variants`).
 
 | Group | Content | Field | Edited in |
 |---|---|---|---|
-| interiors | room arrangements: furniture (rugs are furniture too), wall / floor / ceiling finishes | `interiors` | Interiors / Materials / Furniture |
+| interiors | room arrangements: furniture (rugs are furniture too), wall / floor / ceiling finishes | `interiors` | Arrange › Furniture / Colours |
 | stairs | finishes of the stairs: treads, risers, handrail, balustrade (project with stairs) | `stairs` | stairs card ([WALK_AND_STAIRS.md](WALK_AND_STAIRS.md)) |
 | electrical | own electrical layout, when split from the global plan | `electrical` | Electrical → "Plan scope" ([ELECTRICAL_PLANNER.md](ELECTRICAL_PLANNER.md)) |
-| view | camera (position, target), FOV, surroundings on / off | `view` `{ position, target, fov, environment }` | "Save" in Variants |
-| sun | date and time of the sun simulation (project with the `sun` module) | `sun` `{ date, minutes }` | "Save" (from the sun panel) |
-| thumbnail | JPEG 320 × 200 (data URL) | `thumbnail` | "Save" / "Save as…" |
-| saved at | ISO 8601 | `updatedAt` | "Save" |
+| view | camera (position, target), FOV, surroundings on / off | `view` `{ position, target, fov, environment }` | stored automatically when the version is left |
+| sun | date and time of the sun simulation (project with the `sun` module) | `sun` `{ date, minutes }` | Look › Time of day; stored with the view |
+| thumbnail | JPEG 320 × 200 (data URL) | `thumbnail` | stored with the view |
+| saved at | ISO 8601 | `updatedAt` | stored with the view |
 
 Every field except `id`, `name` and `interiors` is optional; a missing view or sun means "current". Exterior joinery, facade
 materials and outdoor elements are not part of the engine and therefore not part of a variant.
@@ -25,29 +26,31 @@ materials and outdoor elements are not part of the engine and therefore not part
 **Validation** runs with the document (`variantExtrasErrors` in `docErrors`): stairs config, electrical plan, FOV 10–120°,
 date `YYYY-MM-DD`, minutes 0–1439, thumbnail as an image data URL (≤ 300 kB). The save server applies the same validation.
 
-## 2. Variant operations (Variants section)
+## 2. Version operations (the Versions step)
+
+There is no Save button (autosave only): **switching versions stores the current view** (camera, FOV, surroundings), the **sun
+date and time** and a **thumbnail** (crop of the current image) in the version that is left — in the same history entry as the
+switch.
 
 | Operation | Effect |
 |---|---|
-| **New** | a new variant with the given name: interiors empty (the project default furnishing), stairs bare; becomes active |
-| **Save** | stores the **current view** (camera, FOV, surroundings), the **sun date and time** and a **thumbnail** (crop of the current image) in the active variant, then saves the document |
-| **Save as…** | copy of the active variant under a new (unique) name, with the current view, sun and thumbnail; becomes active; document saved |
-| **Duplicate** | copy of the active variant ("<name> (copy)"), active |
-| **Rename** | name of the active variant |
-| **Delete** | the active variant (when there is more than one) |
-| **Restore project settings** | the active variant returns to the package state (empty interiors, bare stairs, no view, no sun); its own electrical layout is kept |
-| **Restore project furniture** | the active arrangement of every room gets the project default furnishing; finishes, saved arrangements and the rest stay |
+| **New version** | a copy of the current design named "Version N" (the next free number); becomes active; the version left keeps its view and thumbnail |
+| ⋯ › **Rename** | name of that version (unique: "(2)" is added to a name already used) |
+| ⋯ › **Start over** | that version returns to the package state (empty interiors, bare stairs, no view, no sun); its own electrical layout is kept |
+| ⋯ › **Delete** | that version (when there is more than one) |
+| **Compare** | with two versions: compares them; with more: the next card clicked is compared with the active one |
+| Settings › Files › **Restore project furniture** (advanced) | the active arrangement of every room gets the project default furnishing; finishes, saved arrangements and the rest stay |
 
-Every operation is **one history entry** (Undo / Redo). The variant list shows cards with the **thumbnail**, name, number of
-furnished rooms, saved time of day and save time; a variant without a saved view shows "no thumbnail — Save".
+Every operation is **one history entry** (Undo / Redo). The version list shows a card with the **thumbnail** and the name of
+each version; the active version's card shows the scene as it is now.
 
-**Selecting a variant** (click a card) switches the interiors in the scene, restores the saved **sun** and **surroundings**, and
-in the building view from outside also the variant's **camera**. In a room or a level section the camera stays, so the user is
+**Selecting a version** (click a card) switches the interiors in the scene, restores the saved **sun** and **surroundings**, and
+in the building view from outside also the version's **camera**. In a room or a level section the camera stays, so the user is
 not pulled out of editing.
 
 ## 3. A/B comparison
 
-Variants → "Compare A / B": choose variants A and B, then "Compare (split screen)".
+Versions → **Compare** (see above).
 
 - **One canvas, two render passes** (`SplitRenderer`, `src/home/scene/CompareRenderer.tsx`): the left half is side A, the right
   half side B. Before each half only the **variant data** are switched — visibility of the groups `SIDE_A` / `SIDE_B` (finishes,
@@ -55,12 +58,13 @@ Variants → "Compare A / B": choose variants A and B, then "Compare (split scre
 - **Identical on both sides:** the same camera (half-frame aspect; orbit and zoom act on both halves at once), the same lights,
   sun, sky, IBL, surroundings and building shell.
 - Comparison is for viewing: clicks in the scene (editing) are disabled.
-- Overlay: labels "A · name" and "B · name", divider line; **⇄ Swap**, **Screenshot**, **Exit** (or Esc).
+- Overlay: labels "A · name" and "B · name", divider line; **⇄ Swap**, **Exit** (or Esc). A picture of the comparison:
+  Download › **Picture**.
 - On a phone the comparison shows **one side on the full frame** with an **A | B** switch — half the draw calls of a split
   screen.
 
-**Room arrangement comparison** (e.g. "Office A vs Office B"): Interiors → room → Arrangement → choose A and B → "Compare
-arrangements A / B". Both sides are the same variant; only the active arrangement of that room differs. Works in 3D, top view
+**Room arrangement comparison** (advanced mode, e.g. "Office A vs Office B"): Arrange → room → Furniture › Arrangement →
+"Compare arrangements A / B" (the active arrangement against another one). Both sides are the same variant; only the active arrangement of that room differs. Works in 3D, top view
 and room walk.
 
 State: `ui.compare = { kind: "variants", a, b } | { kind: "room", roomId, a, b } | null` (view state, not saved). The sides are
@@ -68,7 +72,7 @@ computed by `sidesOf(doc, compare)` in `src/home/store/sides.ts`.
 
 ## 4. Screenshot with metadata
 
-The camera button in the top bar, "Screenshot" in Variants or "Screenshot" in the comparison creates
+Download › **Picture** (in the top bar; also during a comparison) creates
 `screenshot-<variant>-<YYYYMMDD-HHMM>.png` (`src/home/screenshot.ts`):
 
 - **scene image** — in a comparison both halves with A / B labels and the divider;
@@ -78,9 +82,9 @@ The camera button in the top bar, "Screenshot" in Variants or "Screenshot" in th
   `takenAt`, `variants[]` (side, id, name, label, saved at), `compare`, `view { mode, room, camera, environment, quality }`,
   `sun { date, time, azimuth, elevation } | null`, `image`.
 
-## 5. Variant export and import (JSON)
+## 5. Version export and import (JSON)
 
-**Export** (`exportVariant`) writes `variant-<name>.json`:
+In advanced mode, Settings › Files › **Export version** / **Import version**. **Export** (`exportVariant`) writes `variant-<name>.json`:
 
 ```json
 { "schema": "home-simulator/variant", "version": 1, "exportedAt": "…",
@@ -127,7 +131,7 @@ An arrangement stores furniture (positions, rotations, variants, parametric dime
 wall / floor / ceiling finishes. A room without a saved interior shows the project default furnishing in an implicit first
 arrangement, created on the first change — the document is not touched before that.
 
-Operations (`src/home/model/interiors.ts`; UI: Interiors → Arrangement):
+Operations (`src/home/model/interiors.ts`; UI: advanced mode, Arrange › Furniture → Arrangement):
 
 | Operation | Effect |
 |---|---|
@@ -139,12 +143,13 @@ Operations (`src/home/model/interiors.ts`; UI: Interiors → Arrangement):
 | **New** (＋) | an empty arrangement |
 
 Every operation = one history entry (Ctrl+Z undoes e.g. deleting an arrangement). Name fields work in the panel (Enter —
-confirm, Esc — cancel), without browser dialogs. The document is saved with Ctrl+S, "Save" or autosave.
+confirm, Esc — cancel), without browser dialogs. The document is saved automatically (Ctrl+S saves at once).
 
-## 7. Layout proposals
+## 7. Start from: the plan, proposals, empty
 
-For living rooms of at least 7 m² (kinds office, bedroom, room) the Interiors panel offers **layout proposals**: **Office**,
-**Guest room**, **Hybrid**. A proposal creates a **new** arrangement with furniture placed heuristically
+Arrange › Furniture › **Start from** replaces the furniture of the room in one history entry: **As planned** (the furnishing of
+the project's plans, or the project default furnishing), **Empty**, and for rooms of at least 7 m² (kinds office, bedroom,
+room) the proposals **Office** and **Guest room**. A proposal places furniture heuristically
 (`arrangeScenario`, `src/home/model/placement.ts`): items with their backs to full walls, bed and wardrobe on walls without
 openings, desk near a window, chair in front of the desk, bedside table next to the bed, rug by the bed. Positions with a
 collision, in a door zone, in front of a window for items taller than the sill, or under a slope are rejected. **The room
@@ -154,24 +159,24 @@ geometry does not change** — items that cannot be placed without a collision a
 |---|---|
 | Office | desk, office chair, bookshelf, tall cabinet |
 | Guest room | bed 140 × 200, bedside table, 2-door wardrobe, rug 120 × 170 |
-| Hybrid | sofa bed, 120 cm desk, office chair, 2-door wardrobe |
+| Hybrid | sofa bed, 120 cm desk, office chair, 2-door wardrobe (kept in the model; not offered in Start from) |
 
 ## 8. Camera bookmarks
 
-Building → "Save this view": camera position and target (LCS), FOV, room and view mode — stored in the document
-(`bookmarks`). Clicking a bookmark moves the camera (and enters the room, or resumes the walk, when the bookmark was made
-there).
+Look › Places → **Save view**: camera position and target (LCS), FOV, room and view mode — stored in the document
+(`bookmarks`) as "My view 1", "My view 2" …. Clicking it moves the camera (and enters the room, or resumes the walk, when it was
+made there); × deletes it.
 
 ## 9. Files and tests
 
 - Model: `src/home/model/variantData.ts` (fields, validation, export / import), `src/document/model.ts` (`Variant` in the
   document, `docErrors`), `src/home/model/interiors.ts` (arrangements), `src/home/model/placement.ts` (proposals).
 - State: `src/home/store/sides.ts`, `src/home/store/ui.ts` (`compare`).
-- Actions: `src/home/actions.ts` (`newVariant`, `saveVariant`, `saveVariantAs`, `switchVariant`, `applyVariantView`,
-  `resetVariantToProject`, `resetFurnitureToProject`, `exportVariantFile`, `importVariantFile`, `startCompare`,
-  `startRoomCompare`, `swapCompare`, `exitCompare`).
+- Actions: `src/home/actions.ts` (`newVersion`, `switchVariant` (with the snapshot of the version left), `renameVersion`,
+  `resetVersion`, `deleteProjectVariant`, `applyVariantView`, `resetFurnitureToProject`, `exportVariantFile`,
+  `importVariantFile`, `compareWith`, `startCompare`, `startRoomCompare`, `swapCompare`, `exitCompare`, `startFrom`).
 - Scene: `src/home/scene/CompareRenderer.tsx`, `src/home/scene/HomeCanvas.tsx` (groups `SIDE_A` / `SIDE_B`).
-- Screenshot: `src/home/screenshot.ts`. UI: `src/home/ui/SectionVariants.tsx`, `SectionInteriors.tsx`, `Compare.tsx`,
-  `Shell.tsx`.
+- Screenshot: `src/home/screenshot.ts`. UI: `src/home/ui/SectionVariants.tsx` (Versions), `SectionArrange.tsx` (start from,
+  arrangements), `Compare.tsx`, `Settings.tsx` (files).
 - Tests: `src/home/tests/variants.test.ts` (fields, validation, unique names, export / import incl. rejection of syntax,
   schema, version, foreign project and unknown furniture, comparison sides, PNG `iTXt`), `src/document/tests/model.test.ts`.

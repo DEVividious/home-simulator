@@ -27,6 +27,7 @@
     "phone": "node scripts/phone/phone.mjs",
     "audit:i18n": "node scripts/audit/i18n-check.mjs",
     "audit:core": "node scripts/audit/core-boundary.mjs",
+    "audit:ui": "vite-node scripts/audit/ui-one-place.ts",
     "plugin:build": "node scripts/plugin/build.mjs"
   },
   "engines": {

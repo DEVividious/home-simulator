@@ -2,8 +2,8 @@
 
 `npm run project:print` turns a project into a printable scale model: STL parts that fit the printer bed, a report of every
 check and change, and a preview image. The same code (`packages/core/src/print/`) runs in the `house-forge` plugin
-(`house-forge print`, [HOUSE_FORGE.md](HOUSE_FORGE.md)) and will run in the app, so the same input, printer and scale give the
-same bytes everywhere.
+(`house-forge print`, [HOUSE_FORGE.md](HOUSE_FORGE.md)) and in the app (Download › **Print model**), so the same input, printer
+and scale give the same bytes everywhere.
 
 ```bash
 npm run project:print -- projects/<id> --bed K1C                 # automatic scale, FDM 0.4 mm
@@ -93,3 +93,12 @@ of every STL written.
 
 `preview-1to<N>.png`: the assembled model, the parts lifted apart, and every part on the bed as it is printed, with its size —
 drawn by the core's software rasteriser (z-buffer, Lambert shading, outlines, 2× supersampling, a 5×7 font), no browser.
+
+## In the app
+
+Download › **Print model** (top bar) makes the model in the core's worker (`src/home/three/coreWorker.ts`, the same kernel as
+the generated shell) with a 220 × 220 × 250 mm bed, a 0.4 mm nozzle, a 10 mm margin and the automatic scale (`APP_PRINT` in
+`src/home/download.ts`), and saves one file `<project>-print-1to<N>.zip`: the STL parts (stored, not recompressed — the bytes of
+`npm run project:print -- projects/<id> --bed 220x220x250`), `print-report.json` and the preview picture. A model that does not
+print (a part fails a check) is not saved; the message names the first problem. The browser test `verify_core.mjs` compares
+the STL bytes with the CLI's for both example projects.

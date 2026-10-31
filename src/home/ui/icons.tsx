@@ -15,6 +15,10 @@ const P: Record<string, ReactNode> = {
   gear: <><circle cx="12" cy="12" r="3" /><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1" /></>,
   close: <path d="M6 6l12 12M18 6 6 18" />,
   back: <path d="M14.5 5.5 8 12l6.5 6.5" />,
+  next: <path d="M9.5 5.5 16 12l-6.5 6.5" />,
+  up: <path d="M5.5 14.5 12 8l6.5 6.5" />,
+  down: <path d="M5.5 9.5 12 16l6.5-6.5" />,
+  help: <><circle cx="12" cy="12" r="8.5" /><path d="M9.6 9.6a2.5 2.5 0 1 1 3.4 2.3c-.7.3-1 .8-1 1.5v.6M12 16.8v.4" /></>,
   plus: <path d="M12 5v14M5 12h14" />,
   trash: <><path d="M4.5 7h15" /><path d="M9.5 7V4.5h5V7" /><path d="M6.5 7l1 13h9l1-13" /></>,
   copy: <><rect x="8.5" y="8.5" width="11" height="11" rx="1.5" /><path d="M15.5 8.5V5.5a1 1 0 0 0-1-1h-9a1 1 0 0 0-1 1v9a1 1 0 0 0 1 1h3" /></>,
@@ -58,6 +62,9 @@ const P: Record<string, ReactNode> = {
   search: <><circle cx="10.5" cy="10.5" r="6" /><path d="m15 15 5 5" /></>,
   grid: <><rect x="4" y="4" width="16" height="16" /><path d="M9.3 4v16M14.6 4v16M4 9.3h16M4 14.6h16" /></>,
 };
+
+/** the names of the icons (the UI audit checks every registry icon exists) */
+export const ICON_NAMES: readonly string[] = Object.keys(P);
 
 export function Icon({ name, size = 18, className }: { name: keyof typeof P | string; size?: number; className?: string }) {
   return (

@@ -70,10 +70,11 @@ User parameters (surface panel → "Tile / plank layout") override the catalog v
 
 An arrangement has `finishes = { walls: { [wallId]: FinishRef }, floor: FinishRef | null, ceiling: FinishRef | null }`,
 `FinishRef = { materialId, color?, layout? }`. No entry = the finish of the building shell. `setFinish(arrangement, target,
-ref)` (`src/home/model/interiors.ts`) takes `floor`, `ceiling`, `wall` (one wall) or `walls` (a list). The wall panel offers:
-**Selected** (one or several walls — Ctrl / Shift + click in the model, on the plan, on the list or with the wall buttons),
-**Whole room** and **Whole home** (all rooms except bathrooms, garages and technical rooms — `applyWallsHouse`). `null`
-restores the shell finish. One change = one history entry, also for the whole home.
+ref)` (`src/home/model/interiors.ts`) takes `floor`, `ceiling`, `wall` (one wall) or `walls` (a list). Arrange › Colours works
+on the walls of the whole room by default; a click on a wall in the scene chooses that wall alone ("This wall"). Advanced mode
+adds several walls (Ctrl / Shift + click or the wall buttons) and **Whole home** (all rooms except bathrooms, garages and
+technical rooms — `applyWallsHouse`). **Original** (`null`) restores the shell finish. One change = one history entry, also for
+the whole home.
 
 Room walls (`packages/core/src/model/building.ts`) are the edges of the room outline (`<roomId>-w<n>`) with their openings:
 doors and passages, windows (sill / head), roof windows. A finish (`src/home/three/surfaces.ts`) is a thin layer 3 mm
@@ -86,8 +87,8 @@ doors and passages, windows (sill / head), roof windows. A finish (`src/home/thr
 - floor: the room outline (with the stair opening cut out where stairs arrive);
 - ceiling: flat or in strips following the ceiling profile, with stair and roof-window openings.
 
-Surface selection: click a wall or floor in 3D (the ceiling in walk mode), the room plan in the Materials section, or the
-Floor / Walls / Ceiling buttons. Hover highlights the surface; selection highlights it more strongly.
+Surface selection: click a wall or floor in 3D (the ceiling in walk mode) or the **Walls** / **Floor** / **Ceiling** buttons
+of Arrange › Colours. Hover highlights the surface; selection highlights it more strongly.
 
 ## Furniture and rug materials
 
@@ -106,4 +107,4 @@ Performance.
 
 `data/materialCatalog.json`, `src/home/catalog/materials.ts` (catalog, scale, layout), `src/home/three/textures.ts`
 (procedural textures, thumbnails), `src/home/three/materials.ts` (three.js materials), `src/home/three/surfaces.ts` (finish
-geometry), `src/home/ui/Inspector.tsx` (surface panel), `src/home/ui/SectionMaterials.tsx`.
+geometry), `src/home/ui/ArrangeColours.tsx` (Arrange › Colours).

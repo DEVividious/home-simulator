@@ -10,7 +10,7 @@ import { resolveDims } from '../catalog/furniture';
 import { itemById } from '../catalog/providers';
 import { axes, obbPoint, pointInPolygon, round } from '@home-sim/core/model/geom2d';
 import { furnitureById } from '../model/interiors';
-import { levelName, roomById, roomsOfLevel, type HomeRoom } from '../model/rooms';
+import { roomById, roomsOfLevel, type HomeRoom } from '../model/rooms';
 import type { Vec2, Vec3 } from '../model/types';
 import { arrangementOf, design, useArrangement } from '../store/design';
 import { useDrag } from '../store/drag';
@@ -328,7 +328,7 @@ function AdaptiveDpr({ profile, enabled, onChange }: { profile: QualityProfile; 
 /** render statistics (Expert mode) — no cost in Home mode (measurement off) */
 function PerfProbe() {
   const gl = useThree((s) => s.gl), frameloop = useThree((s) => s.frameloop);
-  const on = useUi((s) => s.mode === 'expert');
+  const on = useUi((s) => s.mode === 'advanced');
   const st = useMemo(() => ({ t0: 0, times: [] as number[], at: performance.now() }), []);
   useFrame(() => { st.t0 = performance.now(); }, -1000); // frame start (before the other useFrame callbacks)
   useEffect(() => (on ? addAfterEffect(() => { if (st.t0) st.times.push(performance.now() - st.t0); st.t0 = 0; }) : undefined), [on, st]);
@@ -510,7 +510,6 @@ export function HomeCanvas({ data }: { data: SceneData }) {
       {compare && sides.length === 2 && <CompareOverlay sides={sides} single={mobileLayout ? single : null} />}
       <WalkHudBar />
       <LabelLayer />
-      {mode.kind === 'level' && <div className="hm-level-tag" data-testid="level-tag">{t('scene.levelSection', { level: levelName(mode.level) })}</div>}
     </div>
   );
 }

@@ -115,10 +115,10 @@ side a free clear width is enough.
 
 ## 7. "Show doors"
 
-The **Doors** switch (`src/home/ui/DoorsToggle.tsx`) sits in the view bar under the scene (desktop), next to the sun button
-(phone, 44 px), in the Building and Interiors panels and in the Expert layers. Off: leaves hidden, frames and openings stay,
-leaf collisions are off (every door passable). Door data and open states are kept. The panels also offer "Open all" /
-"Close all".
+The **Doors** switch is in one place: the scene bar under the scene (registry action `doors-toggle`, ≥ 48 px on a phone),
+shown in interior views (level section, room, walk). Off: leaves hidden, frames and openings stay, leaf collisions are off
+(every door passable). Door data and open states are kept. Opening every door at once is a test hook only
+(`__home.doors.all`).
 
 ## 8. Phone
 

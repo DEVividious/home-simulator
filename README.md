@@ -2,7 +2,7 @@
 
 A 3D configurator engine for **your own home or apartment**. Give it the floor plan — a CAD drawing, an architect's PDF or a
 plain plan image from an estate agent — and an AI coding agent builds a 1:1 model you can walk through, furnish, finish, plan
-sockets and switches in, compare variants of, and carry on your Android phone, offline.
+sockets and switches in, compare versions of, print as a 3D scale model, and carry on your Android phone, offline.
 
 The engine knows no building. A building is a **project package** — `projects/<id>/project.json` — loaded at runtime.
 Two synthetic examples ship with it: `demo-apartment` (a 52 m² flat) and `sample-house` (two storeys, stairs, plot, sun).
@@ -16,6 +16,11 @@ npm install
 npm run dev              # http://localhost:5173/ — your own project if there is one, else sample-house;
                          # ?project=demo-apartment (or any id) opens another; port busy: npm run dev -- --port 5180
 ```
+
+The app has three steps — **Look** (views, places, time of day), **Arrange** (pick a room, then furniture and colours) and
+**Versions** (copies of the design to compare); **Download** gives a picture or a model to 3D-print. Electrical planning and
+technical tools are in **Settings → Advanced mode**. Task by task: [docs/USER_GUIDE.md](docs/USER_GUIDE.md); how the UI is
+tested with agent personas: [docs/USABILITY_TESTS.md](docs/USABILITY_TESTS.md).
 
 Requirements: Node.js ≥ 22.18. For importing plans: Python 3.11 + `tools/requirements.txt`; poppler for PDF sheets; the ODA File
 Converter for DWG. For previews and the phone: Google Chrome / Chromium; an Android phone with Chrome.

@@ -568,6 +568,6 @@ describe('service worker: rules and version', () => {
     expect(MANIFEST.icons.filter((i) => i.purpose === 'maskable').map((i) => i.sizes)).toEqual(['192x192', '512x512']);
     expect(MANIFEST.icons.filter((i) => i.purpose === 'any').map((i) => i.sizes)).toEqual(['192x192', '512x512']);
     for (const i of MANIFEST.icons) expect(fs.existsSync(path.join(__dirname, '..', i.src.replace('/icons/', 'icons/'))), i.src).toBe(true);
-    expect(MANIFEST.shortcuts.map((s) => s.url)).toEqual(['/?section=electrical']);
+    expect(MANIFEST.shortcuts.map((s) => s.url)).toEqual(['/?section=electrical&mode=advanced']);
   });
 });

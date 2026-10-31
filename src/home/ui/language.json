@@ -1,0 +1,14 @@
+{
+  "$comment": "Child-level language rules (ADR 0043), shared by the unit test, npm run audit:ui and the usability reports. Words are matched case-insensitively at word starts, except where marked case-sensitive.",
+  "button": { "maxWords": 2, "maxChars": { "en": 16, "pl": 18 } },
+  "hint": { "maxWords": 12, "maxSentences": 1 },
+  "bar": { "maxButtons": 6 },
+  "panel": { "maxBlocks": 3 },
+  "block": { "maxItems": 7 },
+  "touchTarget": 48,
+  "forbidden": {
+    "en": ["arrangement", "preset", "cutaway", "section view", "viewpoint", "bookmark", "scope", "snap", "gpu", "dpr", "fov", "json", "mesh", "azimuth", "confidence"],
+    "pl": ["aranżacj", "preset", "przekrój", "przekroj", "punkt widokowy", "zakładk", "zakres", "przyciągan", "gpu", "dpr", "fov", "json", "siatk", "azymut", "pewnoś"]
+  },
+  "forbiddenCaseSensitive": { "en": ["ID", "z"], "pl": ["ID"] }
+}

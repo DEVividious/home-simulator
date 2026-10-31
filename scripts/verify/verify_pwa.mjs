@@ -65,7 +65,8 @@ const fileDoc = () => { try { return JSON.parse(fileText()); } catch { return nu
 const inFile = (id) => (fileText() ?? '').includes(`"${id}"`);
 const waitFor = async (fn, ms = 15000) => { const t0 = Date.now(); for (;;) { const v = await fn().catch(() => null); if (v) return v; if (Date.now() - t0 > ms) return null; await sleep(200); } };
 const saveLabel = () => text(T('save'));
-const save = async () => { await click(T('save'), 300); await waitFor(async () => !(await page.evaluate(() => document.querySelector('[data-testid="save"]')?.textContent.includes('…'))), 15000); await sleep(400); };
+// saving is automatic; Ctrl+S saves at once (the status in the top bar is a button only when the design is not in the file yet)
+const save = async () => { await page.keyboard.down('Control'); await page.keyboard.press('KeyS'); await page.keyboard.up('Control'); await sleep(300); await waitFor(async () => !(await page.evaluate(() => document.querySelector('[data-testid="save"]')?.textContent.includes('…'))), 15000); await sleep(400); };
 
 try {
   await startServer();
@@ -98,7 +99,7 @@ try {
   const p0 = await addPoint([5.5, 6.6]);
   await save();
   const s0 = await sync();
-  check('4. online: the save goes to the project file; device copy in IndexedDB, nothing pending; button "Saved"', !!p0 && inFile(p0) && !s0.pending && !s0.offline && s0.device === 'indexeddb' && s0.target === 'file' && (await saveLabel()) === EN['shell.saved'], `${p0}; ${JSON.stringify(s0)}`);
+  check('4. online: the save goes to the project file; device copy in IndexedDB, nothing pending; button "Saved"', !!p0 && inFile(p0) && !s0.pending && !s0.offline && s0.device === 'indexeddb' && s0.target === 'file' && (await saveLabel()) === EN['steps.save.saved'], `${p0}; ${JSON.stringify(s0)}`);
 
   // ================================================================== OFFLINE — server stopped
   await stopServer();
@@ -110,13 +111,13 @@ try {
     stOff.loaded && sOff.offline && sOff.target === 'localStorage' && (await points()).includes(p0) && (await pwa()).ready && shellOff?.kind === 'core' && shellOff.status === 'ready', `${JSON.stringify(sOff)}; shell ${JSON.stringify(shellOff)}`);
   // room, furniture, material, electrical point, save
   const room = 'R1';
-  await page.evaluate((r, lv) => window.__home.ui({ section: 'interiors', roomId: r, level: lv, roomView: '3d', houseView: 'interior', camera: { preset: 'room', n: Date.now() } }), room, LEVEL); await sleep(1500);
+  await page.evaluate((r, lv) => window.__home.ui({ section: 'arrange', roomId: r, level: lv, roomView: '3d', houseView: 'interior', camera: { preset: 'room', n: Date.now() } }), room, LEVEL); await sleep(1500);
   const a0 = (await st()).arrangement, item = a0.furniture.find((f) => f.catalogId === 'coffee-table') ?? a0.furniture[0];
   await page.evaluate((r, id) => window.__home.ui({ selection: { kind: 'furniture', roomId: r, id } }), room, item.id); await sleep(300);
   await page.keyboard.press('KeyR'); await sleep(400);
   const rot1 = (await st()).arrangement.furniture.find((f) => f.id === item.id).rot;
   await page.evaluate(() => window.__home.ui({ selection: null }));
-  await click(T('nav-materials'), 500); await click(T('surface-floor'), 500);
+  await page.evaluate(() => window.__home.ui({ arrangeTab: 'colours' })); await sleep(300); await click(T('surface-floor'), 500);
   const mat = await page.$$eval(`${T('materials')} button`, (b) => b.map((x) => ({ id: x.dataset.testid, on: x.classList.contains('on') })).find((x) => !x.on)?.id);
   await click(T(mat), 700);
   const floor1 = (await st()).arrangement.finishes.floor?.materialId;
@@ -124,8 +125,8 @@ try {
   await save();
   const sSaved = await sync(), label = await saveLabel();
   await shot('01_offline_saved');
-  check(`6. offline: room, furniture rotated, floor material, new electrical point, SAVE → "${EN['shell.onDevice']}" (changes wait for the connection)`,
-    rot1 !== item.rot && floor1 === mat?.slice(4) && !!p1 && sSaved.pending && sSaved.offline && !sSaved.dirty && label === EN['shell.onDevice'] && sSaved.device === 'indexeddb',
+  check(`6. offline: room, furniture rotated, floor material, new electrical point, SAVE → "${EN['steps.save.device']}" (changes wait for the connection)`,
+    rot1 !== item.rot && floor1 === mat?.slice(4) && !!p1 && sSaved.pending && sSaved.offline && !sSaved.dirty && label === EN['steps.save.device'] && sSaved.device === 'indexeddb',
     `${item.catalogId}: ${item.rot}° → ${rot1}°, floor ${floor1}, point ${p1}; "${label}"`);
   await reload();
   await page.evaluate((r, lv) => window.__home.ui({ roomId: r, level: lv }), room, LEVEL); await sleep(600);
@@ -145,7 +146,7 @@ try {
   const before = inFile(p1);
   await page.evaluate(() => window.dispatchEvent(new Event('online')));
   const synced = await waitFor(async () => { const s = await sync(); return !s.pending && !s.offline ? s : null; }, 30000);
-  check(`10. connection back → the device changes reach the project file by themselves; "${EN['shell.saved']}"`, !before && !!synced && inFile(p1) && fileDoc()?.variants?.[0]?.interiors?.[room] && (await saveLabel()) === EN['shell.saved'] && synced.target === 'file', `point in file: ${before} → ${inFile(p1)}`);
+  check(`10. connection back → the device changes reach the project file by themselves; "${EN['steps.save.saved']}"`, !before && !!synced && inFile(p1) && fileDoc()?.variants?.[0]?.interiors?.[room] && (await saveLabel()) === EN['steps.save.saved'] && synced.target === 'file', `point in file: ${before} → ${inFile(p1)}`);
 
   // ================================================================== conflict: offline edit + file changed on the PC
   await stopServer();
@@ -162,6 +163,8 @@ try {
   await click(T('conflict-server'), 1500);
   const after = await st(), backups = await page.evaluate(() => window.__home.pwa.backups());
   check('12. choice "load the project file": the file version is opened; the device version is kept in the backups', after.variant === 'Changed on the PC' && !(await points()).includes(p2) && !(await sync()).conflict && !(await exists(T('project-conflict'))) && backups.some((b) => b.label === EN['sync.backupDeviceReplacedByFileChoice']), backups.map((b) => b.label).join(' | '));
+  // App and data is in advanced mode (Settings → Advanced mode)
+  await page.evaluate(() => window.__home.ui({ mode: 'advanced' }));
   await click(T('settings'), 600);
   const appData = await text(T('app-data'));
   await shot('03_settings_app_data');
@@ -171,6 +174,7 @@ try {
   await page.keyboard.down('Control'); await page.keyboard.press('KeyZ'); await page.keyboard.up('Control'); await sleep(400);
   check('13. Settings → App and data: offline ready, backups; "Restore" loads a backup as an ordinary change (Undo reverts it)', appData.includes(EN['pwa.backups']) && (await page.evaluate(() => document.querySelector('[data-testid="pwa-offline-state"]')?.dataset.ready)) !== '0' && restored && !(await points()).includes(p2), appData.slice(0, 160));
   if (await exists(T('settings-modal'))) await page.keyboard.press('Escape');
+  await page.evaluate(() => window.__home.ui({ mode: 'simple' }));
 
   // ================================================================== a second device saves while this tab is in sync with the file
   await save();
@@ -211,7 +215,7 @@ try {
   await page.evaluate(() => window.__home.pwa.syncNow());
   await sleep(31500);                                                        // a full turn of the 30 s sync loop
   const q2 = await sync(), same = fileText() === before18;
-  check(`18. "Save automatically" off: the change stays on the device unsaved — the file is unchanged after returning to the app and a full sync-loop turn; button "${EN['shell.save']}"`, !!p6 && q1.dirty && same && q2.dirty && (await saveLabel()) === EN['shell.save'], `file unchanged: ${same}; ${JSON.stringify(q2)}`);
+  check(`18. "Save automatically" off: the change stays on the device unsaved — the file is unchanged after returning to the app and a full sync-loop turn; button "${EN['steps.save.failed']}"`, !!p6 && q1.dirty && same && q2.dirty && (await saveLabel()) === EN['steps.save.failed'], `file unchanged: ${same}; ${JSON.stringify(q2)}`);
   await save();
   check('19. …and "Save" writes it to the file', inFile(p6) && !(await sync()).dirty && !(await sync()).pending, `in file: ${inFile(p6)}`);
   await page.evaluate(() => window.__home.ui({ autosave: true }));

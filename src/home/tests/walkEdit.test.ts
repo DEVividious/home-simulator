@@ -15,14 +15,14 @@ const root = path.resolve(__dirname, '..', '..', '..');
 const base = { houseView: 'exterior' as const, level: 'L1', roomId: null, roomView: '3d' as const, environment: true };
 const POSE = { p: [6.3, 1.5] as [number, number], z: 0, yaw: 0, pitch: 0 };
 /** state after the room walk handed over to the building walk; the user started in the hallway and now stands in the living room */
-const handedOver = (section: Section = 'interiors') => {
+const handedOver = (section: Section = 'arrange') => {
   ui.set({ section, roomId: null, houseView: 'walk', roomView: '3d', selection: null, walkGo: { pose: POSE, from: { roomId: 'R4', level: 'L1' }, n: 7 } });
   walkHud.set({ on: true, roomId: 'R1', kind: 'room', place: 'Apartment — Living room with kitchenette' });
 };
 
 beforeEach(() => {
-  ui.set({ settingsOpen: false, onboardingDone: true, sunPanel: false, sheet: 'collapsed', selection: null, compare: null,
-    section: 'building', roomId: null, roomView: '3d', houseView: 'exterior', level: 'L1', walkGo: { n: 0 } });
+  ui.set({ settingsOpen: false, onboardingDone: true, menu: null, sheet: 'collapsed', selection: null, compare: null,
+    section: 'look', roomId: null, roomView: '3d', houseView: 'exterior', level: 'L1', walkGo: { n: 0 } });
   walkHud.set({ on: false, roomId: null, kind: '', place: '' });
 });
 
@@ -52,7 +52,7 @@ describe('whether the user is walking (one rule for keys, bars and the pointer)'
 });
 
 describe('end of the walk', () => {
-  it('walk from the Building section: exterior building view; the room view does not stay on "walk"', () => {
+  it('walk from the Look step: exterior building view; the room view does not stay on "walk"', () => {
     ui.set({ roomView: 'walk' });
     startWalk();
     expect(ui.get()).toMatchObject({ houseView: 'walk', roomId: null });
@@ -65,9 +65,9 @@ describe('end of the walk', () => {
     const n = ui.get().camera.n;
     exitWalk();
     const s = ui.get();
-    expect(s).toMatchObject({ roomId: 'R1', level: 'L1', houseView: 'interior', roomView: '3d', section: 'interiors', selection: null });
+    expect(s).toMatchObject({ roomId: 'R1', level: 'L1', houseView: 'interior', roomView: '3d', section: 'arrange', selection: null });
     expect(s.camera).toMatchObject({ preset: 'room', n: n + 1 });
-    expect(s.walkGo.from ?? null).toBeNull();                                 // the next walk from the Building section is a plain tour
+    expect(s.walkGo.from ?? null).toBeNull();                                 // the next walk from the Look step is a plain tour
   });
   it('walk started in a room, user on the stairs / on the site: back to the room the walk started from', () => {
     handedOver();
@@ -75,10 +75,10 @@ describe('end of the walk', () => {
     exitWalk();
     expect(ui.get()).toMatchObject({ roomId: 'R4', level: 'L1', houseView: 'interior', roomView: '3d' });
   });
-  it('section outside interiors (the user switched to the Building section during the walk): back in the room — Interiors', () => {
-    handedOver('building');
+  it('another step (the user switched to Look during the walk): back in the room — Arrange', () => {
+    handedOver('look');
     exitWalk();
-    expect(ui.get()).toMatchObject({ roomId: 'R1', section: 'interiors' });
+    expect(ui.get()).toMatchObject({ roomId: 'R1', section: 'arrange' });
   });
   it('system "back" on a phone: walk started in a room → room → level section → building view', () => {
     handedOver();
@@ -92,24 +92,22 @@ describe('end of the walk in a multi-level building (sample house)', () => {
   beforeAll(() => { activateProject(readProjectDir(path.join(root, 'projects', 'sample-house'))); });
   afterAll(() => { activateProject(readProjectDir(path.join(root, 'projects', 'demo-apartment'))); });
   it('walk started in a room, the room underfoot on another level: the level of that room', () => {
-    ui.set({ section: 'interiors', roomId: null, houseView: 'walk', roomView: '3d', level: 'L0', walkGo: { pose: { p: [1.8, 4.2], z: 0, yaw: 0, pitch: 0 }, from: { roomId: 'H0', level: 'L0' }, n: 3 } });
+    ui.set({ section: 'arrange', roomId: null, houseView: 'walk', roomView: '3d', level: 'L0', walkGo: { pose: { p: [1.8, 4.2], z: 0, yaw: 0, pitch: 0 }, from: { roomId: 'H0', level: 'L0' }, n: 3 } });
     walkHud.set({ on: true, roomId: 'BR1', kind: 'room', place: 'First floor — Main bedroom' });
     exitWalk();
     expect(ui.get()).toMatchObject({ roomId: 'BR1', level: 'L1', roomView: '3d', houseView: 'interior' });
   });
 });
 
-describe('sections during a walk started in a room', () => {
-  it('Interiors → Materials → Furniture does not interrupt the walk (as in a room walk)', () => {
-    handedOver('interiors');
-    goSection('materials');
-    expect(ui.get()).toMatchObject({ section: 'materials', houseView: 'walk', roomId: null });
-    goSection('furniture');
-    expect(ui.get()).toMatchObject({ section: 'furniture', houseView: 'walk' });
+describe('steps during a walk started in a room', () => {
+  it('Versions → Arrange does not interrupt the walk (as in a room walk)', () => {
+    handedOver('variants');
+    goSection('arrange');
+    expect(ui.get()).toMatchObject({ section: 'arrange', houseView: 'walk', roomId: null });
   });
-  it('touring from the Building section: entering an interior section ends the walk with a level section (unchanged)', () => {
+  it('touring from the Look step: Arrange ends the walk with a level section (unchanged)', () => {
     startWalk();
-    goSection('materials');
-    expect(ui.get()).toMatchObject({ section: 'materials', houseView: 'interior' });
+    goSection('arrange');
+    expect(ui.get()).toMatchObject({ section: 'arrange', houseView: 'interior' });
   });
 });

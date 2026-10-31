@@ -1,10 +1,8 @@
-// A/B comparison — split-screen overlay: side labels, divider line, swap sides, screenshot, exit.
+// A/B comparison — split-screen overlay: side labels, divider line, swap sides, exit (a picture: Download › Picture).
 // Mobile layout: one side full-screen with an A ↔ B switch (same camera), no double rendering.
 import { exitCompare, swapCompare } from '../actions';
-import { takeScreenshot } from '../screenshot';
 import type { Side } from '../store/sides';
 import { ui, useUi } from '../store/ui';
-import { Icon } from './icons';
 import { t } from '../../i18n';
 
 export function CompareOverlay({ sides, single = null }: { sides: Side[]; single?: Side['id'] | null }) {
@@ -36,7 +34,6 @@ export function CompareOverlay({ sides, single = null }: { sides: Side[]; single
       <div className="hm-compare-bar" data-testid="compare-bar">
         <span>{kind === 'room' ? t('compareUi.arrangements') : t('compareUi.variants')} · {t('compareUi.sameView')}</span>
         <button className="hm-btn" onClick={swapCompare} data-testid="compare-swap" title={t('compareUi.swapTitle')}>{t('compareUi.swap')}</button>
-        <button className="hm-btn" onClick={() => void takeScreenshot()} data-testid="compare-shot"><Icon name="camera" size={15} /> {t('compareUi.shot')}</button>
         <button className="hm-btn primary" onClick={exitCompare} data-testid="compare-exit">{t('compareUi.exit')}</button>
       </div>
     </div>

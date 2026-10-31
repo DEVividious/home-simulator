@@ -65,8 +65,8 @@ try {
     await resetOrigin(page, BASE);
     await page.goto(`${BASE}/?onboarding=off&project=${HOUSE.id}`, { waitUntil: 'load' });
     await waitForApp(page); await page.waitForFunction(() => !!window.__home3d?.camera?.(), { timeout: 60000 });
-    const d = await page.evaluate(() => { const h = document.querySelector('[data-testid="home-app"]'); return { layout: h.dataset.layout, pointer: h.dataset.pointer, mnav: !!document.querySelector('[data-testid="mobile-nav"]'), sheet: !!document.querySelector('[data-testid="mobile-sheet"]'), side: !!document.querySelector('[data-testid="side"]'), nav: !!document.querySelector('.hm-nav button'), legend: !!document.querySelector('[data-testid="mouse-legend"]'), canvasW: Math.round(document.querySelector('[data-testid="canvas-frame"] canvas').getBoundingClientRect().width) }; });
-    check('[desktop] a 1400 × 900 window stays in the desktop layout (side panel, top navigation, mouse legend, no sheet)', d.layout === 'desktop' && d.pointer === 'fine' && !d.mnav && !d.sheet && d.side && d.nav && d.legend && d.canvasW >= 900, JSON.stringify(d));
+    const d = await page.evaluate(() => { const h = document.querySelector('[data-testid="home-app"]'); const steps = document.querySelector('[data-testid="steps"]')?.getBoundingClientRect(); return { layout: h.dataset.layout, pointer: h.dataset.pointer, sheet: !!document.querySelector('[data-testid="mobile-sheet"]'), side: !!document.querySelector('[data-testid="side"]'), stepsTop: steps ? Math.round(steps.top) : null, legend: !!document.querySelector('[data-testid="mouse-legend"]'), canvasW: Math.round(document.querySelector('[data-testid="canvas-frame"] canvas').getBoundingClientRect().width) }; });
+    check('[desktop] a 1400 × 900 window stays in the desktop layout (side panel, the steps in the top bar, no sheet)', d.layout === 'desktop' && d.pointer === 'fine' && !d.sheet && d.side && d.stepsTop !== null && d.stepsTop < 60 && !d.legend && d.canvasW >= 700, JSON.stringify(d));
     await page.close();
   }
   check('no console errors / page exceptions', errors.length === 0, errors.slice(0, 5).join(' | ') || 'none');

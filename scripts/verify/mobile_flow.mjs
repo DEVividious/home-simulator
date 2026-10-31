@@ -4,9 +4,9 @@
 // ctx: { page, cdp, base, check(name, ok, detail), shot(name), F (project facts: id, room, levels, hasSun, …) }
 import { resetOrigin } from './app_data.mjs';
 import { waitForApp } from './browser.mjs';
+import { S, T } from './selectors.mjs';
 
 export const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-const T = (id) => `[data-testid="${id}"]`;
 
 export function touchKit({ page, cdp }) {
   const touch = (type, pts) => cdp.send('Input.dispatchTouchEvent', { type, touchPoints: pts.map(([x, y], id) => ({ x, y, id, radiusX: 8, radiusY: 8, force: 1 })) });
@@ -60,7 +60,8 @@ export function touchKit({ page, cdp }) {
     return best && [best.x, best.y];
   }, x, y);
   const onCanvas = (p) => page.evaluate((p) => !!p && document.elementFromPoint(p[0], p[1])?.tagName === 'CANVAS', p);
-  const openSheet = async (nav) => { await tap(T(nav)); if ((await ui()).sheet === 'collapsed') await tap(T(nav)); };
+  /** opens the sheet of a step: a tap on another step opens its panel, a tap on the active one folds / opens the sheet */
+  const openSheet = async (step) => { await tap(S.step(step)); if ((await ui()).sheet === 'collapsed') await tap(S.step(step)); };
   return { touch, tapXY, tap, locate, drag, st, ui, s3, cameraStill, waitHome, freeCanvasPoint, onCanvas, openSheet };
 }
 
@@ -72,7 +73,7 @@ export async function openFresh(ctx, K, { onboarding = false, extra = '' } = {})
   await K.waitHome(); await sleep(1200); await K.cameraStill();
 }
 
-/** layout checks: no page scrolling, full-width scene, touch targets, navigation on screen, touch help instead of mouse help */
+/** layout checks: no page scrolling, full-width scene, touch targets ≥ 48 px, the steps on screen, a touch hint */
 export async function layoutChecks(ctx, K, label, EN) {
   const { page, check } = ctx;
   const m = await page.evaluate(() => {
@@ -81,22 +82,23 @@ export async function layoutChecks(ctx, K, label, EN) {
     const size = (sel) => [...document.querySelectorAll(sel)].filter((e) => e.getBoundingClientRect().width > 0).map((e) => { const b = e.getBoundingClientRect(); return [Math.round(b.width), Math.round(b.height)]; });
     return { inner: [innerWidth, innerHeight], doc: [document.documentElement.scrollWidth, document.documentElement.scrollHeight], canvas: c && [c.left, c.top, c.width, c.height].map(Math.round),
       stage: stage && [stage.left, stage.top, stage.width, stage.height].map(Math.round), layout: document.querySelector('.hm')?.dataset.layout, orient: document.querySelector('.hm')?.dataset.orient,
-      navOut: [...document.querySelectorAll('.hm-mnav button')].filter((e) => { const b = e.getBoundingClientRect(); return b.top < -0.5 || b.left < -0.5 || b.bottom > innerHeight + 0.5 || b.right > innerWidth + 0.5; }).map((e) => e.textContent.trim()),
-      nav: size('.hm-mnav button'), top: size('.hm-top .hm-icon-btn'), pills: size('.hm-bottom .hm-pill'), grip: size('.hm-sheet-grip .hm-icon-btn'), legend: !!document.querySelector('[data-testid="mouse-legend"]'),
+      navOut: [...document.querySelectorAll('.hm-steps .hm-act')].filter((e) => { const b = e.getBoundingClientRect(); return b.top < -0.5 || b.left < -0.5 || b.bottom > innerHeight + 0.5 || b.right > innerWidth + 0.5; }).map((e) => e.textContent.trim()),
+      nav: size('.hm-steps .hm-act'), top: size('.hm-tools .hm-act'), pills: size('.hm-scenebar .hm-act, .hm-scenebar [data-group] button'), grip: size('.hm-sheet-grip .hm-icon-btn'), legend: !!document.querySelector('[data-testid="mouse-legend"]'),
       hint: document.querySelector('[data-testid="hint"] span')?.textContent ?? '' };
   });
   const min = (a) => (a.length ? Math.min(...a.map((x) => Math.min(x[0], x[1]))) : null);
-  const touchHints = Object.entries(EN).filter(([k]) => /^shell\.hint\.touch/.test(k)).map(([, v]) => v);
+  const touchHints = Object.entries(EN).filter(([k]) => /^steps\.hint\.\w+Touch$/.test(k)).map(([, v]) => v);
   check(`${label}: mobile layout (${m.orient})`, m.layout === 'mobile', JSON.stringify({ inner: m.inner }));
   check(`${label}: no page scrolling horizontally or vertically`, m.doc[0] <= m.inner[0] && m.doc[1] <= m.inner[1], `document ${m.doc} / window ${m.inner}`);
   check(`${label}: 3D scene over the full width of the stage`, !!m.canvas && !!m.stage && m.canvas[2] === m.stage[2] && m.canvas[0] >= 0 && m.canvas[0] + m.canvas[2] <= m.inner[0] + 1 && (m.orient === 'landscape' || m.canvas[2] === m.inner[0]), `canvas ${m.canvas}, stage ${m.stage}`);
-  check(`${label}: touch targets ≥ 44 px (navigation, top bar, view pills, sheet toggle)`, [m.nav, m.top, m.pills, m.grip].every((a) => min(a) === null || min(a) >= 44), JSON.stringify({ nav: min(m.nav), top: min(m.top), pills: min(m.pills), grip: min(m.grip) }));
-  check(`${label}: every section of the bottom navigation on screen`, m.navOut.length === 0 && m.nav.length >= 5, `${m.nav.length} sections, off screen: ${m.navOut.join(', ') || '—'}`);
+  check(`${label}: touch targets ≥ 48 px (steps, top bar, scene bar) and ≥ 44 px (sheet toggle)`, [m.nav, m.top, m.pills].every((a) => min(a) === null || min(a) >= 48) && (min(m.grip) === null || min(m.grip) >= 44), JSON.stringify({ nav: min(m.nav), top: min(m.top), pills: min(m.pills), grip: min(m.grip) }));
+  check(`${label}: every step on screen (at the bottom)`, m.navOut.length === 0 && m.nav.length >= 3, `${m.nav.length} steps, off screen: ${m.navOut.join(', ') || '—'}`);
   check(`${label}: touch help — no mouse legend, the hint is a touch hint`, !m.legend && (!m.hint || touchHints.includes(m.hint)), `"${m.hint}"`);
   return m;
 }
 
-/** acceptance scenario on a phone: welcome → room → plan view → add / select-then-drag / rotate furniture → floor → arrangement → walk */
+/** acceptance scenario on a phone: welcome → room → plan view → add / select-then-drag / turn furniture → floor → start from empty
+ *  and undo → walk */
 export async function runAcceptance(ctx, EN) {
   const { page, check, shot, F } = ctx;
   const K = touchKit(ctx);
@@ -108,35 +110,35 @@ export async function runAcceptance(ctx, EN) {
   // ---- 1. first start: welcome screen for touch
   await openFresh(ctx, K, { onboarding: true });
   const welcome = await page.evaluate(() => document.querySelector('[data-testid="onboarding"]')?.textContent ?? '');
-  await tap(T('onboarding-start'));
+  await tap(S.welcomeStart);
   let u = await ui();
-  step(1, 'first start: welcome screen with touch instructions; mobile layout, sheet collapsed', u.layout === 'mobile' && u.pointer === 'coarse' && u.sheet === 'collapsed' && welcome.includes(EN['shell.welcome.lookTouch']) && !welcome.includes(EN['shell.welcome.lookMouse']) && !(await page.$(T('onboarding'))), JSON.stringify(u));
+  step(1, 'first start: the welcome screen (three pictures, one sentence each); mobile layout, sheet collapsed', u.layout === 'mobile' && u.pointer === 'coarse' && u.sheet === 'collapsed' && ['look', 'arrange', 'versions'].every((k) => welcome.includes(EN[`steps.welcome.${k}`])) && !(await page.$(S.welcome)), JSON.stringify(u));
   await layoutChecks(ctx, K, 'start', EN);
   await shot('01_start');
 
-  // ---- 2. enter a room from the list in the sheet
-  await tap(T('mnav-interiors'), { wait: 1200 });
+  // ---- 2. Arrange: the sheet opens on the rooms; a tap on a room enters it (the sheet stays open on its furniture)
+  await tap(S.step('arrange'), { wait: 1200 });
   u = await ui();
   const sheetOpen = u.sheet === 'medium';
-  await tap(T(`room-${F.room.id}`), { wait: 1800 });
+  await tap(S.roomPick(F.room.id), { wait: 1800 });
   await cameraStill();
   let s = await st(); u = await ui();
-  step(2, `"${F.room.name}" entered from the list in the sheet (the sheet collapses, the room is visible)`, sheetOpen && s.roomId === F.room.id && u.sheet === 'collapsed', `room ${s.roomId}, sheet ${u.sheet}`);
+  step(2, `"${F.room.name}" entered from the rooms in the sheet (the sheet stays half open on the furniture)`, sheetOpen && s.roomId === F.room.id && u.sheet === 'medium' && !!(await page.$(S.arrangeTab('furniture'))), `room ${s.roomId}, sheet ${u.sheet}`);
 
-  // ---- 3. plan view (large 3D / Plan / Walk modes)
-  const modes = await page.evaluate(() => [...document.querySelectorAll('[data-testid="bottom-view"] button')].map((b) => { const r = b.getBoundingClientRect(); return [b.dataset.value, Math.round(r.width), Math.round(r.height)]; }));
-  await tap(`${T('bottom-view')} button[data-value="top"]`, { wait: 1500 });
+  // ---- 3. from above (the scene bar: Around / From above / Walk)
+  const modes = await page.evaluate(() => [...document.querySelectorAll('[data-testid="view"] button')].map((b) => { const r = b.getBoundingClientRect(); return [b.dataset.value, Math.round(r.width), Math.round(r.height)]; }));
+  await tap(S.view('above'), { wait: 1500 });
   await cameraStill();
   s = await st();
-  step(3, 'plan view from the bottom bar (3D / Plan / Walk buttons ≥ 44 px)', s.roomView === 'top' && modes.map((m) => m[0]).join() === '3d,top,walk' && modes.every((m) => m[2] >= 44), JSON.stringify(modes));
+  step(3, 'from above with the scene bar (Around / From above / Walk buttons ≥ 48 px)', s.roomView === 'top' && modes.map((m) => m[0]).join() === 'around,above,walk' && modes.every((m) => m[2] >= 48), JSON.stringify(modes));
 
   // ---- 4. add furniture by tapping a catalogue card
-  await K.openSheet('mnav-furniture');
+  if ((await ui()).sheet === 'collapsed') await K.openSheet('arrange');
   const n0 = s.arrangement.furniture.length, had = new Set(s.arrangement.furniture.map((f) => f.id));
-  await tap(T(`cat-add-${ADD}`), { wait: 1500 });
+  await tap(S.catalogCard(ADD), { wait: 1500 });
   s = await st(); u = await ui();
   const added = s.arrangement.furniture.find((f) => f.catalogId === ADD && !had.has(f.id));
-  step(4, `tap on the "${ADD}" card adds it to the room — selected, sheet collapsed, quick actions bar`, s.arrangement.furniture.length === n0 + 1 && !!added && s.selection?.id === added.id && u.sheet === 'collapsed' && !!(await page.$(T('furniture-quick'))), `furniture ${n0} → ${s.arrangement.furniture.length}; ${added && [added.x, added.y]}`);
+  step(4, `tap on the "${ADD}" card adds it to the room — selected, sheet collapsed, the object bar`, s.arrangement.furniture.length === n0 + 1 && !!added && s.selection?.id === added.id && u.sheet === 'collapsed' && !!(await page.$(S.objectBar)), `furniture ${n0} → ${s.arrangement.furniture.length}; ${added && [added.x, added.y]}`);
   if (!added) throw new Error('furniture not added');
   await cameraStill();
 
@@ -158,29 +160,30 @@ export async function runAcceptance(ctx, EN) {
   const aOk = await K.onCanvas(a);
   await drag(a, b);
   const d1 = furn(await st(), added.id), moved = Math.hypot(d1.x - added.x, d1.y - added.y);
-  await tap(T('q-done'));
+  await tap(S.obj('done'));
   await cameraStill();
   const a2 = await bring(added.id), cam0 = JSON.stringify((await s3('camera')).position);
   await drag(a2, [a2[0] + 50, a2[1] + 30]);
   const d2 = furn(await st(), added.id), cam1 = JSON.stringify((await s3('camera')).position);
   step(5, 'select-then-drag: the selected item follows the finger; a drag over an unselected item pans the view and leaves the item', aOk && moved > 0.2 && d2.x === d1.x && d2.y === d1.y && cam0 !== cam1 && (await st()).selection === null,
-    `moved ${moved.toFixed(2)} m; unselected: item ${d2.x === d1.x && d2.y === d1.y ? 'unchanged' : 'MOVED'}, camera ${cam0 !== cam1 ? 'moved' : 'unchanged'}`);
+    `moved ${moved.toFixed(2)} m; unselected: item ${d2.x === d1.x && d2.y === d1.y ? 'unchanged' : 'MOVED'}, camera ${cam0 !== cam1 ? 'moved' : 'unchanged'}; selection ${JSON.stringify((await st()).selection)}`);
   await cameraStill();
   await shot('05_drag');
 
-  // ---- 6. rotate: tap selects, quick bar −90° / +15°
+  // ---- 6. turn: tap selects, the object bar turns right then left (90° each)
   const a3 = await bring(added.id);
   await tapXY(a3[0], a3[1], 800);
   const selAfterTap = (await st()).selection?.id === added.id;
   const r0 = furn(await st(), added.id).rot;
-  await tap(T('q-rot-r90')); const r1 = furn(await st(), added.id).rot;
-  await tap(T('q-rot-l15')); const r2 = furn(await st(), added.id).rot;
+  await tap(S.obj('rotate-right')); const r1 = furn(await st(), added.id).rot;
+  await tap(S.obj('rotate-left')); await tap(S.obj('rotate-left')); const r2 = furn(await st(), added.id).rot;
   const norm = (x) => ((x % 360) + 360) % 360;
-  step(6, 'rotate: a tap selects the item, quick bar −90° then +15°', selAfterTap && norm(r1 - r0) === 270 && norm(r2 - r1) === 15, `${r0}° → ${r1}° → ${r2}°`);
-  await tap(T('q-done'));
+  step(6, 'turn: a tap selects the item, the object bar turns it right (−90°) and twice left (+180°)', selAfterTap && norm(r1 - r0) === 270 && norm(r2 - r1) === 180, `${r0}° → ${r1}° → ${r2}°`);
+  await tap(S.obj('done'));
 
   // ---- 7. floor material (a tap on the material card applies it)
-  await K.openSheet('mnav-materials');
+  await K.openSheet('arrange');
+  await tap(S.arrangeTab('colours'));
   await tap(T('surface-floor'));
   const f0 = JSON.stringify((await st()).arrangement.finishes.floor ?? null);
   const mats = await page.$$eval(`${T('materials')} [data-testid^="mat-"]`, (els) => els.map((e) => ({ id: e.dataset.testid, on: e.classList.contains('on') })));
@@ -190,23 +193,23 @@ export async function runAcceptance(ctx, EN) {
   step(7, 'floor material: a tap on a material card applies it', mats.length > 2 && f1 !== f0 && f1.includes(pick.id.slice(4)), `${mats.length} materials; ${f0} → ${f1}`);
   await shot('07_floor');
 
-  // ---- 8. save the arrangement under a name (on-screen keyboard)
+  // ---- 8. start from an empty room, then undo it in the top bar (the only undo)
   await page.evaluate(() => window.__home.ui({ selection: null })); await sleep(300);
-  await K.openSheet('mnav-interiors');
-  await tap(T('arr-save'));
-  if (!(await page.evaluate(() => document.activeElement?.dataset?.testid === 'arr-save-name'))) await tap(T('arr-save-name'));
-  await page.keyboard.type('Phone layout');
-  await tap(T('arr-save-name-ok'), { wait: 900 });
+  await tap(S.arrangeTab('furniture'));
+  const n8 = (await st()).arrangement.furniture.length;
+  await tap(S.startFrom('empty'), { wait: 900 });
+  const emptied = (await st()).arrangement.furniture.length;
+  await tap(S.undo, { wait: 900 });
   s = await st();
-  step(8, 'arrangement saved under a name', s.arrangement.name === 'Phone layout' && s.arrangement.saved === true, `${s.arrangement.name} / saved: ${s.arrangement.saved}`);
+  step(8, '"Start from: Empty" clears the room; Undo in the top bar brings the furniture back', n8 > 0 && emptied === 0 && s.arrangement.furniture.length === n8, `${n8} → ${emptied} → ${s.arrangement.furniture.length}`);
 
-  // ---- 9. leave the room, back to the building
+  // ---- 9. leave the room (the scene bar's "← level · room"), back to Look
   if ((await ui()).sheet !== 'collapsed') await tap(T('sheet-toggle'));
-  await tap(T('bottom-exit'), { wait: 1200 });
+  await tap(S.back, { wait: 1200 });
   const afterExit = (await st()).roomId;
-  await tap(T('mnav-building'), { wait: 1500 });
+  await tap(S.step('look'), { wait: 1500 });
   s = await st();
-  step(9, 'leaving the room (‹ level) and the building section', afterExit === null && s.roomId === null && s.houseView === 'exterior' && s.section === 'building', `view ${s.houseView}, section ${s.section}`);
+  step(9, 'leaving the room (← level · room) and the Look step', afterExit === null && s.roomId === null && s.houseView === 'exterior' && s.section === 'look', `view ${s.houseView}, section ${s.section}`);
 
   // ---- 10. walk: joystick (left thumb) + looking around with a second finger
   await runWalkPad(ctx, K, 10);
@@ -215,8 +218,8 @@ export async function runAcceptance(ctx, EN) {
 /** walk with the virtual joystick: forward with the left thumb, look around with a second finger */
 export async function runWalkPad(ctx, K, n) {
   const { page, check, shot } = ctx;
-  if ((await K.ui()).sheet === 'collapsed') await K.tap(T('mnav-building'));
-  await K.tap(T('walk-start'), { wait: 2500 });
+  if ((await K.ui()).sheet !== 'collapsed') await K.tap(T('sheet-toggle'));
+  await K.tap(S.view('walk'), { wait: 2500 });
   await page.waitForFunction(() => window.__home3d.walk().on && !!window.__home3d.walk().place, { timeout: 20000 }).catch(() => {});
   const s = await K.st(), u = await K.ui();
   const pad = await K.locate(T('walk-pad'));
@@ -234,8 +237,8 @@ export async function runWalkPad(ctx, K, n) {
   const geo = await page.evaluate(() => ({ hud: document.querySelector('[data-testid="walk-hud"]')?.textContent ?? '', inner: innerWidth }));
   check(`${n}. walk: touch joystick walks (left part of the screen), a second finger looks around; no key instructions`, s.houseView === 'walk' && u.sheet === 'collapsed' && !!pad && pad.hit && dist > 0.4 && Math.abs(p1.yaw - p0.yaw) > 0.05 && pad.x < geo.inner * 0.42 && !/WASD|Esc|Shift/.test(geo.hud),
     `walked ${dist.toFixed(2)} m (${p0.place} → ${p1.place}); yaw ${p0.yaw.toFixed(2)} → ${p1.yaw.toFixed(2)}; joystick ${Math.round(pad.w)} px at (${Math.round(pad.x)}, ${Math.round(pad.y)})`);
-  await K.tap(T('bottom-walk-exit'), { wait: 1200 });
-  check(`${n}a. walk exit button returns to the building view`, (await K.st()).houseView === 'exterior' && !(await page.evaluate(() => window.__home3d.walk().on)), (await K.st()).houseView);
+  await K.tap(S.view('around'), { wait: 1200 });
+  check(`${n}a. "Around" in the scene bar ends the walk: the house from outside`, (await K.st()).houseView === 'exterior' && !(await page.evaluate(() => window.__home3d.walk().on)), (await K.st()).houseView);
 }
 
 /** system "back": dialog → selection → sheet → room → section, before the app is left */
@@ -248,14 +251,15 @@ export async function backChecks(ctx) {
   const open1 = !!(await page.$(T('settings-modal')));
   await back();
   const open2 = !!(await page.$(T('settings-modal')));
-  await K.tap(T('mnav-interiors'), { wait: 1000 }); await K.tap(T(`room-${F.room.id}`), { wait: 1500 });
-  await K.openSheet('mnav-materials'); await K.tap(T('surface-floor'));
+  await K.tap(S.step('arrange'), { wait: 1000 }); await K.tap(S.roomPick(F.room.id), { wait: 1500 });
+  if ((await K.ui()).sheet === 'collapsed') await K.openSheet('arrange');
+  await K.tap(S.arrangeTab('colours')); await K.tap(T('surface-floor'));
   const seq = [];
   const snap = async () => { const s = await K.st(), u = await K.ui(); return `${u.sheet}/${s.selection ? s.selection.kind : '-'}/${s.roomId ?? '-'}/${s.houseView}`; };
   seq.push(await snap());
   for (let i = 0; i < 6 && seq[seq.length - 1] !== 'collapsed/-/-/exterior'; i++) { await back(); seq.push(await snap()); }
   const here = await page.evaluate(() => location.pathname + (window.__home ? ' (app)' : ''));
-  check('back: closes the settings dialog, then the selection, the sheet, the room and the section — without leaving the app',
+  check('back: closes the settings dialog, then the selection, the sheet, the room and the level section — without leaving the app',
     open1 && !open2 && seq[0] === `medium/floor/${F.room.id}/interior` && seq.join() === [`medium/floor/${F.room.id}/interior`, `medium/-/${F.room.id}/interior`, `collapsed/-/${F.room.id}/interior`, 'collapsed/-/-/interior', 'collapsed/-/-/exterior'].join() && /app/.test(here),
     seq.join(' → '));
 }
@@ -265,6 +269,12 @@ export async function extraChecks(ctx) {
   const { page, check, F } = ctx;
   const K = touchKit(ctx);
   await openFresh(ctx, K, { extra: '&date=2026-06-21&time=15:00' });
+  // the Download menu opens under the top bar, on screen and tappable; the scene stays where it was
+  await K.tap(S.download, { wait: 600 });
+  const dl = await K.locate(S.downloadPrint), pic = await K.locate(S.downloadPicture);
+  const topY = await page.evaluate(() => Math.round(document.querySelector('.hm-top').getBoundingClientRect().top));
+  await K.tap(S.download, { wait: 400 });
+  check('Download menu on a phone: Picture and Print model on screen and tappable, the top bar does not move', !!dl?.hit && dl.inView && !!pic?.hit && topY === 0 && !(await page.$('.hm-menu.open')), JSON.stringify({ dl, topY }));
   // sheet: three states (grip — tap and drag)
   const h = () => page.evaluate(() => { const s = document.querySelector('.hm-sheet'), c = document.querySelector('canvas').getBoundingClientRect(); return { state: s.dataset.state, sheetH: Math.round(s.getBoundingClientRect().height), canvasH: Math.round(c.height), bodyH: Math.round(document.querySelector('.hm-body').getBoundingClientRect().height) }; });
   // the sheet animates between states: the grip is located once it stands still, the sizes are read after the transition
@@ -293,11 +303,12 @@ export async function extraChecks(ctx) {
   const p0 = JSON.stringify((await K.s3('camera')).position);
   await K.drag(c0, [c0[0] + 90, c0[1] + 10], { steps: 14 });
   check('one finger orbits the view', p0 !== JSON.stringify((await K.s3('camera')).position), '');
-  // sun panel: only a project with the sun module has it — on a phone a low bar with the day slider, fully on screen
+  // time of day: only a project with the sun module has it — in Look, on a phone the day slider (no dial), fully on screen
   if (F.hasSun) {
-    await K.tap(T('sun-toggle'));
-    const sun = await page.evaluate(() => { const r = (q) => { const b = document.querySelector(q)?.getBoundingClientRect(); return b ? [Math.round(b.left), Math.round(b.top), Math.round(b.right), Math.round(b.bottom)] : null; }; return { panel: r('[data-testid="sun-panel"]'), rail: r('[data-testid="sun-track-rail"]'), dial: !!document.querySelector('[data-testid="sun-dial"]'), inner: [innerWidth, innerHeight] }; });
-    check('sun panel on a phone: a low bar with the day slider, fully on screen (no dial covering the scene)', !!sun.panel && !!sun.rail && !sun.dial && sun.panel[0] >= 0 && sun.panel[2] <= sun.inner[0] && sun.panel[3] <= sun.inner[1] && sun.panel[3] - sun.panel[1] <= Math.max(150, sun.inner[1] * 0.24), JSON.stringify(sun));
+    await K.openSheet('look');
+    await K.locate(T('sun-track'));
+    const sun = await page.evaluate(() => { const r = (q) => { const b = document.querySelector(q)?.getBoundingClientRect(); return b ? [Math.round(b.left), Math.round(b.top), Math.round(b.right), Math.round(b.bottom)] : null; }; return { panel: r('[data-testid="sun"]'), rail: r('[data-testid="sun-track-rail"]'), dial: !!document.querySelector('[data-testid="sun-dial"]'), inner: [innerWidth, innerHeight] }; });
+    check('time of day on a phone: in Look, the day slider and the times of day, fully on screen (no dial)', !!sun.panel && !!sun.rail && !sun.dial && sun.panel[0] >= 0 && sun.panel[2] <= sun.inner[0] && sun.panel[3] <= sun.inner[1], JSON.stringify(sun));
     if (sun.rail) {
       const y = (sun.rail[1] + sun.rail[3]) / 2, w = sun.rail[2] - sun.rail[0];
       await K.drag([sun.rail[0] + w * 0.3, y], [sun.rail[0] + w * 0.75, y], { steps: 10 });
@@ -305,11 +316,10 @@ export async function extraChecks(ctx) {
       check('day slider: dragging with a finger sets the time (75 % of the rail ≈ 18:00)', Math.abs(after - 1080) <= 20, `minutes ${after}`);
     }
     await ctx.shot('sun');
-    await page.evaluate(() => window.__home.ui({ sunPanel: false })); await sleep(400);
-  } else check('project without the sun module: no sun panel on the phone', !(await page.$(T('sun'))) && !(await page.$(T('sun-toggle'))), '');
+  } else { await K.openSheet('look'); check('project without the sun module: no time of day in Look', !(await page.$(T('sun'))) && !(await page.$(T('time-of-day'))), ''); }
   // A ↔ B comparison on a phone: one side at a time over the full frame, a switch, the same camera
-  await K.openSheet('mnav-variants');
-  await K.tap(T('variant-duplicate'), { wait: 1200 });
+  await K.openSheet('variants');
+  await K.tap(S.versionNew, { wait: 1200 });
   const ids = await page.evaluate(() => window.__home.variants().list.map((x) => x.id));
   if (ids.length >= 2) {
     await page.evaluate((ids) => window.__home.ui({ compare: { kind: 'variants', a: ids[0], b: ids[1] }, sheet: 'collapsed' }), ids); await sleep(2500);

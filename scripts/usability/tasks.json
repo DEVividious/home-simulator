@@ -1,0 +1,208 @@
+{
+  "$comment": "Usability tasks (ADR 0045). goal: what the persona is told (one sentence, in the persona's language). setup: hidden steps before the first screenshot — query (URL parameters), eval (page script; its returned object is merged into ctx), key. check: hidden success rule, evaluated in Node with final (state after the last action), ever (states after every action), ctx (project facts and setup results). best: clicks on the shortest path; limit: the release threshold (best + 2 when not given). firstOk: test-id prefixes a right first click lands on (old and new UI).",
+  "tasks": [
+    {
+      "id": "T1",
+      "goal": {
+        "en": "Look at the whole house from the outside.",
+        "pl": "Obejrzyj cały dom z zewnątrz."
+      },
+      "setup": [
+        {
+          "query": {
+            "room": "{living}"
+          }
+        }
+      ],
+      "check": "final.houseView === 'exterior' && !final.roomId",
+      "best": 1,
+      "limit": 4,
+      "firstOk": [
+        "scene-back",
+        "view",
+        "place-",
+        "bottom-exit",
+        "exit-room",
+        "nav-building",
+        "mnav-building",
+        "cam-",
+        "step-look",
+        "preset-overview"
+      ]
+    },
+    {
+      "id": "T2",
+      "goal": {
+        "en": "Go up to the first floor.",
+        "pl": "Przejdź na piętro."
+      },
+      "setup": [],
+      "check": "final.level === ctx.upper && final.houseView !== 'exterior'",
+      "best": 1,
+      "limit": 4,
+      "firstOk": [
+        "level",
+        "bottom-level",
+        "nav-interiors",
+        "mnav-interiors",
+        "cam-interior",
+        "step-arrange",
+        "preset-interior"
+      ]
+    },
+    {
+      "id": "T3",
+      "goal": {
+        "en": "Go into the kitchen.",
+        "pl": "Wejdź do kuchni."
+      },
+      "setup": [],
+      "check": "final.roomId === ctx.kitchen || (!!final.walk && final.walk.on && final.walk.roomId === ctx.kitchen)",
+      "best": 2,
+      "limit": 4,
+      "firstOk": [
+        "step-arrange",
+        "nav-interiors",
+        "mnav-interiors",
+        "cam-interior",
+        "level",
+        "room-",
+        "preset-interior",
+        "view",
+        "place-"
+      ]
+    },
+    {
+      "id": "T4",
+      "goal": {
+        "en": "Put a sofa in the living room.",
+        "pl": "Postaw kanapę w salonie."
+      },
+      "setup": [
+        {
+          "eval": "({ sofas0: window.__home.room(ctx.living).furniture.filter((f) => /sofa/.test(f.catalogId)).length })"
+        }
+      ],
+      "check": "final.rooms[ctx.living].furniture.filter((f) => /sofa/.test(f.catalogId)).length > ctx.sofas0",
+      "best": 3,
+      "limit": 4,
+      "firstOk": [
+        "step-arrange",
+        "nav-furniture",
+        "nav-interiors",
+        "mnav-furniture",
+        "mnav-interiors",
+        "room-"
+      ]
+    },
+    {
+      "id": "T5",
+      "goal": {
+        "en": "Paint the walls of the main bedroom a new colour.",
+        "pl": "Pomaluj ściany głównej sypialni na nowy kolor."
+      },
+      "setup": [],
+      "check": "Object.keys(final.rooms[ctx.bedroom].finishes.walls ?? {}).length > 0",
+      "best": 4,
+      "limit": 4,
+      "firstOk": [
+        "step-arrange",
+        "nav-materials",
+        "nav-interiors",
+        "mnav-materials",
+        "mnav-interiors",
+        "room-"
+      ]
+    },
+    {
+      "id": "T6",
+      "goal": {
+        "en": "Make a second version of the house and compare it with the first one.",
+        "pl": "Zrób drugą wersję domu i porównaj ją z pierwszą."
+      },
+      "setup": [],
+      "check": "final.variants >= 2 && ever.some((s) => s.compare === 'variants')",
+      "best": 3,
+      "limit": 6,
+      "firstOk": [
+        "step-variants",
+        "nav-variants",
+        "mnav-variants"
+      ]
+    },
+    {
+      "id": "T7",
+      "goal": {
+        "en": "Download a model of the house that you can print on a 3D printer.",
+        "pl": "Pobierz model domu do wydrukowania na drukarce 3D."
+      },
+      "setup": [],
+      "check": "downloads.stl",
+      "best": 2,
+      "limit": 4,
+      "firstOk": [
+        "download"
+      ]
+    },
+    {
+      "id": "T8",
+      "goal": {
+        "en": "Walk out of the house into the garden.",
+        "pl": "Wyjdź spacerem z domu do ogrodu."
+      },
+      "setup": [],
+      "check": "ever.some((s) => s.walk && s.walk.on && s.walk.kind === 'site')",
+      "best": 2,
+      "firstOk": [
+        "view",
+        "place-",
+        "step-look",
+        "walk-start",
+        "nav-building",
+        "mnav-building",
+        "vp-"
+      ]
+    },
+    {
+      "id": "T9",
+      "goal": {
+        "en": "Oops — the sofa in the living room was deleted by mistake. Bring it back.",
+        "pl": "Ups — kanapa w salonie została przez pomyłkę usunięta. Przywróć ją."
+      },
+      "setup": [
+        {
+          "query": {
+            "room": "{living}"
+          }
+        },
+        {
+          "eval": "(() => { const f = window.__home.room(ctx.living).furniture.find((x) => /sofa/.test(x.catalogId)) ?? window.__home.room(ctx.living).furniture[0]; window.__home.ui({ selection: { kind: 'furniture', roomId: ctx.living, id: f.id } }); return { removed: f.id }; })()"
+        },
+        {
+          "key": "Delete"
+        },
+        {
+          "eval": "(window.__home.ui({ selection: null }), {})"
+        }
+      ],
+      "check": "final.rooms[ctx.living].furniture.some((f) => f.id === ctx.removed)",
+      "best": 1,
+      "firstOk": [
+        "undo"
+      ]
+    },
+    {
+      "id": "T10",
+      "goal": {
+        "en": "Switch the app to Polish.",
+        "pl": "Przełącz aplikację na angielski."
+      },
+      "setup": [],
+      "check": "final.lang !== ctx.lang",
+      "best": 2,
+      "firstOk": [
+        "settings"
+      ]
+    }
+  ]
+}

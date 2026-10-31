@@ -30,7 +30,7 @@ import { screenshotCaption, screenshotMeta } from '../../home/screenshot';
 import { design, variantOf } from '../../home/store/design';
 import { ui, type Selection } from '../../home/store/ui';
 import { Inspector } from '../../home/ui/Inspector';
-import { LevelView } from '../../home/ui/SectionInteriors';
+import { SectionArrange } from '../../home/ui/SectionArrange';
 import { SectionVariants } from '../../home/ui/SectionVariants';
 import { hasModule, project, withProject } from '../active';
 import { readProjectDir } from '../node';
@@ -222,10 +222,10 @@ describe('demo-apartment: UI and operations without data the project does not ha
   const start = (doc: ConfiguratorDoc) => design.set({ history: initHistory(doc), draft: null });
   afterEach(() => { ui.set(ui0); start(demoDoc()); });
 
-  it('stairs: house — a button in the Interiors section and a card describing the structure from the stairs data; a finish set is stored in the variant', () => inHouse(() => {
+  it('stairs: house — a button with the rooms in Arrange and a card describing the structure from the stairs data; a finish set is stored in the variant', () => inHouse(() => {
     start(houseDoc());
-    ui.set({ level: 'L0', selection: null });
-    expect(html(LevelView)).toContain('data-testid="stairs-open"');
+    ui.set({ section: 'arrange', roomId: null, level: 'L0', selection: null });
+    expect(html(SectionArrange)).toContain('data-testid="stairs-open"');
     ui.set({ selection: { kind: 'stairs' } });
     expect(html(Inspector)).toContain('Reinforced concrete structure: 2 flights × 9 steps (16.4 × 27 cm), landing +1.475 — this is building data. Here you choose the finish');
     setVariantStairs({ tread: 'oak', treadThickness: 0.04 }, 'stairs: test');
@@ -234,9 +234,9 @@ describe('demo-apartment: UI and operations without data the project does not ha
   }));
   it('stairs: the apartment without stairs — no button, no card (even with a forced selection), nothing stored in the document', () => {
     start(demoDoc());
-    ui.set({ level: 'L1', selection: null });
-    const side = html(LevelView);
-    expect(side).toContain('data-testid="room-R1"');                  // the section is there: the list of apartment rooms
+    ui.set({ section: 'arrange', roomId: null, level: 'L1', selection: null });
+    const side = html(SectionArrange);
+    expect(side).toContain('data-testid="room-R1"');                  // the step is there: the apartment's rooms to pick
     expect(side).not.toContain('stairs-open');
     ui.set({ selection: { kind: 'stairs' } });
     expect(html(Inspector)).toBe('');
@@ -265,8 +265,9 @@ describe('demo-apartment: UI and operations without data the project does not ha
     const kind = (selection: Selection) => { ui.set({ selection }); return /data-kind="([^"]+)"/.exec(html(Inspector))?.[1] ?? null; };
     expect(kind({ kind: 'stairs' })).toBe('stairs');
     expect(kind({ kind: 'door', id: 'D6' })).toBe('door');
-    expect(kind({ kind: 'room', roomId: 'LK' })).toBe('room');
-    expect(kind({ kind: 'floor', roomId: 'LK' })).toBe('floor');
+    // a room and its surfaces have no card: their finishes are in Arrange › Colours (ADR 0040)
+    expect(kind({ kind: 'room', roomId: 'LK' })).toBeNull();
+    expect(kind({ kind: 'floor', roomId: 'LK' })).toBeNull();
     expect(kind({ kind: 'furniture', roomId: 'LK', id: 'arch-LK-kitchen-base' })).toBe('furniture');
   }));
 
@@ -312,37 +313,29 @@ describe('demo-apartment: UI and operations without data the project does not ha
       expect(currentView()?.environment).toBe(false); expect(currentSun()).toBeNull();
     } finally { sceneApi.camera = null; }
   });
-  it('Variants section: the apartment does not mention the time of day, the sun or surroundings (a variant does not store them); the house mentions the time of day', () => {
+  it('Versions step: cards, "New version" and "Compare" — no Save button (autosave, ADR 0041); the apartment does not mention the time of day', () => {
     inHouse(() => {
       start(houseDoc());
       const h = html(SectionVariants);
-      expect(h).toContain('A variant is a complete version of the house: interiors, view and time of day.');
-      expect(h).toContain('furnished rooms: 0 · no time of day');
-      expect(h).toContain('“Save” stores the current view (camera, FOV), the sun date and time and a thumbnail in the variant.');
-      expect(h).toContain('Both halves of the screen share the same camera and light — only the variant data differ.');
+      expect(h).toContain('data-testid="variant-new"');
+      expect(h).toContain(`data-testid="variant-${houseDoc().variants[0].name}"`);
+      expect(h).not.toMatch(/variant-save|variant-saveas|project-save/);
+      expect(h).not.toContain('versions-compare');                    // one version — nothing to compare
     });
-    // a variant saved elsewhere may have a time of day — in a project without the sun it is not shown
+    // a version saved elsewhere may have a time of day — in a project without the sun it is not shown
     const d0 = demoDoc();
-    start({ ...d0, variants: [{ ...d0.variants[0], ...SAVED } as Variant] });
+    start({ ...d0, variants: [{ ...d0.variants[0], ...SAVED } as Variant, { ...d0.variants[0], id: 'v2', name: 'Version 2' } as Variant] });
     const d = html(SectionVariants);
-    expect(d).toContain('data-testid="variant-save"');
+    expect(d).toContain('data-testid="versions-compare"');
     expect(d).not.toMatch(/time of day|sun|surroundings|21\.06|06-21/i);
-    expect(d).toContain('A variant is a complete version of the apartment: interiors and view.');
-    expect(d).toContain('“Save” stores the current view (camera, FOV) and a thumbnail in the variant.');
-    expect(d).toContain('Both halves of the screen share the same camera and light — only the variant data differ.');
   });
-  it('system Back on a phone: the "sun panel expanded" preference does not take a step in a project without the sun panel', () => {
-    const closed = { settingsOpen: false, onboardingDone: true, sheet: 'collapsed' as const, selection: null, compare: null, roomView: '3d' as const, section: 'building' as const };
-    inHouse(() => {
-      ui.set({ ...closed, ...exterior, sunPanel: true });
-      expect(backStep()).toBe(true); expect(ui.get().sunPanel).toBe(false);   // the house: the step closes the sun panel
-    });
-    ui.set({ ...closed, ...exterior, sunPanel: true });
-    expect(backStep(true)).toBe(false);                               // nothing to close — Back leaves the app
-    ui.set({ roomId: 'R1', level: 'L1', houseView: 'interior' });
-    expect(backStep()).toBe(true);
-    expect(ui.get().roomId).toBeNull();                               // the first step leaves the room
-    expect(ui.get().sunPanel).toBe(true);                             // device preference unchanged
+  it('system Back on a phone: an open menu closes first, then the room is left; nothing open — Back leaves the app', () => {
+    const closed = { settingsOpen: false, onboardingDone: true, sheet: 'collapsed' as const, selection: null, compare: null, roomView: '3d' as const, section: 'look' as const, menu: null };
+    ui.set({ ...closed, ...exterior });
+    expect(backStep(true)).toBe(false);
+    ui.set({ roomId: 'R1', level: 'L1', houseView: 'interior', menu: 'download' });
+    expect(backStep()).toBe(true); expect(ui.get().menu).toBeNull();
+    expect(backStep()).toBe(true); expect(ui.get().roomId).toBeNull();  // the next step leaves the room
   });
   it('screenshot: caption and metadata without the sun and surroundings in a project without these modules', () => {
     withProject(houseWithSurroundings, () => {

@@ -8,7 +8,7 @@ import en_preview from './en/preview.json';
 import en_print from './en/print.json';
 import en_render from './en/render.json';
 import en_scene from './en/scene.json';
-import en_section from './en/section.json';
+import en_steps from './en/steps.json';
 import en_ui_a from './en/ui-a.json';
 import en_ui_b from './en/ui-b.json';
 import en_views from './en/views.json';
@@ -21,12 +21,12 @@ import pl_preview from './pl/preview.json';
 import pl_print from './pl/print.json';
 import pl_render from './pl/render.json';
 import pl_scene from './pl/scene.json';
-import pl_section from './pl/section.json';
+import pl_steps from './pl/steps.json';
 import pl_ui_a from './pl/ui-a.json';
 import pl_ui_b from './pl/ui-b.json';
 import pl_views from './pl/views.json';
 
 export const DICTS: Record<string, Record<string, string>> = {
-  en: { ...en_app, ...en_catalog, ...en_document, ...en_model_a, ...en_model_b, ...en_preview, ...en_print, ...en_render, ...en_scene, ...en_section, ...en_ui_a, ...en_ui_b, ...en_views },
-  pl: { ...pl_app, ...pl_catalog, ...pl_document, ...pl_model_a, ...pl_model_b, ...pl_preview, ...pl_print, ...pl_render, ...pl_scene, ...pl_section, ...pl_ui_a, ...pl_ui_b, ...pl_views },
+  en: { ...en_app, ...en_catalog, ...en_document, ...en_model_a, ...en_model_b, ...en_preview, ...en_print, ...en_render, ...en_scene, ...en_steps, ...en_ui_a, ...en_ui_b, ...en_views },
+  pl: { ...pl_app, ...pl_catalog, ...pl_document, ...pl_model_a, ...pl_model_b, ...pl_preview, ...pl_print, ...pl_render, ...pl_scene, ...pl_steps, ...pl_ui_a, ...pl_ui_b, ...pl_views },
 };

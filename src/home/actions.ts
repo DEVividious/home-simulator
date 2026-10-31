@@ -7,7 +7,8 @@ import { createVariant, docErrors, duplicateVariant, renameVariant, type Variant
 import { exportVariant, importVariant, type VariantSun, type VariantView } from './model/variantData';
 import { hasStairs } from './model/stairs';
 import type { DeepPartial, StairsConfig } from './model/stairsConfig';
-import { homeViewId } from './model/views';
+import { aboveViewId, homeViewId } from './model/views';
+import { viewpointById } from './model/viewpoints';
 import { displayName, resolveDims } from './catalog/furniture';
 import { itemById } from './catalog/providers';
 import { materialById } from './catalog/materials';
@@ -21,9 +22,9 @@ import { architectFurniture, defaultFurniture, kitchenBuiltIn } from './model/de
 import { allRooms, baseLevel, roomById, roomsOfLevel, type HomeRoom } from './model/rooms';
 import { duplicateMounted } from './scene/interaction';
 import type { CameraBookmark, FinishRef, FurniturePlacement, LevelId, RoomView, ScenarioPreset, Vec3 } from './model/types';
-import { arrangementOf, commit, design, docOf, preview, previewArrangement, save, interiorOfRoom, updateArrangement, updateInterior, updateVariant, variantOf, withActiveVariant } from './store/design';
+import { arrangementOf, commit, design, docOf, preview, previewArrangement, interiorOfRoom, updateArrangement, updateInterior, updateVariant, variantOf, withActiveVariant } from './store/design';
 import { attachMounted, patchPlacement } from './model/mountedFurniture';
-import { cameraTo, enterRoom, exitRoom, isEditWalk, isWalking, startWalk, toast, ui, type CameraPresetId, type ElView, type Section } from './store/ui';
+import { cameraTo, enterRoom, exitRoom, exitWalk, isEditWalk, isWalking, startWalk, toast, ui, type CameraPresetId, type ElView, type Mode, type Section, type UiState } from './store/ui';
 import { cancelPlace, forgetPlace } from './store/elPlace';
 import { EYE_LEVEL_FOV, eyeLevelPitch, heightRange } from './model/elPlacement';
 import { sceneApi } from './scene/sceneApi';
@@ -36,9 +37,9 @@ import { addPoint, EL_TYPES, elRoom, elWall, removePoint, resolvePlan, siteLevel
 export function goSection(section: Section) {
   const s = ui.get();
   if (section === s.section) return;
-  if (section === 'building') {
+  if (section === 'look') {
     const wasInside = s.roomId || s.houseView === 'interior';
-    // a walk through the building and site continues (eye-level viewpoints are in the building section)
+    // a walk through the building and site continues (the walk places are in the Look step)
     ui.set({ section, roomId: null, houseView: s.houseView === 'walk' && !s.roomId ? 'walk' : 'exterior', selection: null, hoverRoom: null });
     if (wasInside) cameraTo(homeViewId());
     return;
@@ -51,8 +52,8 @@ export function goSection(section: Section) {
     if (!s.roomId && (s.houseView !== 'interior' || walking)) cameraTo('interior');
     return;
   }
-  // a walk started in a room continues when switching between interior sections (as in a room walk); touring from the Home section — cutaway
-  if ((section === 'interiors' || section === 'materials' || section === 'furniture') && !s.roomId && s.houseView !== 'interior' && !isEditWalk(s)) {
+  // a walk started in a room continues in the Arrange step (as in a room walk); touring from the Look step — cutaway
+  if (section === 'arrange' && !s.roomId && s.houseView !== 'interior' && !isEditWalk(s)) {
     ui.set({ section, houseView: 'interior', selection: null });
     cameraTo('interior');
     return;
@@ -61,7 +62,7 @@ export function goSection(section: Section) {
 }
 
 export function goPreset(id: CameraPresetId) {
-  if (id === 'interior') { ui.set((s) => ({ roomId: null, houseView: 'interior', selection: null, section: s.section === 'building' ? 'interiors' : s.section })); cameraTo('interior'); return; }
+  if (id === 'interior') { ui.set({ roomId: null, houseView: 'interior', selection: null }); cameraTo('interior'); return; }
   ui.set({ roomId: null, houseView: 'exterior', selection: null });
   cameraTo(id);
 }
@@ -75,6 +76,62 @@ export function setLevel(level: LevelId) {
 
 export const setRoomView = (v: RoomView) => ui.set({ roomView: v });
 export { enterRoom, exitRoom };
+
+/** simple or advanced mode (ADR 0038): leaving advanced mode leaves its steps and its whole-home wall scope */
+export function setMode(mode: Mode) {
+  const s = ui.get();
+  if (mode === s.mode) return;
+  if (mode === 'simple' && (s.section === 'electrical' || s.section === 'expert')) goSection('look');
+  ui.set((u) => ({ mode, ...(mode === 'simple' && u.wallScope === 'house' ? { wallScope: 'all' as const } : {}) }));
+}
+
+// ------------------------------------------------------------------ scene bar: Around | From above | Walk (the same words outside and in a room)
+export type SceneView = 'around' | 'above' | 'walk';
+/** the scene-bar view shown now; null — the level section ("doll's house"), shown by the level chips */
+export function sceneViewOf(s: Pick<UiState, 'roomId' | 'roomView' | 'houseView' | 'camera'>): SceneView | null {
+  if (s.roomId) return s.roomView === 'walk' ? 'walk' : s.roomView === 'top' ? 'above' : 'around';
+  if (s.houseView === 'walk') return 'walk';
+  if (s.houseView === 'interior') return null;
+  return s.camera.preset === aboveViewId() ? 'above' : 'around';
+}
+export function goView(v: SceneView) {
+  const s = ui.get();
+  if (s.roomId) { setRoomView(v === 'walk' ? 'walk' : v === 'above' ? 'top' : '3d'); return; }
+  if (v === 'walk') { if (s.houseView !== 'walk') startWalk(); return; }
+  // a walk started in a room goes back to that room; otherwise the house from outside
+  if (s.houseView === 'walk' && isEditWalk(s)) { exitWalk(); if (v === 'above') setRoomView('top'); return; }
+  const above = aboveViewId();
+  if (v === 'above' && !above) { setLevel(s.level); return; }
+  goPreset(v === 'above' ? above! : homeViewId());
+}
+
+/** a place in the Look step: a view of the project, a walk start at a viewpoint, or a saved view */
+export function goPlace(id: string) {
+  if (viewpointById(id)) { startWalk({ viewpointId: id }); return; }
+  const b = (docOf(design.get()).bookmarks ?? []).find((x) => x.id === id);
+  if (b) { openBookmark(b); return; }
+  goPreset(id);
+}
+
+/** "Start from" in a room: the furniture of the plan, a proposal (office, guest room) or an empty room — one history entry,
+ *  the room's current furniture is replaced (simple mode keeps one layout per room; alternatives are versions, ADR 0042) */
+export type StartFrom = 'plan' | 'office' | 'guest' | 'empty';
+export function startFrom(roomId: string, what: StartFrom) {
+  const room = roomById(roomId);
+  if (!room) return;
+  let items: FurniturePlacement[] = [];
+  if (what === 'plan') {
+    // wall-mounted objects (wall cabinets, a TV) get a mounting record — as in the default arrangement
+    const plan = architectFurniture(roomId, newId('arch')).map((f) => attachMounted(roomId, f));
+    items = plan.length ? plan : defaultFurniture(roomId);
+  } else if (what === 'office' || what === 'guest') {
+    const r = arrangeScenario(room, what, []);
+    items = r.placed;
+    if (r.skipped.length) toast(t('actions.scenarioSkipped', { label: SCENARIOS.find((x) => x.id === what)!.label, items: r.skipped.join(', ') }), 'warn');
+  }
+  updateArrangement(roomId, t(`history.startFrom.${what}`), (a) => ({ ...a, furniture: items, ...(what === 'office' || what === 'guest' ? { scenario: what } : {}) }));
+  ui.set({ selection: null });
+}
 
 // ------------------------------------------------------------------ furniture
 const curRoom = () => roomById(ui.get().roomId);
@@ -219,11 +276,37 @@ export function clearRoom(roomId: string) {
   ui.set({ selection: null });
 }
 
-// ------------------------------------------------------------------ project variants
+// ------------------------------------------------------------------ project variants ("versions" in the UI)
+/** switching versions: the version being left keeps the current view, sun and picture (saved automatically, ADR 0041) — one
+ *  history entry with the switch */
 export function switchVariant(id: string) {
-  commit(t('history.switchVariant'), (d) => (d.activeVariantId === id ? d : { ...d, activeVariantId: id }));
+  if (docOf(design.get()).activeVariantId === id) return;
+  const snap = snapshot();
+  commit(t('history.switchVariant'), (d) => (d.activeVariantId === id ? d : { ...withActiveVariant(d, (v) => withSnapshot(v, snap)), activeVariantId: id }));
   ui.set({ selection: null });
   applyVariantView(docOf(design.get()).variants.find((v) => v.id === id));
+}
+/** "+ New version": a copy of the current design under the next free name ("Version 2"), which becomes active; the version
+ *  left keeps its view and picture — one history entry */
+export function newVersion() {
+  const snap = snapshot();
+  commit(t('history.newVersion'), (d) => {
+    const cur = withSnapshot(d.variants.find((x) => x.id === d.activeVariantId)!, snap);
+    let n = d.variants.length + 1;
+    while (d.variants.some((v) => v.name === t('actions.versionName', { n }))) n++;
+    const c = { ...duplicateVariant(cur, d.variants), name: t('actions.versionName', { n }) };
+    return { ...d, variants: [...d.variants.map((v) => (v.id === cur.id ? cur : v)), c], activeVariantId: c.id };
+  });
+  ui.set({ selection: null });
+}
+/** a version's picture for its card: the active one from the scene as it is now (not stored), the others as stored */
+export const liveThumbnail = (): string | null => captureThumbnail();
+export const renameVersion = (id: string, name: string) => { const n = name.trim(); if (n) commit(t('history.renameVariant'), (d) => ({ ...d, variants: d.variants.map((v) => (v.id === id ? renameVariant(v, uniqueVariantName(d.variants.filter((x) => x.id !== id), n)) : v)) })); };
+/** "Start over": the version returns to the project's state (its name and electrical layout stay) — one history entry */
+export function resetVersion(id: string) {
+  const ok = commit(resetLabel(), (d) => ({ ...d, variants: d.variants.map((v) => (v.id === id ? projectDefaultVariant(v) : v)) }));
+  if (ok) { ui.set({ selection: null }); toast(t('actions.variantReset')); } else toast(t('actions.variantAlreadyDefault'));
+  return ok;
 }
 
 // ------------------------------------------------------------------ complete variant (view, sun, thumbnail, facade)
@@ -254,23 +337,6 @@ export function captureThumbnail(): string | null {
 /** stored in the variant: view, sun, thumbnail (joinery and interiors unchanged) */
 const snapshot = () => ({ view: currentView(), sun: currentSun(), thumbnail: captureThumbnail(), updatedAt: new Date().toISOString() });
 const withSnapshot = (v: Variant, snap: ReturnType<typeof snapshot>): Variant => ({ ...v, view: snap.view ?? v.view ?? null, sun: snap.sun, thumbnail: snap.thumbnail ?? v.thumbnail ?? null, updatedAt: snap.updatedAt });
-
-/** Save: current view, sun and thumbnail into the active variant + project save */
-export async function saveVariant() {
-  const snap = snapshot(), name = activeVariant().name;
-  updateVariant(t('history.saveVariant', { name }), (v) => withSnapshot(v, snap));
-  await save();
-}
-
-/** Save as: a copy of the active variant under a new name (with the current view and sun); it becomes active */
-export async function saveVariantAs(name: string) {
-  const snap = snapshot();
-  commit(t('history.saveVariantAs', { name: name.trim() }), (d) => {
-    const v = d.variants.find((x) => x.id === d.activeVariantId)!, c = withSnapshot({ ...duplicateVariant(v, d.variants), name: uniqueVariantName(d.variants, name) }, snap);
-    return { ...d, variants: [...d.variants, c], activeVariantId: c.id };
-  });
-  await save();
-}
 
 /** new variant: empty interiors (the project default furnishing) */
 export function newVariant(name: string) {
@@ -329,8 +395,6 @@ export function uniqueVariantName(list: Variant[], name: string): string {
   while (list.some((v) => v.name === n)) n = `${base} (${i++})`;
   return n;
 }
-
-const activeVariant = () => { const d = docOf(design.get()); return d.variants.find((v) => v.id === d.activeVariantId)!; };
 
 /**
  * After choosing a variant: its sun, surroundings and (in the exterior view of the home) camera. Sun and surroundings — only in a
@@ -392,6 +456,11 @@ export function startRoomCompare(roomId: string, a: string, b: string) {
   ui.set((s) => ({ compare: { kind: 'room', roomId, a, b }, selection: null, roomView: s.roomView === 'walk' ? '3d' : s.roomView }));
 }
 export const swapCompare = () => ui.set((s) => ({ compare: s.compare ? { ...s.compare, a: s.compare.b, b: s.compare.a } : null }));
+/** "Compare" in Versions: the active version against another one (with two versions — the other one) */
+export function compareWith(other: string) {
+  const d = docOf(design.get());
+  startCompare(d.activeVariantId, other);
+}
 export const exitCompare = () => ui.set({ compare: null });
 export function duplicateProjectVariant() {
   commit(t('history.duplicateVariant'), (d) => {
@@ -419,6 +488,13 @@ export function addBookmark(name: string) {
   const tgt = walking || !tg ? c.position.clone().add(c.getWorldDirection(c.position.clone())) : tg;
   const b: CameraBookmark = { id: newId('cam'), name: name.trim() || t('actions.bookmarkFallbackName'), position: lcs(c.position), target: lcs(tgt), fov: c.isPerspectiveCamera ? round(c.fov, 2) : 45, roomId: s.roomId, view: s.roomId ? s.roomView : walking ? 'walk' : null };
   commit(t('history.addBookmark', { name: b.name }), (d) => ({ ...d, bookmarks: [...(d.bookmarks ?? []), b] }));
+}
+/** "Save view" in Look: the current camera as a place named "My view 1", "My view 2", … (no typing) */
+export function addBookmarkAuto() {
+  const have = new Set((docOf(design.get()).bookmarks ?? []).map((b) => b.name));
+  let n = 1;
+  while (have.has(t('actions.myView', { n }))) n++;
+  addBookmark(t('actions.myView', { n }));
 }
 export const deleteBookmark = (id: string) => commit(t('history.deleteBookmark'), (d) => ({ ...d, bookmarks: (d.bookmarks ?? []).filter((b) => b.id !== id) }));
 export function openBookmark(b: CameraBookmark) {

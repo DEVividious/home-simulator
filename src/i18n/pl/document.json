@@ -1,7 +1,7 @@
 {
- "document.newVariant": "Nowy wariant",
- "document.defaultVariant": "Ustawienia z projektu",
+ "document.newVariant": "Nowa wersja",
+ "document.defaultVariant": "Wersja 1",
  "document.copyOf": "{name} (kopia)",
  "document.copyOfN": "{name} (kopia {n})",
- "document.variantFromFile": "Wariant z pliku"
+ "document.variantFromFile": "Wersja z pliku"
 }

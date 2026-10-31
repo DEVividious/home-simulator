@@ -11,7 +11,6 @@
  "scene.enterRoomToPlace": "Najpierw wejdź do pokoju, aby ustawiać meble.",
  "scene.noRoomForCopy": "Na tej ścianie nie ma już miejsca na kopię: {name}.",
  "scene.modelLoadFailed": "Nie można wczytać pliku modelu „{name}” — w scenie jest bryła zastępcza. Zaimportuj model ponownie albo usuń mebel.",
- "scene.levelSection": "{level} — przekrój",
  "walkHud.feetLevel": "poziom stóp {z}",
  "walkHud.helpSelected": "przeciągnij zaznaczony mebel — przesuwanie · przeciągnij obok — rozglądanie · Esc — odznacz",
  "walkHud.help": "WASD — chodzenie · Shift — bieg · przeciągnij — rozglądanie · klik — drzwi, meble",

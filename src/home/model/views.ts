@@ -27,5 +27,12 @@ export const exteriorViews = (): ViewPreset[] => project().views?.presets ?? def
 /** views in the bottom bar and the building section: exterior + level section */
 export const viewPresets = (): ViewPreset[] => [...exteriorViews(), interiorView()];
 export const viewById = (id: string): ViewPreset | null => exteriorViews().find((v) => v.id === id) ?? null;
-/** start view (also after leaving walk mode or a section) */
+/** start view (also after leaving walk mode or a section) — "Around" in the scene bar */
 export const homeViewId = (): string => { const v = project().views; return v?.home && viewById(v.home) ? v.home : exteriorViews()[0].id; };
+/** the exterior view that looks down the most — "From above" in the scene bar; null when no view looks down steeply */
+export function aboveViewId(): string | null {
+  const steep = exteriorViews().filter((v) => v.dir && v.dir[2] / Math.hypot(...v.dir) > 0.8 && v.id !== homeViewId());
+  return steep.sort((a, b) => b.dir![2] / Math.hypot(...b.dir!) - a.dir![2] / Math.hypot(...a.dir!))[0]?.id ?? null;
+}
+/** exterior views offered as places in the Look step: those the scene bar does not already give */
+export const placeViews = (): ViewPreset[] => { const above = aboveViewId(), home = homeViewId(); return exteriorViews().filter((v) => v.id !== home && v.id !== above); };

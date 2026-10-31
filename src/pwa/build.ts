@@ -30,7 +30,7 @@ export const MANIFEST = {
     { src: '/icons/maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
   ],
   shortcuts: [
-    { name: 'Electrical plan', short_name: 'Electrical', url: '/?section=electrical', icons: [{ src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' }] },
+    { name: 'Electrical plan', short_name: 'Electrical', url: '/?section=electrical&mode=advanced', icons: [{ src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' }] },
   ],
 } as const;
 

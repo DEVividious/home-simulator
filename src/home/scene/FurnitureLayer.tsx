@@ -292,9 +292,8 @@ const FurnitureItem = memo(function FurnitureItem({ room, p, selected, level, in
     e.stopPropagation();
     if (interactive && touchDown && wasClick(e.nativeEvent.clientX, e.nativeEvent.clientY)) { ui.set({ selection: { kind: 'furniture', roomId: room.id, id: p.id } }); return; }
     if (interactive || !wasClick(e.nativeEvent.clientX, e.nativeEvent.clientY)) return;
-    // furniture in another room (level section): enter the room and select
+    // furniture in another room (level section): the tap enters the room — the next one selects (one tap, one thing)
     enterRoom(room.id, room.level);
-    ui.set({ selection: { kind: 'furniture', roomId: room.id, id: p.id } });
   };
   return (
     <group position={[x, (draft ? roomById(draft.roomId)?.floorZ ?? room.floorZ : room.floorZ) + (draft?.elevation ?? elevationOf(item, p)), -y]} rotation-y={rad(rot)} name={`FURNITURE_${p.id}`} userData={{ furniture: p.id, room: room.id }}

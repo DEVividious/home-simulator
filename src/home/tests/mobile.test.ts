@@ -10,7 +10,7 @@ import { ui } from '../store/ui';
 
 describe('system Back on a phone', () => {
   const ui0 = ui.get();
-  beforeEach(() => ui.set({ section: 'building', settingsOpen: false, onboardingDone: true, sunPanel: false, sheet: 'collapsed', selection: null, compare: null, roomId: null, roomView: '3d', houseView: 'exterior', level: 'L1' }));
+  beforeEach(() => ui.set({ section: 'look', settingsOpen: false, onboardingDone: true, menu: null, sheet: 'collapsed', selection: null, compare: null, roomId: null, roomView: '3d', houseView: 'exterior', level: 'L1' }));
   afterEach(() => ui.set(ui0));
   const snap = () => { const s = ui.get(); return `${s.settingsOpen ? 'dialog' : '-'}/${s.sheet}/${s.selection ? s.selection.kind : '-'}/${s.roomId ?? '-'}/${s.roomView}/${s.houseView}`; };
 
@@ -54,7 +54,7 @@ describe('system Back on a phone', () => {
   it('Electrical mode: selection, then leaving the mode to the first section', () => {
     ui.set({ section: 'electrical', selection: { kind: 'electrical', id: 'S1' } });
     expect(backStep()).toBe(true); expect(ui.get().selection).toBeNull();
-    expect(backStep()).toBe(true); expect(ui.get().section).toBe('building');
+    expect(backStep()).toBe(true); expect(ui.get().section).toBe('look');
   });
   it('mobile layout rule: a narrow window or a phone in landscape (coarse pointer, low screen)', () => {
     expect(MOBILE_QUERY).toBe('(max-width: 760px), ((pointer: coarse) and (max-height: 540px))');

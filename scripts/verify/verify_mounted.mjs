@@ -99,7 +99,7 @@ async function runProject(PROJECT) {
     await frames(2);
   };
   const setCamera = async (position, target, fov = 50) => { await page.evaluate((pose) => window.__home.ui({ camera: { preset: 'pose', n: Date.now(), pose } }), { position, target, fov }); await sleep(600); await still(); };
-  const enter = async (room = ROOM) => { await page.evaluate((r, l) => window.__home.ui({ roomId: r, level: l, section: 'furniture', houseView: 'interior', roomView: '3d', selection: null, camera: { preset: 'room', n: Date.now() } }), room, SCENE.level); await sleep(1500); await still(); };
+  const enter = async (room = ROOM) => { await page.evaluate((r, l) => window.__home.ui({ roomId: r, level: l, section: 'arrange', arrangeTab: 'furniture', houseView: 'interior', roomView: '3d', selection: null, camera: { preset: 'room', n: Date.now() } }), room, SCENE.level); await sleep(1500); await still(); };
   const open = async () => { navigating = true; await page.goto(URL, { waitUntil: 'load' }); navigating = false; await waitForApp(page); await page.waitForFunction(() => !!window.__home3d, { timeout: 60000 }); await enter(); };
   const keys = async (...ks) => { for (const k of ks.slice(0, -1)) await page.keyboard.down(k); await page.keyboard.press(ks.at(-1)); for (const k of ks.slice(0, -1).reverse()) await page.keyboard.up(k); await sleep(450); };
 
@@ -169,7 +169,7 @@ async function runProject(PROJECT) {
     // ================================================================== 1. selection
     await page.mouse.click(M.c[0], M.c[1]); await sleep(700); await still();
     const sel = (await st()).selection;
-    check('1. a click selects the object; the inspector shows its position on the wall (no rotation buttons)', sel?.kind === 'furniture' && sel.id === TV && !!(await page.$(T('mount'))) && !(await page.$(T('rot-left'))),
+    check('1. a click selects the object; the card shows its position on the wall, the object bar has the four nudges (no turning)', sel?.kind === 'furniture' && sel.id === TV && !!(await page.$(T('mount'))) && !!(await page.$(T('obj-up'))) && !(await page.$(T('obj-rotate-left'))),
       `${JSON.stringify(sel)}; ${await page.$eval(T('mount-along'), (e) => e.textContent).catch(() => '—')} from the corner, ${await page.$eval(T('mount-height'), (e) => e.textContent).catch(() => '—')}`);
     M = await metric();                                                          // inspector open — the scene has a new size
     const past0 = (await st()).past;
@@ -351,11 +351,11 @@ async function runProject(PROJECT) {
     // ================================================================== C. step buttons and arrows (precision without aiming)
     await page.mouse.click(cB[0], cB[1]); await sleep(700); await still();
     const n0 = await tv(), pastC = (await st()).past;
-    await page.click(T('mount-up-1')); await sleep(250);
-    await page.click(T('mount-left-5')); await sleep(250);
+    await page.click(T('obj-up')); await sleep(250);
+    for (let i = 0; i < 5; i++) { await page.click(T('obj-left')); await sleep(200); }
     const n1 = await tv(), cB2 = await scr(onWall(along(n1), zB + 0.01)), sR2 = Math.sign((await scr(onWall(along(n1) + 0.1, zB + 0.01)))[0] - cB2[0]);
-    check('C. step buttons in the inspector: +1 cm height, 5 cm along the wall (to the left on screen), two history entries',
-      Math.abs((n1.elevation ?? 0) - (n0.elevation ?? elev0) - 0.01) < 1e-6 && Math.abs((along(n1) - along(n0)) * sR2 + 0.05) < 1e-6 && (await st()).past === pastC + 2,
+    check('C. nudges in the object bar: ▲ +1 cm height, ◀ five times 5 cm along the wall (to the left on screen), one history entry each',
+      Math.abs((n1.elevation ?? 0) - (n0.elevation ?? elev0) - 0.01) < 1e-6 && Math.abs((along(n1) - along(n0)) * sR2 + 0.05) < 1e-6 && (await st()).past === pastC + 6,
       `bottom ${r3(n0.elevation ?? elev0)} → ${r3(n1.elevation)}; along the wall ${r3(along(n0))} → ${r3(along(n1))} (right on screen = ${sR2 > 0 ? '+' : '−'}); history +${(await st()).past - pastC}`);
     await page.mouse.move(cB[0], cB[1] - 200);
     await page.keyboard.press('ArrowRight'); await sleep(300);

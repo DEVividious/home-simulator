@@ -1,6 +1,6 @@
-// Sun panel (Home mode): date, time, 24-hour dial (phone: a low day bar), times of day (Morning / Noon / Afternoon / Sunset),
-// sun position (azimuth, elevation), sunrise / sunset; a north indicator that rotates with the camera, marked "approximate
-// north" when the site orientation is not confirmed (site.runtime.json → orientation_confidence).
+// Time of day (the Look step, sun module): times of day (Morning / Noon / Afternoon / Sunset) and a day bar; in advanced mode the
+// date and time fields, the 24-hour dial, the sun position (azimuth, elevation), sunrise / sunset and a north indicator that
+// rotates with the camera, marked "approximate north" when the site orientation is not confirmed.
 import { useEffect, useMemo, useRef } from 'react';
 import type * as THREE from 'three';
 import { fmtTime, northApproximate, northEastLcs, siteGeo, sunAt, sunPresets, sunTimes, zoneLabel } from '../model/sun';
@@ -8,8 +8,6 @@ import { sceneApi } from '../scene/sceneApi';
 import { onSceneFrame } from '../scene/renderLoop';
 import { ui, useUi } from '../store/ui';
 import { useLayout } from '../store/layout';
-import { DoorsButton } from './DoorsToggle';
-import { Icon } from './icons';
 import { fmtNum, t } from '../../i18n';
 
 type PresetKey = 'morning' | 'noon' | 'afternoon' | 'sunset';
@@ -142,58 +140,36 @@ export function SunTrack({ minutes, sunrise, sunset, night, onChange }: { minute
   );
 }
 
-export function SunPanel() {
-  const mobile = useLayout((s) => s.mobile);
-  const open = useUi((s) => s.sunPanel), date = useUi((s) => s.sun.date), minutes = useUi((s) => s.sun.minutes);
+/** "Time of day" in the Look step: four times of day and the day bar (the dial on a large screen); the date, the sun's position
+ *  and the north arrow in advanced mode only (ADR 0038) */
+export function TimeOfDay() {
+  const mobile = useLayout((s) => s.mobile), advanced = useUi((s) => s.mode === 'advanced');
+  const date = useUi((s) => s.sun.date), minutes = useUi((s) => s.sun.minutes);
   const pos = useMemo(() => sunAt(date, minutes), [date, minutes]);
   const times = useMemo(() => sunTimes(date), [date]);
   const presets = useMemo(() => sunPresets(date), [date]);
   const set = (patch: Partial<{ date: string; minutes: number }>) => ui.set((s) => ({ sun: { ...s.sun, ...patch } }));
   const approx = northApproximate();
   const up = pos.elevation > -0.833;
-  const toggle = (
-    <button className="hm-sun-btn" onClick={() => ui.set({ sunPanel: !open })} title={t('sunUi.toggleTitle')} data-testid="sun-toggle">
-      <Icon name="sun" size={16} /> <b data-testid="sun-time">{fmtTime(minutes)}</b><small>{date.slice(8, 10)}.{date.slice(5, 7)}</small>
-    </button>
-  );
   return (
-    <div className="hm-sun" data-testid="sun">
-      <div className="hm-sun-bar">
-        {mobile && <DoorsButton />}
-        {toggle}
-        <div className="hm-north" title={approx ? t('sunUi.northApproxTitle', { confidence: siteGeo().confidence, deg: siteGeo().uncertaintyDeg }) : t('sunUi.north')}>
-          <NorthArrow />
-          {approx && <span className="hm-approx" data-testid="north-approx">{t('sunUi.approxNorth')}<small>{t('sunUi.approxNorthSub')}</small></span>}
-        </div>
+    <div className="hm-time" data-testid="sun">
+      <div className="hm-sun-presets" data-testid="sun-presets">
+        {presetLabels().map(([k, label, title]) => (
+          <button key={k} type="button" className={`hm-pill${Math.abs(presets[k] - minutes) < 3 ? ' on' : ''}`} onClick={() => set({ minutes: presets[k] })} title={`${title} (${fmtTime(presets[k])})`} data-testid={`sun-${k}`}>{label}</button>
+        ))}
       </div>
-      {open && mobile && (
-        <div className="hm-sun-panel compact" data-testid="sun-panel">
-          <SunTrack minutes={minutes} sunrise={times.sunrise} sunset={times.sunset} night={!up} onChange={(m) => set({ minutes: m })} />
-          <div className="hm-sun-presets">
-            {presetLabels().map(([k, label, title]) => (
-              <button key={k} className={`hm-pill${Math.abs(presets[k] - minutes) < 3 ? ' on' : ''}`} onClick={() => set({ minutes: presets[k] })} title={`${title} (${fmtTime(presets[k])})`} data-testid={`sun-${k}`}>{label}</button>
-            ))}
-          </div>
-          <div className="hm-sun-line">
-            <input type="date" value={date} onChange={(e) => { if (e.target.value) set({ date: e.target.value }); }} aria-label={t('sunUi.date')} data-testid="sun-date" />
-            <span data-testid="sun-info">
-              {up ? <><b>{dirName(pos.azimuth)}</b> · {t('sunUi.elevShort')} <b>{comma(pos.elevation)}°</b></> : <>{t('sunUi.nightDusk')}</>}
-              {times.sunrise !== null && times.sunset !== null && <small> · {t('sunUi.dayRange', { from: fmtTime(times.sunrise), to: fmtTime(times.sunset) })}</small>}
-            </span>
-          </div>
-        </div>
-      )}
-      {open && !mobile && (
-        <div className="hm-sun-panel" data-testid="sun-panel">
+      {mobile || !advanced
+        ? <div className="hm-time-track"><b data-testid="sun-time">{fmtTime(minutes)}</b><SunTrack minutes={minutes} sunrise={times.sunrise} sunset={times.sunset} night={!up} onChange={(m) => set({ minutes: m })} /></div>
+        : <SunDial date={date} minutes={minutes} sunrise={times.sunrise} sunset={times.sunset} night={!up} onChange={(m) => set({ minutes: m })} />}
+      {advanced && (
+        <div className="hm-sun-advanced" data-testid="sun-panel">
           <div className="hm-sun-row">
             <label><span>{t('sunUi.date')}</span><input type="date" value={date} onChange={(e) => { if (e.target.value) set({ date: e.target.value }); }} data-testid="sun-date" /></label>
             <label><span>{t('sunUi.time')}</span><input type="time" step={300} value={fmtTime(minutes).padStart(5, '0')} onChange={(e) => { const m = /^(\d{1,2}):(\d{2})/.exec(e.target.value); if (m) set({ minutes: Number(m[1]) * 60 + Number(m[2]) }); }} data-testid="sun-time-input" /></label>
-          </div>
-          <SunDial date={date} minutes={minutes} sunrise={times.sunrise} sunset={times.sunset} night={!up} onChange={(m) => set({ minutes: m })} />
-          <div className="hm-sun-presets">
-            {presetLabels().map(([k, label, title]) => (
-              <button key={k} className={`hm-pill${Math.abs(presets[k] - minutes) < 3 ? ' on' : ''}`} onClick={() => set({ minutes: presets[k] })} title={`${title} (${fmtTime(presets[k])})`} data-testid={`sun-${k}`}>{label}</button>
-            ))}
+            <div className="hm-north" title={approx ? t('sunUi.northApproxTitle', { confidence: siteGeo().confidence, deg: siteGeo().uncertaintyDeg }) : t('sunUi.north')}>
+              <NorthArrow />
+              {approx && <span className="hm-approx" data-testid="north-approx">{t('sunUi.approxNorth')}<small>{t('sunUi.approxNorthSub')}</small></span>}
+            </div>
           </div>
           <p className="hm-sun-info" data-testid="sun-info">
             {up ? <>{t('sunUi.sunLabel')} <b>{dirName(pos.azimuth)}</b> ({t('sunUi.azimuth', { deg: comma(pos.azimuth) })}), {t('sunUi.elevation')} <b>{comma(pos.elevation, 1)}°</b></> : <>{t('sunUi.belowHorizon', { deg: comma(pos.elevation, 1) })}</>}

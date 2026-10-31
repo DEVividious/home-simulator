@@ -11,7 +11,6 @@
  "scene.enterRoomToPlace": "Enter a room first to place furniture.",
  "scene.noRoomForCopy": "There is no room left on this wall for a copy: {name}.",
  "scene.modelLoadFailed": "Cannot load the model file \"{name}\" — a placeholder solid is shown in the scene. Import the model again or delete the furniture.",
- "scene.levelSection": "{level} — section",
  "walkHud.feetLevel": "feet level {z}",
  "walkHud.helpSelected": "drag the selected furniture — move · drag elsewhere — look around · Esc — deselect",
  "walkHud.help": "WASD — walk · Shift — run · drag — look around · click — doors, furniture",

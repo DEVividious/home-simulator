@@ -22,12 +22,13 @@ import { exportElectricalCsv, exportElectricalJson, exportElectricalPdf } from '
 import { replacedText } from '../pdf/pdfText';
 import type { PdfGroup } from '../pdf/electricalPdf';
 import { coordContext } from '../plan/planData';
-import { cancelPreview, docOf, redo, undo, useDesign, variantOf } from '../store/design';
+import { cancelPreview, docOf, useDesign, variantOf } from '../store/design';
 import { beginCopy, beginMove, beginNew, cancelPlace, setPlaceMulti, usePlace, usePlaceNote } from '../store/elPlace';
 import { useLayout } from '../store/layout';
 import { ui, useUi, type ElView } from '../store/ui';
 import { Block, Seg, Slider, Toggle } from './controls';
 import { ElPlanStage } from './ElectricalPlan';
+import { CardShell, TechnicalData } from './Card';
 import { LevelPlan } from './FloorPlan';
 import { Icon } from './icons';
 import { fmtNum, t } from '../../i18n';
@@ -160,18 +161,13 @@ function Panels() {
 
 // ------------------------------------------------------------------ toolbar / placement bar
 function Toolbar() {
-  const canUndo = useDesign((d) => d.history.past.length > 0), canRedo = useDesign((d) => d.history.future.length > 0);
-  const snap = useUi((s) => s.elSnap), panel = useUi((s) => s.elPanel);
+  // undo / redo are in the top bar and snapping in Layers — one place each (ADR 0037)
+  const panel = useUi((s) => s.elPanel);
   const open = (p: 'catalog' | 'layers' | 'export') => ui.set((s) => ({ elPanel: s.elPanel === p ? null : p }));
-  const SNAPS = snaps();
-  const nextSnap = () => { const i = SNAPS.findIndex(([v]) => Math.abs(v - snap) < 1e-9); ui.set({ elSnap: SNAPS[(i + 1) % SNAPS.length][0] }); };
   return (
     <div className="hm-el-toolbar" data-testid="el-toolbar" role="toolbar" aria-label={t('electricalUi.toolbar')}>
       <button className={`hm-el-add${panel === 'catalog' ? ' on' : ''}`} onClick={() => open('catalog')} data-testid="el-add"><Icon name="plus" size={20} /><span>{t('electricalUi.add')}</span></button>
       <button className={`hm-el-tb${panel === 'layers' ? ' on' : ''}`} onClick={() => open('layers')} data-testid="el-tb-layers"><Icon name="layers" size={20} /><span>{t('electricalUi.layers')}</span></button>
-      <button className={`hm-el-tb${snap > 0 ? ' active' : ''}`} onClick={nextSnap} data-testid="el-tb-snap" aria-label={t('electricalUi.snapAria', { value: SNAPS.find(([v]) => Math.abs(v - snap) < 1e-9)?.[1] ?? '' })}><Icon name="magnet" size={20} /><span data-testid="el-tb-snap-value">{SNAPS.find(([v]) => Math.abs(v - snap) < 1e-9)?.[1] ?? `${cm(snap)} cm`}</span></button>
-      <button className="hm-el-tb" onClick={() => undo()} disabled={!canUndo} data-testid="el-tb-undo"><Icon name="undo" size={20} /><span>{t('electricalUi.undo')}</span></button>
-      <button className="hm-el-tb" onClick={() => redo()} disabled={!canRedo} data-testid="el-tb-redo"><Icon name="redo" size={20} /><span>{t('electricalUi.redo')}</span></button>
       <button className={`hm-el-tb${panel === 'export' ? ' on' : ''}`} onClick={() => open('export')} data-testid="el-tb-export"><Icon name="download" size={20} /><span>{t('electricalUi.export')}</span></button>
     </div>
   );
@@ -297,7 +293,7 @@ function HeightStepper({ p }: { p: ElPoint }) {
 }
 /** details ("More"): type, description, smart home, circuit, notes — used less often, they do not get in the way of basic work */
 function MoreForm({ p }: { p: ElPoint }) {
-  const expert = useUi((s) => s.mode === 'expert');
+  const expert = useUi((s) => s.mode === 'advanced');
   const d = DEVICES[p.type], set = (patch: Partial<ElPoint>, label: string) => patchElectrical(p.id, patch, `${d.short}: ${label}`);
   const same = DEVICE_CATEGORIES.flatMap((c) => devicesIn(c.id)).filter((x) => x.mountType === d.mountType || p.orientation === 'free');
   const m = measure(p);
@@ -329,8 +325,8 @@ function MoreForm({ p }: { p: ElPoint }) {
         </select></label>
       {p.source !== 'user' && <p className="hm-muted" data-testid="el-source">{t('electricalUi.source', { source: p.source })}</p>}
       <p className="hm-muted" data-testid="el-ref">{t('electricalUi.printRef', { id: p.id })}</p>
-      {expert && m && <details className="hm-expert-box" data-testid="expert-details"><summary>{t('electricalUi.technicalData')}</summary>
-        <pre className="hm-json" data-testid="el-json">{JSON.stringify({ ...p, lcs: { x: +m.pos[0].toFixed(3), y: +m.pos[1].toFixed(3), z: +m.pos[2].toFixed(3) }, fromLeft: m.fromLeft, fromRight: m.fromRight }, null, 1)}</pre></details>}
+      {expert && m && <TechnicalData summary={t('electricalUi.technicalData')}>
+        <pre className="hm-json" data-testid="el-json">{JSON.stringify({ ...p, lcs: { x: +m.pos[0].toFixed(3), y: +m.pos[1].toFixed(3), z: +m.pos[2].toFixed(3) }, fromLeft: m.fromLeft, fromRight: m.fromRight }, null, 1)}</pre></TechnicalData>}
     </div>
   );
 }
@@ -375,7 +371,7 @@ export function ElectricalInspector({ id }: { id: string }) {
   const mobile = useLayout((s) => s.mobile), exists = useElPlan().points.some((p) => p.id === id);
   // phone: the card lives in the scene area (ElWorkspace); a selection of a point that no longer exists (undone add): no empty panel
   if (mobile || !exists) return null;
-  return <aside className="hm-inspector hm-el-inspector" data-testid="inspector" data-kind="electrical"><ElCard id={id} /></aside>;
+  return <CardShell kind="electrical" className="hm-el-inspector"><ElCard id={id} /></CardShell>;
 }
 
 // ------------------------------------------------------------------ workspace (in the scene)
@@ -434,9 +430,8 @@ export function SectionElectrical() {
     <div className="hm-section" data-testid="section-electrical">
       <Block title={t('electricalUi.sideTitle')}>
         <p className="hm-muted">{t('electricalUi.sideIntro')}</p>
-        <button className="hm-btn primary wide" onClick={() => ui.set({ elPanel: 'catalog' })} data-testid="el-side-add"><Icon name="plus" size={16} /> {t('electricalUi.addDevice')}</button>
       </Block>
-      <Block title={t('electricalUi.room')} right={room ? <button className="hm-link" onClick={() => elFocusRoom(null)} data-testid="el-side-whole">{t('electricalUi.wholeHome')}</button> : undefined}>
+      <Block title={t('electricalUi.room')}>
         {!site && <LevelPlan level={level} onRoom={(r) => elFocusRoom(r.id)} />}
         <p className="hm-muted">{room ? t('electricalUi.selectedRoom', { room: room.label }) : t('electricalUi.clickRoomToZoom')}</p>
       </Block>
@@ -491,4 +486,4 @@ export function proposeKitchenPoints(): number {
   return n;
 }
 /** leaving the mode (phone: the "back" button at whole-building level) */
-export const leaveElectrical = () => goSection('building');
+export const leaveElectrical = () => goSection('look');

@@ -4,7 +4,7 @@
 import type { BuildingData } from '@home-sim/core/model/building';
 import { createStore } from '../store/createStore';
 import type { LevelArrays } from './coreMesh';
-import type { CoreReply, CoreRequest } from './coreWorker';
+import type { CoreReply, CoreRequest, PrintFile, PrintRequest } from './coreWorker';
 
 export type ShellKind = 'core' | 'grid';
 /** the shell the URL asks for: ?shell=grid — the grid shell */
@@ -26,7 +26,7 @@ export const shellStatus = createStore({
 /** a build that does not answer in this time counts as failed (the grid shell is shown) */
 const TIMEOUT = 30000;
 let worker: Worker | null = null, seq = 0;
-const pending = new Map<number, { resolve: (s: CoreShell) => void; reject: (e: Error) => void }>();
+const pending = new Map<number, { resolve: (r: CoreReply & { ok: true }) => void; reject: (e: Error) => void }>();
 const cache = new WeakMap<BuildingData, Promise<CoreShell>>();
 
 function failAll(e: Error) {
@@ -43,7 +43,7 @@ function getWorker(): Worker {
     const p = pending.get(r.id);
     if (!p) return;
     pending.delete(r.id);
-    if (r.ok) p.resolve({ levels: r.levels, roofs: r.roofs, triangles: r.triangles, ms: r.ms, loadMs: r.loadMs });
+    if (r.ok) p.resolve(r);
     else p.reject(new Error(r.error));
   };
   w.onerror = (e) => { e.preventDefault(); failAll(new Error(`shell worker: ${e.message || 'failed to start'}`)); };
@@ -57,10 +57,19 @@ export function coreShell(data: BuildingData): Promise<CoreShell> {
   if (p) return p;
   p = new Promise<CoreShell>((resolve, reject) => {
     const id = ++seq, timer = setTimeout(() => { if (pending.delete(id)) reject(new Error('shell worker: no answer')); }, TIMEOUT);
-    pending.set(id, { resolve: (s) => { clearTimeout(timer); resolve(s); }, reject: (e) => { clearTimeout(timer); reject(e); } });
+    pending.set(id, { resolve: (r) => { clearTimeout(timer); if (r.kind !== 'print') resolve({ levels: r.levels, roofs: r.roofs, triangles: r.triangles, ms: r.ms, loadMs: r.loadMs }); }, reject: (e) => { clearTimeout(timer); reject(e); } });
     try { getWorker().postMessage({ id, data } satisfies CoreRequest); } catch (e) { pending.delete(id); clearTimeout(timer); reject(e as Error); }
   });
   cache.set(data, p);
   p.catch(() => cache.delete(data));
   return p;
+}
+
+/** the printable scale model of a building block, made in the worker (ADR 0044): its files and whether every part printed */
+export function corePrint(data: BuildingData, print: PrintRequest): Promise<{ printable: boolean; scale: string | null; files: PrintFile[]; problems: string[] }> {
+  return new Promise((resolve, reject) => {
+    const id = ++seq, timer = setTimeout(() => { if (pending.delete(id)) reject(new Error('print worker: no answer')); }, 4 * TIMEOUT);
+    pending.set(id, { resolve: (r) => { clearTimeout(timer); if (r.kind === 'print') resolve(r); else reject(new Error('print worker: wrong answer')); }, reject: (e) => { clearTimeout(timer); reject(e); } });
+    try { getWorker().postMessage({ id, kind: 'print', data, print } satisfies CoreRequest); } catch (e) { pending.delete(id); clearTimeout(timer); reject(e as Error); }
+  });
 }
