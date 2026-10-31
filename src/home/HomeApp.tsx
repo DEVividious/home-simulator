@@ -42,6 +42,7 @@ import { MobileSheet, useBackGuard, WalkPad } from './ui/Mobile';
 import { runAction } from './ui/registry';
 import { useLayout } from './store/layout';
 import { openDoor, setAllDoorsOpen, setShowDoors } from './store/doors';
+import './store/walkObstacles';
 import { ProjectConflict, PwaUpdateBanner } from '../pwa/PwaUi';
 import { homeViewId } from './model/views';
 import { buildingWords } from './model/wording';

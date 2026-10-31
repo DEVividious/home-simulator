@@ -44,7 +44,7 @@ The walkable surface consists of:
 
 | Part | Source | Behaviour |
 |---|---|---|
-| rooms of all levels | room outlines of the package (`walk.ts`) | clearance from walls = body radius 0.22 m (`BODY_R`); walking straight at a wall stops 1 m before it (`FRONT_STOP`; already closer — off the stairs, out of a doorway — down to 0.45 m, `NEAR_STOP`), open doors and passages ahead do not stop; under a sloped ceiling, places where the ceiling is lower than eye height + 12 cm are not walkable; doors and passages are corridors through the wall thickness |
+| rooms of all levels | room outlines of the package (`walk.ts`) | clearance from walls = body radius 0.22 m (`BODY_R`); walking straight at a wall stops 1 m before it (`FRONT_STOP`; already closer — off the stairs, out of a doorway — down to 0.45 m, `NEAR_STOP`), open doors and passages ahead do not stop; furniture that reaches eye height (a wardrobe, a tall unit, a wall cupboard — not a sofa, a table, a bed) stops the walk the same way (`store/walkObstacles.ts`), and from inside an item the way out is free; under a sloped ceiling, places where the ceiling is lower than eye height + 12 cm are not walkable; doors and passages are corridors through the wall thickness |
 | door gates | `DoorDef` + door state | a closed leaf blocks the corridor; open ≥ 60% or "Show doors" off — passable |
 | exterior openings | doors with `rooms: [x, "exterior"]`, windows with `passable: true` (`doorFacts.passableOpenings`) | corridors from the room out through the wall to the plot, gated by the door state |
 | plot | `project().site` (module `site`) | outside the building outline (with the body clearance), within `walkBounds` (default: bounding box of the plot boundary); foot height from the ground probe |

@@ -132,7 +132,7 @@ export class WalkWorld {
   /** movement segment allowed: point accessible and height change ≤ MAX_STEP */
   private reach(from: WalkPose, q: Vec2, eye: number): WalkPose | null {
     // no walking face-first into a wall (stairs have their own walls: the ramp and its sides)
-    if (!inStairBox(from.p) && !inStairBox(q) && facesWall(levelAtZ(from.z), from.p, q)) return null;
+    if (!inStairBox(from.p) && !inStairBox(q) && facesWall(levelAtZ(from.z), from.p, q, eye)) return null;
     const z = this.heightAt(q, from.z, eye);
     return z !== null && Math.abs(z - from.z) <= MAX_STEP ? { p: q, z } : null;
   }

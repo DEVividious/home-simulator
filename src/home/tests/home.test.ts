@@ -21,7 +21,7 @@ import {
 } from '../model/interiors';
 import { allLevels, allRooms, roomAt, roomById, roomsOfLevel, roomsWithTag } from '../model/rooms';
 import { keepInside, rotFacing } from '../model/snapping';
-import { BODY_R, doorCorridors, FRONT_STOP, walkRoomAt, walkStep } from '../model/walk';
+import { BODY_R, doorCorridors, FRONT_STOP, setWalkObstacles, walkRoomAt, walkStep } from '../model/walk';
 import { architectItems, architectFurniture, architectItemOf, defaultFurniture, isArchitectId, kitchenBuiltIn } from '../model/defaults';
 import { furnitureWarnings } from '../model/collision';
 import { neighbours } from '../model/placement';
@@ -282,6 +282,19 @@ describe('walk: moving between rooms through doors, walls block', () => {
     const r = go('L1', [8.7 - 0.3, 4.6], 0, 0.05, 20);
     expect(r[1]).toBeGreaterThan(5.5);
     expect(r[0]).toBeCloseTo(8.7 - 0.3, 6);
+  });
+  it('furniture at eye height stops the walk like a wall; low furniture does not; from inside an item the way out is free', () => {
+    const box = (x0: number, y0: number, x1: number, y1: number): [number, number][] => [[x0, y0], [x1, y0], [x1, y1], [x0, y1]];
+    try {
+      setWalkObstacles(() => [{ level: 'L1', corners: box(7.5, 5.0, 8.1, 5.7), bottom: 0, top: 2.0 }]);   // a wardrobe
+      expect(go('L1', [6.0, 5.36], 0.05, 0)[0]).toBeCloseTo(7.5 - FRONT_STOP, 1);
+      setWalkObstacles(() => [{ level: 'L1', corners: box(7.5, 5.0, 8.1, 5.7), bottom: 0, top: 0.8 }]);   // a sofa
+      expect(go('L1', [6.0, 5.36], 0.05, 0)[0]).toBeCloseTo(8.7 - FRONT_STOP, 1);
+      setWalkObstacles(() => [{ level: 'L1', corners: box(7.5, 5.0, 8.1, 5.7), bottom: 1.4, top: 2.1 }]); // a wall cupboard
+      expect(go('L1', [6.0, 5.36], 0.05, 0)[0]).toBeCloseTo(7.5 - FRONT_STOP, 1);
+      setWalkObstacles(() => [{ level: 'L1', corners: box(7.0, 5.0, 8.1, 5.7), bottom: 0, top: 2.0 }]);   // standing inside it
+      expect(go('L1', [7.8, 5.36], -0.05, 0, 20)[0]).toBeLessThan(7.0);
+    } finally { setWalkObstacles(null); }
   });
   it('every room of every level is reachable on foot (through doors and passages) — demo apartment and both levels of the sample house', () => {
     const reach = () => {
