@@ -16,7 +16,8 @@
 - Walls without a room (`walls` in `plan.json`): wing walls, porch walls, garden walls, openings in them filled with slats
   (the slats are not printed).
 - Fewer questions: the skill names the workspace itself and takes the largest scale that fits, offering a smaller one on the
-  approval card.
+  approval card. A plan with no dimension at all is read with the scale from its door and fixture symbols before anything is
+  asked; stairs that lead to a storey with no drawing are left out and said on the card, not asked about.
 - A straight flight ending at a wall with a short landing printed with an open ground-floor part; the landing now runs into the
   walls around it.
 

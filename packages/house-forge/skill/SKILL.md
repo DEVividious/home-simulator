@@ -12,7 +12,8 @@ All geometry — the plan compiler, the roof, the solids, the printability chang
 from `scripts/house-forge.mjs`. Plans are read by you, with the tools of the script, into `plan.json`.
 
 Don't: build the STL before the user approves the dry run (step 6); guess the printer, the scale, a dimension or a roof pitch
-you can ask for; write your own geometry, STL or image code when a command does it; retype or recompute values the script
+you can ask for (a plan with no dimension and no area at all is the exception: take the scale from its symbols before asking
+anything — step 2); write your own geometry, STL or image code when a command does it; retype or recompute values the script
 prints (quote them); make up file names or paths — the script chooses them and prints the real ones.
 
 ## Runtime and tools
@@ -104,6 +105,11 @@ Then show the user what you read, as a short card (from the `compile` output and
 - doors and windows per level (counts), stairs with their kind and number of steps;
 - the plan preview images (one per level) and `3d.png`;
 - at most two questions about what you could not read.
+
+Not questions, said on the card instead: a plan with no dimension and no area at all is read with the scale from its door and
+fixture symbols (`references/reading-plans.md`, `summary` PROBABLE) — say so in one sentence and that one real dimension (a
+room width, the total area) would make it exact, as an offer and not as a question (neither first nor on the card). Stairs that lead to a
+storey with no drawing are left out — say so, and that a plan of that storey would add them.
 
 Write the whole card in the user's language, labels and words alike: the kind of stairs, the roof type, door types and level
 names said in the words a person uses in that language (straight, L-shaped or U-turn stairs, a gable roof …); only ids,
