@@ -260,6 +260,9 @@ async function runProject(F) {
     const s4 = await st();
     await key(['Control'], 'KeyZ');
     const s5 = await st(), back = s5.arrangement.furniture.find((f) => f.id === F0.id);
+    // the undo message reads as one phrase: "Undone: removing “Sofa”" (it was "Undone: remove: Sofa")
+    const toast = await text(T('toast'));
+    check(`[${tag}] undo of a removal says "${EN['design.undone'].replace('{label}', EN['history.removeFurniture'])}"`, /^Undone: removing “.+”$/.test(toast ?? ''), `"${toast}"`);
     check(`[${tag}] Delete removes the selected item, Ctrl+Z brings it back where it was`, s4.arrangement.furniture.length === n0 - 1 && !s4.arrangement.furniture.some((f) => f.id === F0.id) && s4.selection === null
       && s5.arrangement.furniture.length === n0 && !!back && back.x === f3.x && back.y === f3.y && back.rot === f3.rot, `${n0} → ${s4.arrangement.furniture.length} → ${s5.arrangement.furniture.length}`);
     F.moved = { id: F0.id, x: f3.x, y: f3.y, rot: f3.rot };
