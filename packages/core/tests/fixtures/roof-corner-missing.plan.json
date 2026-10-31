@@ -1,0 +1,184 @@
+{
+ "schema": "home-simulator/plan",
+ "version": 1,
+ "project": {
+  "id": "roof-corner-missing",
+  "name": "Flat roof missing a corner",
+  "buildingType": "house"
+ },
+ "units": "m",
+ "source": "synthetic test fixture: an L-shaped ground floor with an upper floor over one arm; the flat roof polygon over the rest leaves out a 0.5 × 0.5 m corner next to the upper floor (roof.cover must find it)",
+ "levels": [
+  {
+   "id": "G",
+   "name": "Ground",
+   "floorZ": 0,
+   "ceiling": 2.6
+  },
+  {
+   "id": "U",
+   "name": "Upper",
+   "floorZ": 2.85,
+   "ceiling": 2.5
+  }
+ ],
+ "rooms": [
+  {
+   "id": "A",
+   "name": "Living",
+   "level": "G",
+   "kind": "living",
+   "rect": [
+    0.3,
+    0.3,
+    4.3,
+    6.3
+   ]
+  },
+  {
+   "id": "B",
+   "name": "Garage",
+   "level": "G",
+   "kind": "garage",
+   "rect": [
+    4.42,
+    0.3,
+    8.3,
+    3.3
+   ]
+  },
+  {
+   "id": "C",
+   "name": "Bedroom",
+   "level": "U",
+   "kind": "bed",
+   "rect": [
+    0.3,
+    3.3,
+    4.3,
+    6.3
+   ]
+  }
+ ],
+ "doors": [
+  {
+   "id": "D0",
+   "between": [
+    "A",
+    "exterior"
+   ],
+   "at": [
+    0.15,
+    1.5
+   ],
+   "width": 1.0
+  },
+  {
+   "id": "D1",
+   "between": [
+    "A",
+    "B"
+   ],
+   "at": [
+    4.36,
+    1.5
+   ],
+   "width": 0.9
+  }
+ ],
+ "windows": [
+  {
+   "id": "W1",
+   "room": "A",
+   "at": [
+    2.0,
+    0.3
+   ],
+   "width": 1.4
+  },
+  {
+   "id": "W2",
+   "room": "C",
+   "at": [
+    2.3,
+    6.3
+   ],
+   "width": 1.2
+  }
+ ],
+ "stairs": [
+  {
+   "id": "S1",
+   "kind": "straight",
+   "from": "G",
+   "to": "U",
+   "box": [
+    3.3,
+    2.1,
+    4.2,
+    5.85
+   ],
+   "up": "N",
+   "risers": 16,
+   "tread": 0.25,
+   "flightWidth": 0.9
+  }
+ ],
+ "roof": {
+  "parts": [
+   {
+    "id": "main",
+    "level": "U",
+    "type": "gable",
+    "rect": [
+     0,
+     3.0,
+     4.6,
+     6.6
+    ],
+    "ridge": "X",
+    "pitch": 35
+   },
+   {
+    "id": "wing",
+    "level": "G",
+    "type": "flat",
+    "polygon": [
+     [
+      0,
+      0
+     ],
+     [
+      8.6,
+      0
+     ],
+     [
+      8.6,
+      3.6
+     ],
+     [
+      5.1,
+      3.6
+     ],
+     [
+      5.1,
+      3.1
+     ],
+     [
+      4.6,
+      3.1
+     ],
+     [
+      4.6,
+      3.0
+     ],
+     [
+      0,
+      3.0
+     ]
+    ],
+    "parapet": 0.3
+   }
+  ]
+ }
+}

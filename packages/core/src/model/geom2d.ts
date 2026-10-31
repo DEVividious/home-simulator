@@ -48,6 +48,53 @@ export function pointInPolygon(q: Vec2, p: Vec2[], tol = 1e-7): boolean {
   return c;
 }
 
+/** the area of the union of the shapes that lies outside the union of the covers (polygons, even-odd rule) — exact: between
+ *  the heights of all vertices and of all edge crossings every horizontal line meets the same edges in the same order, so the
+ *  length of its uncovered part changes linearly and its value at the middle of a band times the band's height is the band's
+ *  area */
+export function uncoveredArea(shapes: Vec2[][], covers: Vec2[][]): number {
+  const all = [...shapes, ...covers], ys = new Set(all.flat().map((q) => q[1]));
+  const edges = all.flatMap((p) => p.map((a, i) => [a, p[(i + 1) % p.length]] as const)).filter(([a, b]) => a[1] !== b[1]);
+  const slanted = edges.filter(([a, b]) => a[0] !== b[0]);
+  // two edges along the axes cross at a vertex height: only crossings with a slanted edge add a band
+  for (const [a, b] of slanted) for (const [c, d] of edges) {
+    const r = sub(b, a), s = sub(d, c), den = cross(r, s);
+    if (Math.abs(den) < EPS) continue;
+    const t = cross(sub(c, a), s) / den, u = cross(sub(c, a), r) / den;
+    if (t > 0 && t < 1 && u > 0 && u < 1) ys.add(a[1] + r[1] * t);
+  }
+  /** the x-intervals of a union of polygons on the line at height y (sorted, merged) */
+  const spans = (ps: Vec2[][], y: number): [number, number][] => {
+    const out: [number, number][] = [];
+    for (const p of ps) {
+      const xs: number[] = [];
+      for (let i = 0, j = p.length - 1; i < p.length; j = i++) {
+        const [xi, yi] = p[i], [xj, yj] = p[j];
+        if ((yi > y) !== (yj > y)) xs.push(xi + ((y - yi) * (xj - xi)) / (yj - yi));
+      }
+      xs.sort((u, w) => u - w);
+      for (let k = 0; k + 1 < xs.length; k += 2) out.push([xs[k], xs[k + 1]]);
+    }
+    out.sort((u, w) => u[0] - w[0]);
+    const merged: [number, number][] = [];
+    for (const s of out) if (merged.length && s[0] <= merged[merged.length - 1][1]) merged[merged.length - 1][1] = Math.max(merged[merged.length - 1][1], s[1]); else merged.push([...s]);
+    return merged;
+  };
+  const sorted = [...ys].sort((u, w) => u - w);
+  let bare = 0;
+  for (let i = 0; i + 1 < sorted.length; i++) {
+    const h = sorted[i + 1] - sorted[i], y = (sorted[i] + sorted[i + 1]) / 2;
+    if (h < 1e-12) continue;
+    const own = spans(shapes, y), cov = spans(covers, y);
+    for (const [x0, x1] of own) {
+      let open = x1 - x0;
+      for (const [c0, c1] of cov) open -= Math.max(0, Math.min(x1, c1) - Math.max(x0, c0));
+      bare += open * h;
+    }
+  }
+  return bare;
+}
+
 /** distance from a point to a segment and parameter t ∈ [0, 1] of the nearest point */
 export function segDist(q: Vec2, a: Vec2, b: Vec2): { d: number; t: number; p: Vec2 } {
   const ab = sub(b, a), L2 = dot(ab, ab);

@@ -252,6 +252,37 @@ describe('compiler checks', () => {
     const two = { levels: [{ id: 'G', name: 'Ground', floorZ: 0, ceiling: 2.6 }, { id: 'U', name: 'Upper', floorZ: 2.85, ceiling: 2.5 }], rooms: [{ id: 'R', name: 'Room', level: 'G', kind: 'living', rect: [0.3, 0.3, 9.7, 7.7] }, { id: 'S', name: 'Upper room', level: 'U', kind: 'bed', rect: [0.3, 0.3, 9.7, 7.7] }] };
     expect(codes(box(gable(), two))).toContain('error:roof.levelAbove');
   });
+  it('the uncovered area is exact: a corner left out of a flat roof polygon next to the upper level is an error with its area', () => {
+    const r = compiled(planOf('roof-corner-missing')), cover = r.issues.find((i) => i.code === 'roof.cover');
+    expect(cover?.level).toBe('error');
+    // the 0.5 × 0.5 m corner less the 1 cm the parts are widened by on its two roof sides
+    expect(Number(cover!.message.match(/([\d.]+) m²/)![1])).toBeCloseTo(0.49 * 0.49, 3);
+    expect(r.project).toBeNull();
+    const whole = planOf('roof-corner-missing') as { roof: { parts: { polygon?: number[][] }[] } };
+    whole.roof.parts[1].polygon = [[0, 0], [8.6, 0], [8.6, 3.6], [4.6, 3.6], [4.6, 3.0], [0, 3.0]];
+    expect(compiled(whole).issues.filter((i) => i.code.startsWith('roof.'))).toEqual([]);
+  });
+  it('a lower level open at the top is a warning with its exact area — also in a building without any roof (45° walls)', () => {
+    const two = (roof: Record<string, unknown> | null) => {
+      const p: Record<string, unknown> = box(roof ?? {}, {
+        levels: [{ id: 'G', name: 'Ground', floorZ: 0, ceiling: 2.6 }, { id: 'U', name: 'Upper', floorZ: 2.85, ceiling: 2.5 }],
+        rooms: [{ id: 'R', name: 'Room', level: 'G', kind: 'living', polygon: [[0.3, 0.3], [9.7, 0.3], [9.7, 6.7], [8.7, 7.7], [0.3, 7.7]] }, { id: 'S', name: 'Upper room', level: 'U', kind: 'bed', rect: [0.3, 0.3, 5.7, 7.7] }],
+      });
+      if (!roof) delete p.roof;
+      return p;
+    };
+    // the ground floor east of the upper one (x 6–10, y 0–8) less the chamfer grown by the wall (legs 18 − 16.4 − 0.3·√2)
+    const want = 32 - (1.6 - 0.3 * Math.SQRT2) ** 2 / 2;
+    for (const roof of [null, { parts: [{ id: 'top', level: 'U', type: 'flat' }] }]) {
+      const missing = compiled(two(roof)).issues.find((i) => i.code === 'roof.missing');
+      expect(missing?.level).toBe('warning');
+      expect(Number(missing!.message.match(/([\d.]+) m²/)![1])).toBeCloseTo(want, 3);
+    }
+    // a flat: one level without a roof is its flat top, not told
+    const flat: Record<string, unknown> = box({});
+    delete flat.roof;
+    expect(codes(flat)).toEqual([]);
+  });
   it('warnings: a hip whose ends meet before the ridge, eaves of joined wings at different heights, the ridge height from the drawings, a slope that disagrees', () => {
     expect(codes(box({ parts: [{ id: 'main', level: 'G', type: 'hip', pitch: 40, pitchEnds: 15, knee: 1.2 }] }))).toContain('warning:roof.hip');
     const l = planOf('roof-l-gable') as { roof: { parts: Record<string, unknown>[] } };

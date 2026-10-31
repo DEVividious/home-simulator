@@ -30,8 +30,9 @@ the behaviour is named in brackets. When a limit is lifted, remove it here in th
   rooms keep their sloped ceilings inside a flat-topped level). Rebuilding from `plan.json` gives the full roof.
 - **A lower level not covered by the one above is open without a roof part.** Where an upper level is smaller than the one
   below it, the part of the lower level outside it needs a roof part (flat or pitched); without one it stays open at the top
-  (the compiler warns: `roof.missing`, a coarse check — a small corner left out of a roof polygon next to a higher level is not
-  found, and its room is then open there; at print the part may not close).
+  (the compiler warns: `roof.missing`, also in a building with no roof at all; the area is exact, 45° walls too). A level with
+  roof parts must have every bit of its walls under a part or a higher level — a corner left out of a roof polygon is the
+  error `roof.cover` (the parts count 1 cm wider, so gaps under 2 cm are not found).
 - **The roof is hidden in the section of the level it covers.** The level section and the room views show the rooms under the
   slopes from above with the walls cut; the roof itself (and its roof windows) is not cut but hidden there
   (`src/home/scene/CoreShellLayer.tsx`). Wall finishes do not cover the cheeks of a dormer (they show the plain shell wall).

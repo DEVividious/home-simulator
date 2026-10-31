@@ -66,13 +66,15 @@ finds (`words.json › found`). Raster plans: read them off the image. Quote wha
 
 ## Checks (errors stop the build)
 
-- `roof.cover` — walls of a level are under no part (and no level above them); `roof.levelAbove` — a level stands on a part.
+- `roof.cover` — walls of a level are under no part (and no level above them) — exact area, a corner left out of a polygon
+  counts; `roof.levelAbove` — a level stands on a part.
 - `window.roof` / `door.roof` — an opening higher than the roof plane at its wall (lower it, or put it in a dormer).
 - `roofWindow.plane` — a roof window across a ridge, a hip, a valley or the flat top; `dormer.plane` / `dormer.high` — a dormer
   across two planes, or higher than the roof behind it.
 - `roof.pitch` — pitched parts 5–75°, flat 0–5°.
 - Warnings: `roof.hip` (the ends meet before the ridge: a pyramid), `roof.eaves`, `roof.ridgeHeight`, `roof.slope`,
-  `roof.missing` (a part of the building with nothing above it), `chimney.low`.
+  `roof.missing` (a part of the building with nothing above it — also when there is no roof block: a ground floor
+  larger than the floor above stays open there), `chimney.low`.
 
 Usable areas under a roof (PN-ISO 9836: full above 2.20 m, half between 1.40 and 2.20 m) are compared with `areaPrinted` too —
 put the printed number as it is.

@@ -83,7 +83,9 @@ describe('numbers out of range', () => {
   it('the shipped plans and the fixtures have nothing out of range; non-finite numbers are reported; at most ten', () => {
     for (const id of ['demo-apartment', 'sample-house']) expect(outOfRange(compilePlan(read(`projects/${id}/source/plan.json`), { catalog }).project!)).toEqual([]);
     for (const f of fs.readdirSync(path.join(ROOT, 'packages/core/tests/fixtures')).filter((x) => x.endsWith('.plan.json'))) {
-      expect(outOfRange(compilePlan(read(`packages/core/tests/fixtures/${f}`), { catalog: null }).project!), f).toEqual([]);
+      // a fixture of an error (roof-corner-missing) has no project
+      const project = compilePlan(read(`packages/core/tests/fixtures/${f}`), { catalog: null }).project;
+      if (project) expect(outOfRange(project), f).toEqual([]);
     }
     const b = read('projects/demo-apartment/project.json').building;
     b.rooms.rooms[0].floor_z = NaN; b.shell = { exteriorWall: Infinity };

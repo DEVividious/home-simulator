@@ -4,7 +4,7 @@
 // underside planes (from the knee height or the 1.40 / 2.20 lines, and the pitch). Dormers stand on one plane of a part and are
 // carried back to its ridge; chimneys run from the slab of the lowest level they stand in. A level slope without a roof block
 // becomes a gable part with exactly the planes of the old attic ceilings. The checks a union cannot make are made here.
-import { area, distToPolygonEdges, pointInPolygon } from '../model/geom2d.ts';
+import { area, distToPolygonEdges, pointInPolygon, uncoveredArea } from '../model/geom2d.ts';
 import { outerOutline } from '../model/outline.ts';
 import { gableExtent, inRegion, planeJson, planeZ, raise, regionPolygon, roofModel, ROOF_DEFAULTS, surfaceAt, surfaceRange, type Plane, type RoofModel } from '../model/roof.ts';
 import type { DormerJson, Rect, RoofJson, RoofPartJson, Vec2 } from '../package/types.ts';
@@ -19,6 +19,7 @@ const deg = (k: number) => (Math.atan(k) * 180) / Math.PI;
 const rectOf = (a: Vec2, b: Vec2): Rect => [Math.min(a[0], b[0]), Math.min(a[1], b[1]), Math.max(a[0], b[0]), Math.max(a[1], b[1])];
 const bboxOf = (pts: Vec2[]): Rect => [Math.min(...pts.map((p) => p[0])), Math.min(...pts.map((p) => p[1])), Math.max(...pts.map((p) => p[0])), Math.max(...pts.map((p) => p[1]))];
 const grow = (r: Rect, d: number): Rect => [r[0] - d, r[1] - d, r[2] + d, r[3] + d];
+const rectPolygon = (r: Rect): Vec2[] => [[r[0], r[1]], [r[2], r[1]], [r[2], r[3]], [r[0], r[3]]];
 const r3Rect = (r: Rect): Rect => r.map(r3) as Rect;
 
 export interface RoofContext {
@@ -315,6 +316,16 @@ export function compileRoof(ctx: RoofContext): CompiledRoof {
 
   const json: RoofJson | null = jsonParts.length ? { covering, buildup, parts: jsonParts, ...(dormers.length ? { dormers } : {}), ...(chimneys.length ? { chimneys } : {}), ...(R?.source ? { source: R.source } : {}), ...(R?.confidence ? { confidence: R.confidence } : {}) } : null;
   const model = json ? roofModel(json) : null;
+  // a level that is the top of part of the building with no roof part over it: a last level keeps a flat slab, a lower one is
+  // open (without any roof a last level is the flat top of a flat or a flat-roofed house: only the open part is told)
+  /** the walls of the levels above a level */
+  const upperWalls = (level: string) => above(level).flatMap((l) => grownRooms(l));
+  for (const lv of plan.levels) {
+    const up = above(lv.id);
+    if (model?.byLevel(lv.id).length || !roomsOf(lv.id).length || (!model && !up.length)) continue;
+    const bare = uncoveredArea(grownRooms(lv.id), upperWalls(lv.id));
+    if (bare > 0.01) warn('roof.missing', `level "${lv.id}": ${r3(bare)} m² of it have no level and no roof part above (${up.length ? 'open at the top' : 'a flat slab'}) — add a roof part (flat or pitched)`);
+  }
   if (!model) return { json, model, windows };
 
   // ---- checks the union cannot make
@@ -324,21 +335,10 @@ export function compileRoof(ctx: RoofContext): CompiledRoof {
     const roofAt = Math.max(-Infinity, ...model.levels.map((l) => surfaceAt(surfaceTop(l), cx, cy)?.z ?? -Infinity));
     if (Number.isFinite(roofAt) && c.top < roofAt + 0.3) warn('chimney.low', `chimney "${c.id}": its top (${c.top} m) is less than 30 cm above the roof (${r3(roofAt)} m)`);
   }
-  // the roof parts of a level cover its walls where no level stands above
+  // the roof parts of a level cover its walls where no level stands above (the parts 1 cm wider: their outlines are rounded)
   for (const level of model.levels) {
-    const up = above(level), rects = parts.filter((p) => p.level === level).map((p) => (p.rect ? grow(p.rect, 0.01) : null)), polysOf = parts.filter((p) => p.level === level && p.polygon).map((p) => p.polygon!);
-    let bare = 0;
-    for (const poly of grownRooms(level)) {
-      const g = bboxOf(poly);
-      const xs = [...new Set([...poly.map((q) => q[0]), ...rects.flatMap((r) => (r ? [r[0], r[2]] : [])).filter((x) => x > g[0] && x < g[2])])].sort((u, w) => u - w);
-      const ys = [...new Set([...poly.map((q) => q[1]), ...rects.flatMap((r) => (r ? [r[1], r[3]] : [])).filter((y) => y > g[1] && y < g[3])])].sort((u, w) => u - w);
-      for (let i = 0; i + 1 < xs.length; i++) for (let j = 0; j + 1 < ys.length; j++) {
-        const x = (xs[i] + xs[i + 1]) / 2, y = (ys[j] + ys[j + 1]) / 2;
-        if (!inRegion(poly, x, y) || up.some((l) => overLevel(l, x, y))) continue;
-        if (rects.some((r) => r && x > r[0] && x < r[2] && y > r[1] && y < r[3]) || polysOf.some((q) => inRegion(q, x, y))) continue;
-        bare += (xs[i + 1] - xs[i]) * (ys[j + 1] - ys[j]);
-      }
-    }
+    const own = parts.filter((p) => p.level === level).map((p) => (p.rect ? rectPolygon(grow(p.rect, 0.01)) : grownPolygon(p.polygon!, 0.01)));
+    const bare = uncoveredArea(grownRooms(level), [...upperWalls(level), ...own]);
     if (bare > 0.01) err('roof.cover', `level "${level}": ${r3(bare)} m² of its walls are under no roof part — add a part or widen one`);
   }
   // overlapping eaves of joined wings at one height
@@ -352,21 +352,6 @@ export function compileRoof(ctx: RoofContext): CompiledRoof {
     let top = -Infinity;
     for (const level of model.levels) for (const p of model.byLevel(level)) { const r = surfaceRange(surfaceTop(level), regionPolygon(p.cover)); if (r) top = Math.max(top, r[1]); }
     if (Math.abs(top - R.ridgeHeight) > 0.1) warn('roof.ridgeHeight', `the roof's ridge comes out at ${r3(top)} m, the drawings say ${R.ridgeHeight} m — check the knee height and the pitch`);
-  }
-  // a level that is the top of part of the building with no roof part over it: a last level keeps a flat slab, a lower one is open
-  for (const lv of plan.levels) {
-    if (model.byLevel(lv.id).length || !roomsOf(lv.id).length) continue;
-    const up = above(lv.id);
-    let bare = 0;
-    const upper = up.flatMap((l) => grownRooms(l));
-    for (const poly of grownRooms(lv.id)) {
-      const xs = [...new Set([...poly, ...upper.flat()].map((q) => q[0]))].sort((u, w) => u - w), ys = [...new Set([...poly, ...upper.flat()].map((q) => q[1]))].sort((u, w) => u - w);
-      for (let i = 0; i + 1 < xs.length; i++) for (let j = 0; j + 1 < ys.length; j++) {
-        const x = (xs[i] + xs[i + 1]) / 2, y = (ys[j] + ys[j + 1]) / 2;
-        if (inRegion(poly, x, y) && !up.some((l) => overLevel(l, x, y))) bare += (xs[i + 1] - xs[i]) * (ys[j + 1] - ys[j]);
-      }
-    }
-    if (bare > 0.01) warn('roof.missing', `level "${lv.id}": ${r3(bare)} m² of it have no level and no roof part above (${up.length ? 'open at the top' : 'a flat slab'}) — add a roof part (flat or pitched)`);
   }
   return { json, model, windows };
 }
