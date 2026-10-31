@@ -128,7 +128,9 @@ export function stairSolid(geo: Geometry, keep: Keep, s: StairDef, floorZ: numbe
   const grow = (p: StairPiece, n: Vec2) => {
     const es = sides.filter((e) => e.piece === p && same(e.out, n));
     if (es.some((e) => e.outer && e.kind !== 'entry' && e.kind !== 'exit')) return P;
-    return p === pieces[pieces.length - 1] && p.kind === 'landing' && es.some((e) => e.kind === 'exit') ? reach : 0;
+    // the top landing of a straight flight stands in the slab opening: its sides on the outline run into the walls and the
+    // floor around it (a landing touching them only along a face or an edge would leave the part open)
+    return p === pieces[pieces.length - 1] && p.kind === 'landing' && es.some((e) => e.kind === 'exit') ? Math.max(es.some((e) => e.outer) ? P : 0, reach) : 0;
   };
   const parts: Manifold[] = [];
   pieces.forEach((p, i) => {

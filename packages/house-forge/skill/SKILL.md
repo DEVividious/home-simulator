@@ -51,8 +51,9 @@ translations in `names` (`references/authoring-conventions.md`) are for the Home
 
 Ask for the drawings: every floor plan (one per storey), and the section or the roof plan or an elevation of a house when they
 exist — the roof pitch, the knee wall and the ridge height are on those. A real-estate or catalogue plan image works; an
-architect's PDF or a DXF is more exact. Agree on a short name now (lower-case, hyphens, e.g. `dom-anny`; it becomes the plan's
-project id) and pass it as `--name` to every command, so all files of the house land in one workspace.
+architect's PDF or a DXF is more exact. Choose a short name yourself — from the name on the drawings or the file names,
+lower-case with hyphens, e.g. `dom-anny`; it becomes the plan's project id — say it in half a sentence and go on (do not ask;
+the user may rename it later). Pass it as `--name` to every command, so all files of the house land in one workspace.
 
 ```bash
 node "$HF" intake plan-parter.png plan-pietro.png --name dom-anny
@@ -82,7 +83,9 @@ node "$HF" cad dwg2dxf <drawing.dwg> -o house-forge-output/<name>/source/cad
 
 Each tool's options: `node "$HF" <group> <tool> --help`. Write `house-forge-output/<name>/source/plan.json` (project id = the
 name). Only the building matters for the print: levels, rooms, doors, passages, windows, stairs, the roof, roof windows — leave
-out furniture, electrical points, the plot and the sun. Then:
+out furniture, electrical points, the plot and the sun. Stairs have a `kind` — straight, l-turn or u-turn — read from the tread
+lines (`references/authoring-conventions.md` § Stairs); walls at 45° are drawn as they are, double doors are `hinged-double`
+and bifolds `folding` (§ Doors and openings, § Walls that are not orthogonal). Then:
 
 ```bash
 node "$HF" compile --name <name>      # errors, warnings, adjustments, then "what the plan says"
@@ -98,9 +101,13 @@ Then show the user what you read, as a short card (from the `compile` output and
 
 - levels with their rooms: name, area from the outline, and the area printed on the drawing when it differs by more than 5 %;
 - the roof: type, pitch, knee wall, ridge height, dormers and roof windows — and which of these you assumed;
-- doors and windows per level (counts), stairs;
+- doors and windows per level (counts), stairs with their kind and number of steps;
 - the plan preview images (one per level) and `3d.png`;
 - at most two questions about what you could not read.
+
+Write the whole card in the user's language, labels and words alike: the kind of stairs, the roof type, door types and level
+names said in the words a person uses in that language (straight, L-shaped or U-turn stairs, a gable roof …); only ids,
+numbers, units and file names stay as the tools print them.
 
 Ask: **is this your house — or should I change something?** Turn every remark into a change of `plan.json`, compile, preview,
 and show the changed card.
@@ -131,8 +138,9 @@ node "$HF" print --name <name> --bed "K1C" --scales
 ```
 
 The table gives the size of every part (one per storey and a removable roof) at each standard scale and whether all of them
-fit the bed (10 mm margin). Suggest the largest scale that fits (`auto` picks it), and one smaller if the user wants a quicker
-print; say plainly how big the model will be. Pass a chosen scale as `--scale 1:N` to the dry run and the build.
+fit the bed (10 mm margin). Do not ask about the scale: take the largest that fits (`auto` picks it) unless the user already
+named one or a size, go straight on to the dry run, and say on the card plainly how big the model will be and that a smaller
+scale is one word away (e.g. "1:100 — about 11 × 10 cm"). Pass a chosen scale as `--scale 1:N` to the dry run and the build.
 
 ### 6. Approval card
 

@@ -115,7 +115,9 @@ try {
       await page.evaluate((y) => { const w = window.__home3d.walk(); window.__home.ui({ walkGo: { pose: { p: w.p, z: w.z, yaw: y, pitch: -0.2 }, n: Date.now() } }); }, c.yaw);
       await sleep(600);
       const opposite = { KeyW: 'KeyS', KeyS: 'KeyW', KeyA: 'KeyD', KeyD: 'KeyA' }, downOk = [];
-      for (let i = c.legs.length - 1; i >= 0; i--) downOk.push(await hold(opposite[c.legs[i][0]], `window.__home3d.walk().z < ${i ? s.landingZ + 0.01 : 0.01}`));
+      // on the landing: on to the line of the lower flight (its middle), then down it
+      const onLine = `Math.abs(window.__home3d.walk().p[0] - ${c.start[0]}) < 0.3`;
+      for (let i = c.legs.length - 1; i >= 0; i--) downOk.push(await hold(opposite[c.legs[i][0]], i ? `window.__home3d.walk().z < ${s.landingZ + 0.01} && ${onLine}` : 'window.__home3d.walk().z < 0.01'));
       const w2 = await s3('walk');
       check(`[${tag}] and back down to the ${lo} floor`, downOk.every(Boolean) && w2.z < 0.01 && (await st()).level === lo, `z ${w2.z} "${w2.place}"`);
     });

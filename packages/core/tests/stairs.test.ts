@@ -7,7 +7,10 @@ import { building } from '@home-sim/core/model/building';
 import { area, pointInPolygon } from '@home-sim/core/model/geom2d';
 import { stairAllowed, stairAt, stairDrawing, stairOutline, stairPart, stairPieces, stairSides, stairSteps, stairZ } from '@home-sim/core/model/stairs';
 import type { LTurnStairDef, StairDef, StraightStairDef } from '@home-sim/core/package/types';
+import { printModel } from '@home-sim/core/print/model';
 import { stairSolid } from '@home-sim/core/print/parts';
+import { parseBed } from '@home-sim/core/print/printers';
+import { profileOf } from '@home-sim/core/print/profiles';
 import { levelSolid } from '@home-sim/core/solid/levels';
 import { scoped } from '@home-sim/core/solid/scope';
 import { loadGeometry, type Geometry } from '@home-sim/core/solid/wasm';
@@ -133,5 +136,22 @@ describe('solids', () => {
       // the free corner of the L stays empty
       if (s.kind === 'l-turn') expect(keep(m.intersect(keep(geo.Manifold.cube([0.3, 0.3, 3], false).translate([s.bbox[0] + 0.3, s.bbox[1] + 0.3, -0.5])))).volume()).toBe(0);
     });
+  });
+});
+
+describe('stairs against the walls (a plan-reading case: the flight runs along a wall and ends with a few centimetres of top landing)', () => {
+  it('every part prints closed, whatever is left of the box beyond the flight', () => {
+    const bed = parseBed('K1C');
+    for (const extra of [0, 0.004, 0.03, 0.08]) {
+      const p = planOf('stairs-straight');
+      // up south along the west wall of the living room (which holds the front door) to its south wall; the upper hall over the
+      // whole floor
+      p.stairs[0] = { ...p.stairs[0], up: 'S', box: [0.3, 0.3, 1.2, 0.3 + 4.05 + extra] };
+      p.rooms = p.rooms.filter((x: { id: string }) => x.id !== 'D').map((x: { id: string; rect?: number[] }) => (x.id === 'C' ? { ...x, rect: [0.3, 0.3, 7.3, 4.3] } : x));
+      p.doors = p.doors.filter((d: { id: string }) => d.id !== 'D2');
+      p.windows = p.windows.filter((w: { id: string }) => w.id !== 'W3');
+      const r = compilePlan(p, { catalog: null }), m = printModel(r.project!.building, geo, { bed, profile: profileOf('0.4'), scale: 75, name: 'wall' });
+      expect(m.parts.map((x) => `${x.id}:${x.ok}`), `${extra}`).toEqual(m.parts.map((x) => `${x.id}:true`));
+    }
   });
 });
