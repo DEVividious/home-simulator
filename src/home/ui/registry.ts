@@ -135,8 +135,9 @@ export const ACTIONS = defineActions({
   'view-walk': { label: 'steps.walk', icon: 'walk', place: 'scenebar', testid: 'view-walk', capability: 'walk', ...view('walk') },
   level: { label: 'steps.levels', place: 'scenebar', testid: 'level', control: true, run: () => {} },
   'doors-toggle': {
-    label: 'steps.doors', icon: 'door', place: 'scenebar', testid: 'doors-toggle', run: () => setShowDoors(!doors.get().show),
-    active: () => doors.get().show, visible: () => !!s().roomId || s().houseView !== 'exterior',
+    // the button says what it does ("Doors on / off" was not understood: usability issue B9)
+    label: 'steps.hideDoors', icon: 'door', place: 'scenebar', testid: 'doors-toggle', run: () => setShowDoors(!doors.get().show),
+    text: () => t(doors.get().show ? 'steps.hideDoors' : 'steps.showDoors'), visible: () => !!s().roomId || s().houseView !== 'exterior',
   },
   'scene-back': {
     label: 'steps.back', icon: 'back', place: 'scenebar', testid: 'scene-back', run: exitRoom, visible: inRoom,

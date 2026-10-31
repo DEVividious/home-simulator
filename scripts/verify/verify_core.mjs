@@ -298,6 +298,12 @@ async function runProject(F) {
       fin.walls?.[picked]?.materialId === want && Object.entries(fin.walls).filter(([id]) => id !== picked).every(([, f]) => f.color?.toLowerCase() === sw[1].toLowerCase()), `${picked}: ${fin.walls?.[picked]?.materialId} (picked ${want})`);
     F.wall = { id: picked, material: want };
     await shot(`${tag}_04_wall`);
+    // usability issue B7: the palette says the name of the colour under the pointer, else of the chosen one
+    await click(T('mcat-wall-paint'), 500);
+    const nameOf = (hex) => page.$eval(`${S.palette} [data-testid="paint-colors"] button[data-hex="${hex}"]`, (b) => b.getAttribute('aria-label'));
+    await page.hover(`${S.palette} [data-testid="paint-colors"] button[data-hex="${sw[2]}"]`); await sleep(200);
+    const over = await text(T('paint-colors-name')), want2 = await nameOf(sw[2]);
+    check(`[${tag}] Colours: the palette names the colour under the pointer in words ("${want2}")`, !!want2 && over === want2 && /^[^#]/.test(over), `"${over}"`);
     await click(S.arrangeTab('furniture'), 500);
   });
 
@@ -330,6 +336,14 @@ async function runProject(F) {
     const closed = await waitDoor(0);
     check(`[${tag}] door card: Open swings the leaf open (animation to the end), Close shuts it`, opened && closed, JSON.stringify(await s3('doors')));
     await uiSet({ selection: null });
+    // usability issue B9: the scene bar button says what it does — "Hide doors", then "Show doors"
+    const t0 = await text(T('doors-toggle'));
+    await click(T('doors-toggle'), 400);
+    const hidden = !(await s3('doors')).show, t1 = await text(T('doors-toggle'));
+    await click(T('doors-toggle'), 400);
+    const shown = (await s3('doors')).show, t2 = await text(T('doors-toggle'));
+    check(`[${tag}] scene bar: "${EN['steps.hideDoors']}" hides the door leaves and becomes "${EN['steps.showDoors']}", which shows them again`,
+      t0 === EN['steps.hideDoors'] && hidden && t1 === EN['steps.showDoors'] && shown && t2 === EN['steps.hideDoors'], `"${t0}" → "${t1}" → "${t2}"`);
   });
 
   // ---------------------------------------------------------------- walk

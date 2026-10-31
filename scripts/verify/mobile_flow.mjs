@@ -256,6 +256,13 @@ export async function runWalkPad(ctx, K, n, EN) {
   const title = await page.evaluate(() => document.querySelector('[data-testid="sheet-grip"] b')?.textContent.trim() ?? '');
   check(`${n}c. walking on a phone: the collapsed sheet says "${EN['steps.places']}"`, title === EN['steps.places'], `"${title}"`);
   check(`${n}b. walk: a short tap on the joystick walks a short step; the walk bar says how to walk in one sentence`, step > 0.3 && help === EN['steps.hint.walkTouch'], `${step.toFixed(2)} m; "${help}"`);
+  // usability issue B10: the pad shows arrows; a finger held still in its middle gets "slide your finger…" and does not walk
+  const p4 = await pos();
+  await K.touch('touchStart', [[pad.x, pad.y]]); await sleep(900);
+  const held = await page.evaluate(() => ({ hint: document.querySelector('[data-testid="walk-pad-hint"]')?.textContent ?? '', arrows: !!document.querySelector('[data-testid="walk-pad"] .hm-walkpad-arrows') }));
+  await K.touch('touchEnd', []); await sleep(300);
+  const p5 = await pos(), still = Math.hypot(p5.p[0] - p4.p[0], p5.p[1] - p4.p[1]);
+  check(`${n}d. walk: the joystick shows arrows; a finger held in its middle is told "${EN['mobile.padPush']}"`, held.arrows && held.hint === EN['mobile.padPush'] && still < 0.05, `"${held.hint}", arrows ${held.arrows}, moved ${still.toFixed(2)} m`);
   await K.tap(S.view('around'), { wait: 1200 });
   check(`${n}a. "Around" in the scene bar ends the walk: the house from outside`, (await K.st()).houseView === 'exterior' && !(await page.evaluate(() => window.__home3d.walk().on)), (await K.st()).houseView);
 }

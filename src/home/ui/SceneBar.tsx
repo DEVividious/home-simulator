@@ -1,15 +1,13 @@
 // The scene bar — the only camera control (ADR 0039): Around | From above | Walk (the same words outside and in a room), the
-// level chips, doors on / off and, in a room, "← Ground floor · Kitchen". The object bar (ADR 0040) — the actions on the
+// level chips, "Hide doors" / "Show doors" and, in a room, "← Ground floor · Kitchen". The object bar (ADR 0040) — the actions on the
 // selected piece of furniture: turn, copy, delete, done; for an object on a wall the four 1 cm nudges instead of turning.
 import { setLevel } from '../actions';
 import { allLevels } from '../model/rooms';
-import { useDoors } from '../store/doors';
 import { isWalking, useUi } from '../store/ui';
 import { useLayout } from '../store/layout';
 import { useArrangement } from '../store/design';
 import { useDrag } from '../store/drag';
 import { mountedNow } from '../scene/interaction';
-import { t } from '../../i18n';
 import { ActionButton, Slot, useActionSlot } from './Action';
 
 /** level chips: the level section of a level ("doll's house"); the chip of the level shown inside is active */
@@ -27,11 +25,6 @@ function LevelChips() {
   );
 }
 
-function DoorsState() {
-  const show = useDoors((s) => s.show);
-  return <small>{show ? t('steps.doorsOn') : t('steps.doorsOff')}</small>;
-}
-
 export function SceneBar() {
   return (
     <div className="hm-scenebar" data-testid="scene-bar" data-bar="scene">
@@ -43,7 +36,7 @@ export function SceneBar() {
           <ActionButton id="view-walk" />
         </div>
         <LevelChips />
-        <ActionButton id="doors-toggle" className="hm-pill"><DoorsState /></ActionButton>
+        <ActionButton id="doors-toggle" className="hm-pill" />
       </Slot>
     </div>
   );

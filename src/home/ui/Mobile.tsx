@@ -3,7 +3,7 @@
 //  • MobileSheet — bottom sheet with the step panel or the card (collapsed / medium / expanded; landscape: panel on the right),
 //  • WalkPad — virtual walk joystick (look around: drag over the rest of the screen),
 //  • useBackGuard — the system "back" closes in turn: dialog, sheet, selection, room / walk — before leaving the app.
-import { useEffect, useRef, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { backStep } from '../backNav';
 import { wake } from '../scene/renderLoop';
 import { padInput, resetWalkInput, TAP_MS, walkInput } from '../scene/walkInput';
@@ -59,12 +59,17 @@ export function MobileSheet({ children }: { children: ReactNode }) {
   );
 }
 
+const PUSH_HINT_MS = 500, PUSH_HINT_KEEP_MS = 4000;
+
 /** virtual walk joystick (bottom-left corner); look around by dragging over the rest of the scene */
 export function WalkPad() {
   const on = useUi(isWalking);
   const knob = useRef<HTMLSpanElement>(null), st = useRef<{ id: number; cx: number; cy: number; r: number; t0: number } | null>(null);
   const later = useRef(0);
-  useEffect(() => { if (!on) resetWalkInput(); return () => { window.clearTimeout(later.current); resetWalkInput(); }; }, [on]);
+  // a finger held still in the middle does nothing: after a moment the pad says to push it (usability issue B10)
+  const [hint, setHint] = useState(false);
+  const hintTimer = useRef(0), moved = useRef(false);
+  useEffect(() => { if (!on) { resetWalkInput(); setHint(false); } return () => { window.clearTimeout(later.current); window.clearTimeout(hintTimer.current); resetWalkInput(); }; }, [on]);
   if (!on) return null;
   const set = (x: number, y: number) => {
     const s = st.current!;
@@ -72,22 +77,35 @@ export function WalkPad() {
     const m = Math.hypot(dx, dy); if (m > 1) { dx /= m; dy /= m; }
     Object.assign(walkInput, padInput(dx, dy));                                   // dead zone, quick start, the outer ring runs
     if (knob.current) knob.current.style.transform = `translate(${dx * s.r * 0.6}px, ${dy * s.r * 0.6}px)`;
+    if (walkInput.f || walkInput.s) { moved.current = true; window.clearTimeout(hintTimer.current); setHint(false); }
     wake();
+  };
+  const press = () => {
+    moved.current = false; window.clearTimeout(hintTimer.current);
+    hintTimer.current = window.setTimeout(() => { if (!moved.current) setHint(true); }, PUSH_HINT_MS);
+  };
+  const lift = () => {
+    window.clearTimeout(hintTimer.current);
+    if (hint) hintTimer.current = window.setTimeout(() => setHint(false), PUSH_HINT_KEEP_MS);
   };
   const release = () => { resetWalkInput(); if (knob.current) knob.current.style.transform = ''; };
   // a short tap on the pad still walks a step at walking speed in its direction (like a short key press)
   const end = () => {
     const t0 = st.current?.t0 ?? 0, left = t0 + TAP_MS - performance.now(), m = Math.hypot(walkInput.f, walkInput.s);
-    st.current = null; walkInput.run = false; window.clearTimeout(later.current);
+    st.current = null; walkInput.run = false; window.clearTimeout(later.current); lift();
     if (left > 0 && m > 0) { walkInput.f /= m; walkInput.s /= m; }
     later.current = window.setTimeout(release, Math.max(0, left));
   };
   return (
     <div className="hm-walkpad" data-testid="walk-pad" aria-label={t('mobile.walking')}
-      onPointerDown={(e) => { const b = e.currentTarget.getBoundingClientRect(); window.clearTimeout(later.current); st.current = { id: e.pointerId, cx: b.left + b.width / 2, cy: b.top + b.height / 2, r: b.width / 2, t0: performance.now() }; e.currentTarget.setPointerCapture(e.pointerId); set(e.clientX, e.clientY); }}
+      onPointerDown={(e) => { const b = e.currentTarget.getBoundingClientRect(); window.clearTimeout(later.current); st.current = { id: e.pointerId, cx: b.left + b.width / 2, cy: b.top + b.height / 2, r: b.width / 2, t0: performance.now() }; e.currentTarget.setPointerCapture(e.pointerId); press(); set(e.clientX, e.clientY); }}
       onPointerMove={(e) => { if (st.current?.id === e.pointerId) set(e.clientX, e.clientY); }}
       onPointerUp={(e) => { if (st.current?.id === e.pointerId) end(); }} onPointerCancel={end}>
+      <svg className="hm-walkpad-arrows" viewBox="0 0 100 100" aria-hidden>
+        <path d="M42 14 50 6l8 8M42 86l8 8 8-8M14 42 6 50l8 8M86 42l8 8-8 8" />
+      </svg>
       <span ref={knob} />
+      {hint && <p className="hm-walkpad-hint" role="status" data-testid="walk-pad-hint">{t('mobile.padPush')}</p>}
     </div>
   );
 }

@@ -113,10 +113,15 @@ export function Swatches({ value, colors, onChange, onPreview, testid, allowCust
 }) {
   const v = (value ?? '').toLowerCase();
   const extra = recent.filter((r) => !colors.some((c) => c.hex.toLowerCase() === r.toLowerCase())).slice(0, 4);
+  // the name of the colour under the pointer (or the finger, or the keyboard focus), else of the chosen one — a swatch alone did
+  // not say which colour it is (usability issue B7)
+  const [over, setOver] = useState<string | null>(null);
+  const named = colors.find((c) => c.hex.toLowerCase() === (over ?? v));
   return (
-    <div className="hm-swatches" data-testid={testid}>
+    <div className="hm-swatches" data-testid={testid} onPointerLeave={() => setOver(null)}>
       {colors.map((c) => (
-        <button key={c.hex} className={`hm-sw${v === c.hex.toLowerCase() ? ' on' : ''}`} style={{ background: c.hex }} title={c.name} aria-label={c.name} onClick={() => onChange(c.hex, c.name)} data-hex={c.hex} />
+        <button key={c.hex} className={`hm-sw${v === c.hex.toLowerCase() ? ' on' : ''}`} style={{ background: c.hex }} title={c.name} aria-label={c.name} onClick={() => onChange(c.hex, c.name)} data-hex={c.hex}
+          onPointerEnter={() => setOver(c.hex.toLowerCase())} onFocus={() => setOver(c.hex.toLowerCase())} onBlur={() => setOver(null)} />
       ))}
       {extra.map((hex) => <button key={hex} className={`hm-sw${v === hex.toLowerCase() ? ' on' : ''}`} style={{ background: hex }} title={t('controls.recentColor', { hex })} onClick={() => onChange(hex, hex)} data-hex={hex} />)}
       {allowCustom && (
@@ -125,6 +130,7 @@ export function Swatches({ value, colors, onChange, onPreview, testid, allowCust
           <span>+</span>
         </label>
       )}
+      <div className="hm-sw-name" data-testid={testid ? `${testid}-name` : undefined} aria-live="polite">{named?.name ?? '\u00a0'}</div>
     </div>
   );
 }
