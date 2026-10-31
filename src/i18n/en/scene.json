@@ -12,6 +12,8 @@
  "scene.noRoomForCopy": "There is no room left on this wall for a copy: {name}.",
  "scene.modelLoadFailed": "Cannot load the model file \"{name}\" — a placeholder solid is shown in the scene. Import the model again or delete the furniture.",
  "scene.wallsFailed": "The thickness of the walls, the windows and the outside of the house cannot be built on this device — the rooms are shown without them. Cause: {error}",
+ "scene.wallsPartFailed": "Part of the house cannot be built on this device: {parts}. The rest is shown. Cause: {error}",
+ "scene.roofOf": "the roof over {level}",
  "walkHud.feetLevel": "feet level {z}",
  "walkHud.helpSelected": "drag the selected furniture — move · drag elsewhere — look around · Esc — deselect",
  "walkHud.help": "WASD — walk · Shift — run · drag — look around · click — doors, furniture",

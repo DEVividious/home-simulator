@@ -20,6 +20,7 @@
   asked; stairs that lead to a storey with no drawing are left out and said on the card, not asked about.
 - A straight flight ending at a wall with a short landing printed with an open ground-floor part; the landing now runs into the
   walls around it.
+- When the solid kernel stops on a geometry, the error says so in a sentence instead of a bare number.
 
 ## 0.1.1
 

@@ -111,6 +111,7 @@ write(path.join(OUT, '.gitignore'), 'house-forge-output/\n__pycache__/\n*.py[cod
 // the icon: the sample house of this repository from outside, drawn by the core's rasteriser
 const sample = JSON.parse(fs.readFileSync(path.join(ROOT, 'projects', 'sample-house', 'project.json'), 'utf8'));
 const shell = shellMeshes(await loadGeometry(), building(sample.building)), meshes = [];
+if (shell.failed.length) throw new Error(`the sample house shell could not be built: ${shell.failed.map((f) => `${f.part} ${f.level} — ${f.error}`).join('; ')}`);
 for (const l of [...shell.levels, ...shell.roofs]) {
   const groups = new Map();
   for (let t = 0; t < l.solid.role.length; t++) {

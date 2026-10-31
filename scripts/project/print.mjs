@@ -26,7 +26,7 @@ import { parseBed } from '@home-sim/core/print/printers';
 import { profileOf } from '@home-sim/core/print/profiles';
 import { encodePng } from '@home-sim/core/print/raster';
 import { parseScale, scaleLabel, scaleTag } from '@home-sim/core/print/scale';
-import { loadGeometry } from '@home-sim/core/solid/wasm';
+import { kernelMessage, loadGeometry } from '@home-sim/core/solid/wasm';
 
 const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..', '..');
 const USAGE = 'usage: npm run project:print -- <projects/<id> | plan.json | project.json> --bed "<printer>"|WxD[xH] [--scale auto|1:N] [--nozzle 0.4|0.6|resin] [--min-wall mm] [--margin 10] [--eaves keep|trim] [--joints on|off] [--scales] [--dry-run] [--out DIR] [--lang en|pl]';
@@ -104,7 +104,8 @@ const meta = {
   inputFile: path.relative(process.cwd(), file),
 };
 const t0 = Date.now();
-const m = printModel(data, geo, { bed, profile, scale, margin, eaves, joints, name, meta });
+let m;
+try { m = printModel(data, geo, { bed, profile, scale, margin, eaves, joints, name, meta }); } catch (e) { fail(`${file}: ${kernelMessage(e)}`); }
 const out = path.resolve(opts['--out'] ?? path.join(projectDir, 'print', m.n ? scaleTag(m.n) : 'no-scale'));
 fs.mkdirSync(out, { recursive: true });
 // stale parts of an earlier run must not pass for this one

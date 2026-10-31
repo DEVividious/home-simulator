@@ -1,15 +1,18 @@
 // Generated shell from the core's solids (ADR 0024, 0026) — the main-thread side: one module worker (three/coreWorker.ts) builds
 // the solids of a building block; its arrays arrive transferred, with the wall mass in plan of every level (model/shell.ts).
 // Results are cached per building block. When the kernel cannot load or run, there is no shell: the scene shows the room
-// finishes only and says why (scene/CoreShellLayer.tsx), the plan views draw the level footprints.
+// finishes only and says why (scene/CoreShellLayer.tsx), the plan views draw the level footprints. A level or roof the kernel
+// fails on is left out alone (`failed`), the rest arrives.
 import type { BuildingData } from '@home-sim/core/model/building';
+import type { ShellFailure } from '@home-sim/core/solid/levels';
 import { project } from '../../project/active';
 import { hasGeneratedShell, setWallSections } from '../model/shell';
 import { createStore } from '../store/createStore';
 import type { LevelArrays } from './coreMesh';
 import type { CoreReply, CoreRequest, PrintFile, PrintRequest } from './coreWorker';
 
-export interface CoreShell { levels: LevelArrays[]; roofs: LevelArrays[]; triangles: number; ms: number; loadMs: number }
+/** the solids of a building block; `failed` — the levels and roofs the kernel could not build (left out, the rest is shown) */
+export interface CoreShell { levels: LevelArrays[]; roofs: LevelArrays[]; failed: ShellFailure[]; triangles: number; ms: number; loadMs: number }
 
 /** state of the generated shell for diagnostics and tests (__home3d.shell()): which shell is shown and what it cost */
 export const shellStatus = createStore({
@@ -18,6 +21,8 @@ export const shellStatus = createStore({
   triangles: 0, ms: 0, loadMs: 0, mainMs: 0,
   /** roof solids (one per level with roof parts) */
   roofs: 0,
+  /** the parts the kernel could not build ("level L1", "roof L1"); the rest of the shell is shown */
+  failed: [] as string[],
   /** diagnostics: raising it rebuilds the shell from a copy of the building block (the whole path — worker, transfer, geometry) */
   rebuilds: 0,
 });
@@ -56,7 +61,15 @@ export function coreShell(data: BuildingData): Promise<CoreShell> {
   if (p) return p;
   p = new Promise<CoreShell>((resolve, reject) => {
     const id = ++seq, timer = setTimeout(() => { if (pending.delete(id)) reject(new Error('shell worker: no answer')); }, TIMEOUT);
-    pending.set(id, { resolve: (r) => { clearTimeout(timer); if (r.kind !== 'print') { setWallSections(data, r.sections); resolve({ levels: r.levels, roofs: r.roofs, triangles: r.triangles, ms: r.ms, loadMs: r.loadMs }); } }, reject: (e) => { clearTimeout(timer); reject(e); } });
+    const done = (r: CoreReply & { ok: true }) => {
+      clearTimeout(timer);
+      if (r.kind === 'print') return;
+      // nothing of the building could be built: a failure of the whole shell
+      if (!r.levels.length && r.failed.length) { reject(new Error(r.failed[0].error)); return; }
+      setWallSections(data, r.sections);
+      resolve({ levels: r.levels, roofs: r.roofs, failed: r.failed, triangles: r.triangles, ms: r.ms, loadMs: r.loadMs });
+    };
+    pending.set(id, { resolve: done, reject: (e) => { clearTimeout(timer); reject(e); } });
     try { getWorker().postMessage({ id, data } satisfies CoreRequest); } catch (e) { pending.delete(id); clearTimeout(timer); reject(e as Error); }
   });
   cache.set(data, p);

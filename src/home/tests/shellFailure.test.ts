@@ -1,19 +1,23 @@
-// When the solid kernel cannot build the shell (no module workers, the WASM cannot load, a solid the kernel rejects, no answer):
-// there is no fallback shell any more (ADR 0026) — the build is rejected with the cause and not cached (the next build tries
-// again), the scene shows only the room finishes, the status carries the cause, a message in the user's language says so, and the electrical
-// plan draws the level's footprint as the wall mass. When the solids arrive, the plan draws the section of each level solid.
+// When the solid kernel cannot build the shell (no module workers, the WASM cannot load, no answer): there is no fallback shell
+// any more (ADR 0026) — the build is rejected with the cause and not cached (the next build tries again), the scene shows only
+// the room finishes, the status carries the cause, a message in the user's language says so, and the electrical plan draws the
+// level's footprint as the wall mass. When the kernel fails on one level only, the rest is shown, the message names the missing
+// level and its plan draws the footprint. When the solids arrive, the plan draws the section of each level solid.
+import path from 'node:path';
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { shellMeshes } from '@home-sim/core/solid/levels';
 import { loadGeometry, type Geometry } from '@home-sim/core/solid/wasm';
 import { outerOutline } from '@home-sim/core/model/outline';
-import { project } from '../../project/active';
+import { activateProject, project } from '../../project/active';
+import { readProjectDir } from '../../project/node';
 import { t } from '../../i18n';
 import { building } from '../model/building';
+import { levelArrays } from '../three/coreMesh';
 import { EL_LAYER_IDS, resolvePlan } from '../model/electrical';
-import { roomsOfLevel } from '../model/rooms';
+import { levelName, roomsOfLevel } from '../model/rooms';
 import { setWallSections, shellSpec, wallSection, wallSectionsRev, type WallSections } from '../model/shell';
 import { buildPlan, massPrims, type Prim } from '../plan/elPlan';
-import { shellFailed } from '../scene/CoreShellLayer';
+import { shellFailed, shellPartsFailed } from '../scene/CoreShellLayer';
 import { coreShell, shellStatus, wallSectionsReady } from '../three/coreShell';
 import type { CoreReply, CoreRequest } from '../three/coreWorker';
 import { ui } from '../store/ui';
@@ -53,7 +57,7 @@ describe('the solid kernel cannot build the shell', () => {
     const first = coreShell(data);
     await expect(first).rejects.toThrow('solid of level L1: NotManifold');
     // a failed build is forgotten: the next one asks the worker again
-    reply = (r) => ({ id: r.id, ok: true, levels: [], roofs: [], sections: { L1: [] }, triangles: 0, ms: 1, loadMs: 1 });
+    reply = (r) => ({ id: r.id, ok: true, levels: [], roofs: [], sections: { L1: [] }, failed: [], triangles: 0, ms: 1, loadMs: 1 });
     const second = coreShell(data);
     expect(second).not.toBe(first);
     await expect(second).resolves.toMatchObject({ triangles: 0 });
@@ -83,7 +87,7 @@ describe('the solids arrive', () => {
   it('the worker sends the section of every level with the solids; the plan draws exactly its loops, the larger first', async () => {
     const data = project().building, m = shellMeshes(geo, building()), sections: WallSections = Object.fromEntries(m.levels.map((l) => [l.level, l.section]));
     vi.stubGlobal('Worker', StubWorker);
-    reply = (r) => ({ id: r.id, ok: true, levels: [], roofs: [], sections, triangles: m.triangles, ms: 1, loadMs: 1 });
+    reply = (r) => ({ id: r.id, ok: true, levels: [], roofs: [], sections, failed: [], triangles: m.triangles, ms: 1, loadMs: 1 });
     const rev = wallSectionsRev.get().n;
     await coreShell(data);
     expect(wallSectionsRev.get().n).toBe(rev + 1);
@@ -99,5 +103,39 @@ describe('the solids arrive', () => {
   it('a section set for another building block (an older one) is not used', () => {
     setWallSections(structuredClone(project().building), { L1: [] });
     expect(wallSection('L1')!.length).toBeGreaterThan(0);
+  });
+});
+
+describe('the kernel fails on one level (sample-house: the upper floor)', () => {
+  const dir = (id: string) => path.resolve(__dirname, '../../../projects', id);
+  beforeAll(() => activateProject(readProjectDir(dir('sample-house'))));
+  afterAll(() => activateProject(readProjectDir(dir('demo-apartment'))));
+  const L1 = { part: 'level' as const, level: 'L1', error: 'the solid kernel stopped on this geometry (internal error 144168)' };
+
+  it('the rest is kept: the shell arrives with the ground floor, the upper floor listed; its plan draws the footprint', async () => {
+    const m = shellMeshes(geo, building()), l0 = m.levels.find((l) => l.level === 'L0')!;
+    vi.stubGlobal('Worker', StubWorker);
+    reply = (r) => ({ id: r.id, ok: true, levels: [levelArrays(l0)], roofs: [], sections: { L0: l0.section }, failed: [L1], triangles: 1, ms: 1, loadMs: 1 });
+    const s = await coreShell(project().building);
+    expect(s.levels.map((l) => l.level)).toEqual(['L0']);
+    expect(s.failed).toEqual([L1]);
+    expect(drawing('L0').walls).toBe('section');
+    expect(drawing('L1').walls).toBe('footprint');
+  });
+
+  it('nothing of the building built: a failure of the whole shell, with the first cause', async () => {
+    vi.stubGlobal('Worker', StubWorker);
+    reply = (r) => ({ id: r.id, ok: true, levels: [], roofs: [], sections: {}, failed: [{ ...L1, level: 'L0' }, L1], triangles: 0, ms: 1, loadMs: 1 });
+    await expect(coreShell(structuredClone(project().building))).rejects.toThrow(L1.error);
+  });
+
+  it('a message names the missing parts by their level names (a roof as the roof over its level) and gives the cause', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    shellPartsFailed([L1, { part: 'roof', level: 'L1', error: L1.error }]);
+    const msg = ui.get().toast!, parts = `${levelName('L1')}, ${t('scene.roofOf', { level: levelName('L1') })}`;
+    expect(msg.level).toBe('warn');
+    expect(msg.text).toBe(t('scene.wallsPartFailed', { parts, error: L1.error }));
+    expect(msg.text).toContain(levelName('L1'));
+    expect(warn).toHaveBeenCalledWith(expect.stringMatching(/failed on level L1 .*roof L1 .*the rest is shown/));
   });
 });

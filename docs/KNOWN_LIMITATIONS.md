@@ -38,8 +38,9 @@ the behaviour is named in brackets. When a limit is lifted, remove it here in th
 - **The solid kernel needs WebAssembly and module workers.** The shell is built with manifold-3d (WASM, ~0.5 MB, ~0.2 MB
   gzipped) in a worker (`src/home/three/coreWorker.ts`). Where it cannot load or run there is no fallback shell: the scene
   shows the room finishes, furniture and doors without the wall solids, slabs and windows, a message gives the cause, and
-  the electrical plan draws each level's footprint (the rooms grown by the exterior wall) as its wall mass. A failure in one
-  level's solid leaves the whole building without its shell.
+  the electrical plan draws each level's footprint (the rooms grown by the exterior wall) as its wall mass. When the kernel
+  fails on one level or roof only, that part is left out: the rest is shown, a message names the missing part, and that
+  level's plan draws its footprint. Node tools (`project:print`, the house-forge previews) stop with the cause instead.
 - **The wall mass in plan is a section.** The electrical plan (screen and PDF) draws the section of each level solid just
   above the floor and at the level's cut height, united (`packages/core/src/solid/slice.ts`): chimneys and dormer cheeks are
   mass, and an opening open at both heights — a glazing up to the ceiling, a door under a slope lower than the cut — shows as a

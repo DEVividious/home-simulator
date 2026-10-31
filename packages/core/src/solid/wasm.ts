@@ -17,6 +17,14 @@ export interface LoadOptions {
   instantiateWasm?: (imports: unknown, done: (instance: unknown, module?: unknown) => void) => unknown;
 }
 
+/** a readable message for what the kernel threw: its Error, or — for an internal C++ exception, which arrives as a bare number
+ *  (a pointer) — a sentence saying the kernel stopped */
+export function kernelMessage(e: unknown): string {
+  if (e instanceof Error) return e.message;
+  if (typeof e === 'number') return `the solid kernel stopped on this geometry (internal error ${e})`;
+  return String(e);
+}
+
 let shared: Promise<Geometry> | null = null;
 
 /** the solid kernel, initialised; one shared instance unless a custom instantiation is asked for */

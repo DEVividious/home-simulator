@@ -14,6 +14,7 @@ import { planImage, roofImage } from '@home-sim/core/preview/plan';
 import { findPrinters, PRINTERS, printerName } from '@home-sim/core/print/printers';
 import { encodePng } from '@home-sim/core/print/raster';
 import { roofBounds } from '@home-sim/core/solid/roofSolid';
+import { kernelMessage } from '@home-sim/core/solid/wasm';
 import { geometry, loadPlan, rel, UsageError, type Opts } from './common.ts';
 import { LANGS, planLabels } from './labels.ts';
 import { PRINT_HELP, printCommand } from './print.ts';
@@ -222,7 +223,7 @@ const entry = process.argv[1] ? fs.realpathSync(process.argv[1]) : '';
 if (entry && fs.realpathSync(fileURLToPath(import.meta.url)) === entry) {
   main(process.argv.slice(2)).then((code) => process.exit(code), (e: unknown) => {
     if (e instanceof UsageError) console.error(e.message);
-    else console.error(e instanceof Error ? (e.stack ?? e.message) : String(e));
+    else console.error(e instanceof Error ? (e.stack ?? e.message) : kernelMessage(e));
     process.exit(2);
   });
 }

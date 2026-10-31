@@ -2,7 +2,8 @@
 // with two material groups — plus window frames and panes; per level with roof parts one roof solid (covering, fascias and
 // soffits, chimneys) with its roof windows. The solids are built in a worker (three/coreShell.ts); until they arrive nothing is
 // drawn. When the kernel cannot load or run there is no shell: the room finishes, furniture and doors stay, a message says the
-// walls could not be built, and the plan views draw the level footprints. The root is named HOUSE and the level solids carry
+// walls could not be built, and the plan views draw the level footprints. A level or roof the kernel fails on is left out alone:
+// the rest is shown and a message names the missing parts. The root is named HOUSE and the level solids carry
 // userData.capLevel, so section caps, the cutaway and architecture raycasts work like with a model file. A roof is
 // not cut by a section: in the section (and the rooms) of the level it covers, or of a level below, it is hidden — the rooms
 // under its slopes stay visible from above, and only the walls are capped.
@@ -14,8 +15,9 @@ import { useStore } from '../store/createStore';
 import { toast, ui } from '../store/ui';
 import { meshGeometry } from '../three/coreMesh';
 import { coreShell, shellStatus, type CoreShell } from '../three/coreShell';
+import type { ShellFailure } from '@home-sim/core/solid/levels';
 import { SHELL_FRAME, SHELL_GLASS, SHELL_ROOF, SHELL_SLAB, SHELL_WALL } from '../three/shellMaterials';
-import { levelIndex } from '../model/rooms';
+import { levelIndex, levelName } from '../model/rooms';
 import { wake } from './renderLoop';
 import { lastWasClick } from './sceneApi';
 import type { SceneMode } from './sceneMode';
@@ -37,7 +39,7 @@ function CoreShellMeshes({ shell, mode }: { shell: CoreShell; mode: SceneMode })
   }, [shell]);
   const gl = useThree((s) => s.gl);
   useEffect(() => {
-    shellStatus.set({ status: 'ready', triangles: shell.triangles, ms: Math.round(shell.ms), loadMs: Math.round(shell.loadMs), mainMs: Math.round(mainMs * 10) / 10, roofs: shell.roofs.length });
+    shellStatus.set({ status: 'ready', failed: shell.failed.map((f) => `${f.part} ${f.level}`), triangles: shell.triangles, ms: Math.round(shell.ms), loadMs: Math.round(shell.loadMs), mainMs: Math.round(mainMs * 10) / 10, roofs: shell.roofs.length });
     // the solids arrive after the first frames: the shadow map (updated only on scene changes) must see them
     gl.shadowMap.needsUpdate = true;
     wake();
@@ -72,15 +74,23 @@ export function shellFailed(e: Error): void {
   toast(t('scene.wallsFailed', { error: e.message }), 'error', 12000);
 }
 
+/** the kernel failed on some levels or roofs: the rest is shown, a message names the missing parts (their plans draw the level
+ *  footprint) */
+export function shellPartsFailed(failed: ShellFailure[]): void {
+  const parts = failed.map((f) => (f.part === 'roof' ? t('scene.roofOf', { level: levelName(f.level) }) : levelName(f.level)));
+  console.warn(`generated shell: the solid kernel failed on ${failed.map((f) => `${f.part} ${f.level} (${f.error})`).join(', ')} — the rest is shown`);
+  toast(t('scene.wallsPartFailed', { parts: parts.join(', '), error: failed[0].error }), 'warn', 12000);
+}
+
 /** building shell computed by the core from the rooms — all levels; clicking the shell clears the selection */
 export function CoreShellLayer({ mode }: { mode: SceneMode }) {
   const data = project().building, rebuilds = useStore(shellStatus, (s) => s.rebuilds);
   const [shell, setShell] = useState<CoreShell | null>(null);
   useEffect(() => {
     let on = true;
-    shellStatus.set({ kind: 'core', status: 'loading', error: null });
+    shellStatus.set({ kind: 'core', status: 'loading', error: null, failed: [] });
     coreShell(rebuilds ? structuredClone(data) : data).then(
-      (s) => { if (on) setShell(s); },
+      (s) => { if (!on) return; setShell(s); if (s.failed.length) shellPartsFailed(s.failed); },
       (e: Error) => { if (on) { setShell(null); shellFailed(e); } },
     );
     return () => { on = false; };

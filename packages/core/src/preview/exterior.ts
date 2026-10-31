@@ -25,7 +25,9 @@ function byRole(m: SolidMesh): DrawMesh[] {
 
 /** two views of the building from outside, side by side, with the title above */
 export function exteriorImage(geo: Geometry, data: BuildingData, o: { title: string }): Image {
-  const s = shellMeshes(geo, building(data)), W = 1440, H = 600, head = 34, img = image(W, head + H, [250, 250, 248]);
+  const s = shellMeshes(geo, building(data));
+  if (s.failed.length) throw new Error(`the shell could not be built: ${s.failed.map((f) => `${f.part} ${f.level} — ${f.error}`).join('; ')}`);
+  const W = 1440, H = 600, head = 34, img = image(W, head + H, [250, 250, 248]);
   const meshes: DrawMesh[] = [];
   for (const l of [...s.levels, ...s.roofs]) {
     meshes.push(...byRole(l.solid));

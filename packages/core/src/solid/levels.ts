@@ -20,7 +20,7 @@ import { roofBounds, roofPieces, roofSolid, type RoofWindow } from './roofSolid.
 import { scoped, type Keep } from './scope.ts';
 import { wallSection } from './slice.ts';
 import { TagTable } from './tags.ts';
-import type { CrossSection, Geometry, Manifold } from './wasm.ts';
+import { kernelMessage, type CrossSection, type Geometry, type Manifold } from './wasm.ts';
 
 /** vertical frame of a level's solid (absolute z) */
 export interface LevelFrame {
@@ -243,31 +243,35 @@ export interface RoofMeshes {
   bounds: { min: Vec3; max: Vec3 };
   volume: number;
 }
-export interface ShellMeshes { levels: LevelMeshes[]; roofs: RoofMeshes[]; triangles: number; ms: number }
+/** a part of the shell the kernel could not build: a level solid or the roof solid over a level */
+export interface ShellFailure { part: 'level' | 'roof'; level: LevelId; error: string }
+export interface ShellMeshes { levels: LevelMeshes[]; roofs: RoofMeshes[]; failed: ShellFailure[]; triangles: number; ms: number }
 
 const meshes = new WeakMap<Building, ShellMeshes>();
-/** the generated shell of a building as plain meshes (once per building); every WASM object is freed before returning */
+/** the generated shell of a building as plain meshes (once per building). Every level and every roof is built in its own scope:
+ *  a part the kernel fails on is left out and listed in `failed`, the others are kept; every WASM object is freed before
+ *  returning */
 export function shellMeshes(geo: Geometry, b: Building): ShellMeshes {
   const hit = meshes.get(b);
   if (hit) return hit;
-  const t0 = Date.now();
-  const out = scoped((keep) => {
-    const levels = builtLevels(b).map((l): LevelMeshes => {
-      const s = levelSolid(geo, keep, b, l.id)!, box = s.solid.boundingBox(), w = windowMeshes(s.windows), slats = slatMeshes(b.walls.filter((x) => x.level === l.id));
-      const section = wallSection(keep, s.solid, s.frame.floor, l.floorZ + l.cutHeight);
-      return { level: l.id, frame: s.frame, solid: solidMesh(s.solid, s.tags), frames: joinMeshes(w.frames, slats), glass: w.glass, windows: s.windows, section, bounds: { min: [...box.min] as Vec3, max: [...box.max] as Vec3 }, volume: s.solid.volume() };
-    });
-    const [lo, hi] = span(b);
-    const roofs = (b.roof?.levels ?? []).flatMap((level): RoofMeshes[] => {
-      const r = roofSolid(geo, keep, b, level, lo, hi);
-      if (!r) return [];
-      const box = r.solid.boundingBox(), w = windowMeshes(r.windows.map((x) => x.frame));
-      return [{ level, solid: solidMesh(r.solid, r.tags), frames: w.frames, glass: w.glass, windows: r.windows, bounds: { min: [...box.min] as Vec3, max: [...box.max] as Vec3 }, volume: r.solid.volume() }];
-    });
-    return { levels, roofs };
-  });
-  const triangles = [...out.levels, ...out.roofs].reduce((n, l) => n + l.solid.index.length / 3, 0);
-  const res: ShellMeshes = { ...out, triangles, ms: Date.now() - t0 };
+  const t0 = Date.now(), failed: ShellFailure[] = [];
+  const attempt = <T>(part: ShellFailure['part'], level: LevelId, fn: (keep: Keep) => T): T | null => {
+    try { return scoped(fn); } catch (e) { failed.push({ part, level, error: kernelMessage(e) }); return null; }
+  };
+  const levels = builtLevels(b).flatMap((l) => attempt('level', l.id, (keep): LevelMeshes[] => {
+    const s = levelSolid(geo, keep, b, l.id)!, box = s.solid.boundingBox(), w = windowMeshes(s.windows), slats = slatMeshes(b.walls.filter((x) => x.level === l.id));
+    const section = wallSection(keep, s.solid, s.frame.floor, l.floorZ + l.cutHeight);
+    return [{ level: l.id, frame: s.frame, solid: solidMesh(s.solid, s.tags), frames: joinMeshes(w.frames, slats), glass: w.glass, windows: s.windows, section, bounds: { min: [...box.min] as Vec3, max: [...box.max] as Vec3 }, volume: s.solid.volume() }];
+  }) ?? []);
+  const [lo, hi] = span(b);
+  const roofs = (b.roof?.levels ?? []).flatMap((level) => attempt('roof', level, (keep): RoofMeshes[] => {
+    const r = roofSolid(geo, keep, b, level, lo, hi);
+    if (!r) return [];
+    const box = r.solid.boundingBox(), w = windowMeshes(r.windows.map((x) => x.frame));
+    return [{ level, solid: solidMesh(r.solid, r.tags), frames: w.frames, glass: w.glass, windows: r.windows, bounds: { min: [...box.min] as Vec3, max: [...box.max] as Vec3 }, volume: r.solid.volume() }];
+  }) ?? []);
+  const triangles = [...levels, ...roofs].reduce((n, l) => n + l.solid.index.length / 3, 0);
+  const res: ShellMeshes = { levels, roofs, failed, triangles, ms: Date.now() - t0 };
   meshes.set(b, res);
   return res;
 }

@@ -8,7 +8,8 @@ import { levelSolid, shellMeshes } from '@home-sim/core/solid/levels';
 import type { SolidMesh } from '@home-sim/core/solid/mesh';
 import { liveObjects, scoped } from '@home-sim/core/solid/scope';
 import { ROLES, type Role } from '@home-sim/core/solid/tags';
-import { loadGeometry, type Geometry } from '@home-sim/core/solid/wasm';
+import { kernelMessage, loadGeometry, type Geometry } from '@home-sim/core/solid/wasm';
+import { exteriorImage } from '@home-sim/core/preview/exterior';
 import { PACKAGES, ROOT } from './packages';
 
 let geo: Geometry;
@@ -94,6 +95,36 @@ describe('level solids', () => {
       expect(l.glass.index.length).toBe(l.windows.length * 36);
       for (let v = 0; v < l.frames.normals.length; v += 3) expect(Math.hypot(l.frames.normals[v], l.frames.normals[v + 1], l.frames.normals[v + 2])).toBeCloseTo(1, 6);
     }
+  });
+});
+
+describe('a part the kernel fails on', () => {
+  /** the sample house with one corner of an upper room moved to 1e30 m: the kernel stops on that level (an internal exception) */
+  const broken = () => {
+    const d = PACKAGES['sample-house'](), r = d.rooms.rooms.find((x) => x.level === 'L1')!;
+    r.polygon[1] = [1e30, r.polygon[1][1]];
+    return d;
+  };
+
+  it('is left out and listed with a readable cause; the other levels are kept; no WASM object is left', () => {
+    const before = liveObjects(), whole = shellMeshes(geo, building(PACKAGES['sample-house']())), m = shellMeshes(geo, building(broken()));
+    expect(m.failed.filter((f) => f.part === 'level')).toEqual([{ part: 'level', level: 'L1', error: expect.stringMatching(/^the solid kernel stopped on this geometry \(internal error \d+\)$/) }]);
+    expect(m.levels.map((l) => l.level)).toEqual(['L0']);
+    // the level below is the same solid as in the whole house
+    expect(m.levels[0].volume).toBeCloseTo(whole.levels[0].volume, 6);
+    expect(m.levels[0].section).toEqual(whole.levels[0].section);
+    expect(m.triangles).toBe([...m.levels, ...m.roofs].reduce((n, l) => n + l.solid.index.length / 3, 0));
+    expect(liveObjects()).toBe(before);
+  });
+
+  it('the kernel\'s messages: an Error as it is, an internal exception (a bare number) as a sentence', () => {
+    expect(kernelMessage(new Error('solid of level L1: NotManifold'))).toBe('solid of level L1: NotManifold');
+    expect(kernelMessage(144168)).toBe('the solid kernel stopped on this geometry (internal error 144168)');
+    expect(kernelMessage('x')).toBe('x');
+  });
+
+  it('the picture from outside refuses a shell with a part missing (the CLI reports it)', () => {
+    expect(() => exteriorImage(geo, broken(), { title: 'broken' })).toThrow(/the shell could not be built: level L1 — the solid kernel stopped/);
   });
 });
 
