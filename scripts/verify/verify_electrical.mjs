@@ -148,6 +148,9 @@ async function runProject(PROJECT) {
     await shot('01_plan');
     check('3. the PLAN opens first: the level with its rooms and the project\'s existing points as symbols',
       ws.el === '2d' && (await exists(T('el-plan-svg'))) && roomsShown.length >= 3 && onLevel.length > 0 && JSON.stringify(symIds) === JSON.stringify(onLevel), `level ${lvl.level}; rooms ${roomsShown.join(', ')}; symbols ${symIds.join(', ')}`);
+    await page.waitForFunction(() => document.querySelector('[data-testid="el-plan-svg"]')?.dataset.walls === 'section', { timeout: 30000 }).catch(() => {});
+    const mass = await page.$eval(T('el-plan-svg'), (v) => ({ walls: v.dataset.walls, mass: v.querySelectorAll('polygon[fill="#7d838c"]').length }));
+    check('3b. the walls of the plan are the section of the generated shell\'s level solid', mass.walls === 'section' && mass.mass >= 1, JSON.stringify(mass));
     check('4. the plan of the project: all source points (ids from the package) present, global scope', S.sourceIds.every((id) => p0.points.some((p) => p.id === id)) && (await page.evaluate(() => window.__home.electrical.scope())) === 'global',
       `${p0.points.length} points: ${p0.points.map((p) => p.id).join(', ')}`);
     const levelOpts = await page.$$eval(`${T('el-level')} [data-value]`, (b) => b.map((x) => x.dataset.value));

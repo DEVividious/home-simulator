@@ -1,5 +1,6 @@
 // Module worker of the core (ADR 0026): loads the solid kernel (manifold-3d WASM, a bundled asset) on the first request.
-//  • shell — builds the level and roof solids of a package's building block and sends back three.js arrays (transferred);
+//  • shell — builds the level and roof solids of a package's building block and sends back three.js arrays (transferred) and
+//    the wall mass in plan of every level (the section of its solid);
 //  • print — the printable scale model (core print/, ADR 0030–0032): the STL parts, the report and the preview picture — the same
 //    STL bytes as `npm run project:print` for the same building block, bed, profile and scale (ADR 0044).
 // The main thread never loads the kernel (three/coreShell.ts).
@@ -13,12 +14,13 @@ import { scaleTag } from '@home-sim/core/print/scale';
 import { shellMeshes } from '@home-sim/core/solid/levels';
 import { loadGeometry } from '@home-sim/core/solid/wasm';
 import { levelArrays, levelBuffers, type LevelArrays } from './coreMesh';
+import type { WallSections } from '../model/shell';
 
 export interface PrintRequest { bed: string; nozzle: string; margin: number; name: string; meta: Record<string, string>; labels: Partial<PreviewLabels> }
 export type CoreRequest = { id: number; kind?: 'shell'; data: BuildingData } | { id: number; kind: 'print'; data: BuildingData; print: PrintRequest };
 export interface PrintFile { name: string; bytes: Uint8Array }
 export type CoreReply =
-  | { id: number; ok: true; kind?: 'shell'; levels: LevelArrays[]; roofs: LevelArrays[]; triangles: number; ms: number; loadMs: number }
+  | { id: number; ok: true; kind?: 'shell'; levels: LevelArrays[]; roofs: LevelArrays[]; sections: WallSections; triangles: number; ms: number; loadMs: number }
   | { id: number; ok: true; kind: 'print'; printable: boolean; scale: string | null; files: PrintFile[]; problems: string[] }
   | { id: number; ok: false; error: string };
 
@@ -60,7 +62,8 @@ ctx.onmessage = async ({ data: req }) => {
       return;
     }
     const t1 = performance.now(), shell = shellMeshes(geo, building(req.data)), levels = shell.levels.map(levelArrays), roofs = shell.roofs.map(levelArrays);
-    ctx.postMessage({ id, ok: true, levels, roofs, triangles: shell.triangles, ms: performance.now() - t1, loadMs }, [...levels, ...roofs].flatMap(levelBuffers));
+    const sections = Object.fromEntries(shell.levels.map((l) => [l.level, l.section]));
+    ctx.postMessage({ id, ok: true, levels, roofs, sections, triangles: shell.triangles, ms: performance.now() - t1, loadMs }, [...levels, ...roofs].flatMap(levelBuffers));
   } catch (e) {
     ctx.postMessage({ id, ok: false, error: String((e as Error)?.message ?? e) });
   }

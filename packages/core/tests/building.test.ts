@@ -3,8 +3,6 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { building, ceilingAt, levelAtZ, roomAt, stairArrivesAt, SHELL_DEFAULTS, type BuildingData } from '@home-sim/core/model/building';
-import { gridLevelShell, gridShellBounds, orthogonalPlan } from '@home-sim/core/model/gridShell';
-import { planMass } from '@home-sim/core/model/planMass';
 import type { ProjectPackage } from '@home-sim/core/package/types';
 
 const ROOT = path.resolve(__dirname, '..', '..', '..');
@@ -66,20 +64,5 @@ describe('building()', () => {
     expect(across.length).toBeGreaterThan(1);
     expect(r.ceiling.breaksAlong(across.a, across.b).map(y).sort((p, q) => p - q).map((v) => +v.toFixed(9))).toEqual([ry - 0.5, ry, ry + 0.5].map((v) => +v.toFixed(9)));
     expect(r.ceiling.range()[1]).toBeCloseTo(2.5, 9);
-  });
-});
-
-describe('grid shell', () => {
-  it('is cached per building and level, and the plan mass is its wall strips', () => {
-    const b = building(pkg('sample-house').building);
-    for (const l of b.levels) {
-      const s = gridLevelShell(b, l.id);
-      expect(gridLevelShell(b, l.id)).toBe(s);
-      expect(planMass(b, l.id)).toBe(s.mass);
-      expect(s.walls.length).toBeGreaterThan(0);
-    }
-    expect(orthogonalPlan(b.rooms)).toBe(true);
-    const bounds = gridShellBounds(b);
-    expect(bounds.min[2]).toBeCloseTo(b.levels[0].floorZ - b.shell.slab, 9);
   });
 });

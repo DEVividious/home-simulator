@@ -1,8 +1,9 @@
 // Generated building shell from the core's solids (ADR 0024, 0027): per level one closed solid — walls and slabs in one geometry
 // with two material groups — plus window frames and panes; per level with roof parts one roof solid (covering, fascias and
 // soffits, chimneys) with its roof windows. The solids are built in a worker (three/coreShell.ts); until they arrive nothing is
-// drawn, and when the kernel fails the grid shell (ShellLayer) is shown instead. The root is named HOUSE and the level solids
-// carry userData.capLevel, like the grid shell, so section caps, the cutaway and architecture raycasts work unchanged. A roof is
+// drawn. When the kernel cannot load or run there is no shell: the room finishes, furniture and doors stay, a message says the
+// walls could not be built, and the plan views draw the level footprints. The root is named HOUSE and the level solids carry
+// userData.capLevel, so section caps, the cutaway and architecture raycasts work like with a model file. A roof is
 // not cut by a section: in the section (and the rooms) of the level it covers, or of a level below, it is hidden — the rooms
 // under its slopes stay visible from above, and only the walls are capped.
 import { useThree } from '@react-three/fiber';
@@ -10,15 +11,15 @@ import { useEffect, useMemo, useState } from 'react';
 import * as THREE from 'three';
 import { project } from '../../project/active';
 import { useStore } from '../store/createStore';
-import { ui } from '../store/ui';
+import { toast, ui } from '../store/ui';
 import { meshGeometry } from '../three/coreMesh';
 import { coreShell, shellStatus, type CoreShell } from '../three/coreShell';
-import { SHELL_FRAME, SHELL_GLASS, SHELL_ROOF, SHELL_SLAB, SHELL_WALL } from '../three/shellGeometry';
+import { SHELL_FRAME, SHELL_GLASS, SHELL_ROOF, SHELL_SLAB, SHELL_WALL } from '../three/shellMaterials';
 import { levelIndex } from '../model/rooms';
 import { wake } from './renderLoop';
 import { lastWasClick } from './sceneApi';
 import type { SceneMode } from './sceneMode';
-import { ShellLayer } from './ShellLayer';
+import { t } from '../../i18n';
 
 const SOLID_MATERIALS = [SHELL_WALL, SHELL_SLAB, SHELL_ROOF];
 const noRay = () => {};
@@ -64,23 +65,25 @@ function CoreShellMeshes({ shell, mode }: { shell: CoreShell; mode: SceneMode })
   );
 }
 
+/** the solid kernel could not build the shell: no wall solids, slabs or windows are drawn, the status carries the cause, and a message says so */
+export function shellFailed(e: Error): void {
+  console.warn(`generated shell: the solid kernel failed (${e.message}) — no shell is shown (only the room finishes)`);
+  shellStatus.set({ status: 'error', error: e.message });
+  toast(t('scene.wallsFailed', { error: e.message }), 'error', 12000);
+}
+
 /** building shell computed by the core from the rooms — all levels; clicking the shell clears the selection */
 export function CoreShellLayer({ mode }: { mode: SceneMode }) {
   const data = project().building, rebuilds = useStore(shellStatus, (s) => s.rebuilds);
-  const [shell, setShell] = useState<CoreShell | 'error' | null>(null);
+  const [shell, setShell] = useState<CoreShell | null>(null);
   useEffect(() => {
     let on = true;
     shellStatus.set({ kind: 'core', status: 'loading', error: null });
     coreShell(rebuilds ? structuredClone(data) : data).then(
       (s) => { if (on) setShell(s); },
-      (e: Error) => {
-        console.warn(`generated shell: the solid kernel failed (${e.message}) — showing the grid shell`);
-        shellStatus.set({ kind: 'grid', status: 'error', error: e.message });
-        if (on) setShell('error');
-      },
+      (e: Error) => { if (on) { setShell(null); shellFailed(e); } },
     );
     return () => { on = false; };
   }, [data, rebuilds]);
-  if (shell === 'error') return <ShellLayer mode={mode} />;
   return shell ? <CoreShellMeshes shell={shell} mode={mode} /> : null;
 }

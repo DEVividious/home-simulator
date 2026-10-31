@@ -7,6 +7,7 @@ import { toCsv, toJson, type ElectricalPlan } from '../model/electrical';
 import { allLevels } from '../model/rooms';
 import { furnitureOutlines } from '../plan/planData';
 import { docOf, design, variantOf } from '../store/design';
+import { wallSectionsReady } from '../three/coreShell';
 import { toast } from '../store/ui';
 import { pdfCharSet, pdfFileName, pdfModel, pdfTexts, renderPdf, type PdfGroup, type PdfOptions } from './electricalPdf';
 import { pdfReplaced, replacedText, type PdfReplaced } from './pdfText';
@@ -36,6 +37,7 @@ export function pdfOptions(o: ExportPdfOptions): PdfOptions {
 /** EXPORT THE ELECTRICAL PLAN AS PDF; `replaced` — description characters the print font lacks (in the PDF they get a substitute spelling or "?") */
 export async function exportElectricalPdf(o: ExportPdfOptions, plan: ElectricalPlan = planNow(), save = true): Promise<{ name: string; bytes: ArrayBuffer; pages: number; replaced: PdfReplaced } | null> {
   try {
+    await wallSectionsReady();   // the wall mass of the plans (the section of the core's solids)
     const opts = pdfOptions(o), pages = pdfModel(plan, opts);
     const [regular, bold] = await Promise.all([regularUrl, boldUrl].map(async (u) => b64(await (await fetch(u)).arrayBuffer())));
     const fonts = { regular, bold }, bytes = await renderPdf(pages, opts, fonts), name = pdfFileName(opts.date);

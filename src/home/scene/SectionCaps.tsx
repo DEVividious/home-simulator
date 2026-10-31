@@ -17,7 +17,7 @@ import type { SceneMode } from './sceneMode';
 import { wake } from './renderLoop';
 
 /** shell meshes cut by the section of a given level: by the model naming convention of the project package (assets.sectionCaps)
- *  or the marker of the generated shell (userData.capLevel — scene/ShellLayer.tsx) */
+ *  or the marker of the generated shell (userData.capLevel — scene/CoreShellLayer.tsx) */
 export function capSources(level: string) {
   const prefixes = project().assets?.sectionCaps?.[level] ?? [];
   return (o: THREE.Object3D) => (o.userData as { capLevel?: string }).capLevel === level || prefixes.some((p) => o.name.startsWith(p));

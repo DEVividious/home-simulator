@@ -5,7 +5,7 @@
 //   • exits in the walk (usability issue B8): a sign over the front door, a click on it opens the door and walks out;
 //   • double and folding doors: a click on the double door in the walk opens both leaves about their own hinges, the bifold
 //     folds, the double entrance door lets the walk out, and the print download works;
-//   • walls at 45°: the shell is built with the slanted walls (no grid fallback for them), a click on the door in the slanted
+//   • walls at 45°: the shell is built with the slanted walls, a click on the door in the slanted
 //     partition opens it and the walk goes through into the room behind; the print download works;
 //   • a flat-roofed wing and walls that bound no room: the screen wall with slats stands in the scene and stops the walk on the
 //     site; the downloaded print has the wing's roof in the upper floor's part and the parts joined by registration tabs.
@@ -104,7 +104,7 @@ try {
       await shot(`${tag}_01_start`);
       const front = F.p.building.doors.find((d) => d.rooms.includes('exterior')), leaf = front ? await obj(`DOOR_LEAF_${front.id}`) : null;
       check(`[${tag}] from outside the front door ${front?.id} is drawn (doors to the outside appear in the exterior view)`, !front || (leaf?.tris ?? 0) > 0, `${leaf?.tris} triangles`);
-      check(`[${tag}] the package loads, the generated shell is built${s ? ` and the ${s.kind} stairs are in the scene` : ''}`, pr.id === F.id && sh.status === 'ready' && sh.kind !== 'grid' && (!s || (stairs?.tris ?? 0) > 50), `shell ${sh.status} (${sh.kind}); stairs ${stairs?.tris} triangles`);
+      check(`[${tag}] the package loads, the generated shell is built${s ? ` and the ${s.kind} stairs are in the scene` : ''}`, pr.id === F.id && sh.status === 'ready' && sh.kind === 'core' && (!s || (stairs?.tris ?? 0) > 50), `shell ${sh.status} (${sh.kind}); stairs ${stairs?.tris} triangles`);
     });
 
     // ---------------------------------------------------------------- walk up the stairs
@@ -174,7 +174,7 @@ try {
       await page.evaluate(() => window.__home.ui({ houseView: 'exterior' })); await sleep(1500);
       await shot(`${tag}_09_exterior`);
       const sh = await s3('shell');
-      check(`[${tag}] the generated shell is built with the walls at 45° (the solid kernel, not the grid)`, sh.status === 'ready' && sh.kind === 'core', JSON.stringify(sh));
+      check(`[${tag}] the generated shell is built with the walls at 45° (the solid kernel)`, sh.status === 'ready' && sh.kind === 'core', JSON.stringify(sh));
       if (!(await s3('walk')).on) { await click(S.view('walk'), 2500); await waitFor(async () => { const w = await s3('walk'); return w.on && w.place ? w : null; }, 20000); }
       // in the room the door does not open into, 2.2 m from the door, facing it across the slanted wall
       const o = slanted.opening, n = [-o.dir[1], o.dir[0]], t = (o.from + o.to) / 2, c = (o.faces[0] + o.faces[1]) / 2;

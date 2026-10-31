@@ -1,12 +1,12 @@
-// E2E — the generated shell from the core's manifold solids against the grid shell it replaces (ADR 0024, 0026), on BOTH example
-// projects: the same views (start, from above, the level section of every level, a room) render alike (≤ 1 % of the canvas
-// pixels differ), the core shell adds at most 2 draw calls per level (and 4 per roof), and its budget holds — the WASM file ≤ 1 MB,
-// served as application/wasm and fetched only for packages without a model file, ≤ 60k triangles, a rebuild leaves no main-thread
-// task over 50 ms, the geometries take < 50 ms on the main thread. A kernel failure falls back to the grid shell. A package with a
-// roof (ADR 0027; the grid shell has none): the views from outside show the roof (they differ from the grid shell by intent), the
-// sections and the room are compared as above — the roof is hidden there.
+// E2E — the generated shell from the core's manifold solids (ADR 0024, 0026), on BOTH example projects: the views (start, from
+// above, the level section of every level, a room) draw the level solids, at most 3 meshes per level and per roof (solid, frames,
+// panes); a roof (ADR 0027) shows from outside and is hidden in the sections and the room; the budget holds — the WASM file
+// ≤ 1 MB, served as application/wasm, ≤ 60k triangles, a rebuild leaves no main-thread task over 50 ms, the geometries take
+// < 50 ms on the main thread; the electrical plan draws the wall mass from the section of the solids. When the kernel cannot
+// load (the WASM blocked) there is no shell: only the room finishes in the scene, a message with the cause, the plan draws the
+// level footprint.
 // Usage: node scripts/verify/verify_shell.mjs [--no-build] [--only demo-apartment,sample-house]
-//        HOME_SIM_BROWSER=auto|gpu|swiftshader. Output: reports/e2e/shell/ (screenshots of both shells and their difference, shell.json).
+//        HOME_SIM_BROWSER=auto|gpu|swiftshader. Output: reports/e2e/shell/ (screenshots of the views, shell.json).
 import { execSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -21,11 +21,10 @@ const ONLY = (arg('only', '') ?? '').split(',').filter(Boolean);
 mkdirSync(OUT, { recursive: true });
 for (const f of readdirSync(OUT)) rmSync(resolve(OUT, f), { recursive: true, force: true });
 
-/** a pixel differs when a channel differs by more than this; a view passes when at most MAX_DIFF of its pixels differ */
-const PIXEL_TOL = 32, MAX_DIFF = 0.01;
 const results = [];
 const check = (name, ok, detail = '') => { results.push({ name, status: ok ? 'PASS' : 'FAIL', detail: String(detail) }); console.log(`  ${ok ? 'PASS' : 'FAIL'} | ${name} | ${String(detail).replace(/\s+/g, ' ').slice(0, 400)}`); };
 const pkg = (id) => JSON.parse(readFileSync(resolve(ROOT, 'projects', id, 'project.json'), 'utf8'));
+const EN = Object.assign({}, ...readdirSync(resolve(ROOT, 'src/i18n/en')).filter((f) => f.endsWith('.json')).map((f) => JSON.parse(readFileSync(resolve(ROOT, 'src/i18n/en', f), 'utf8'))));
 
 if (!process.argv.includes('--no-build')) execSync('npx vite build', { cwd: ROOT, stdio: 'ignore' });
 const server = await startServer({ port: PORT, mode: 'preview', userdata: UD });
@@ -54,62 +53,61 @@ async function still(timeout = 8000) {
   }
 }
 const shellState = () => page.evaluate(() => window.__home3d.shell());
-async function open(id, shell) {
-  await page.goto(`${BASE}/?onboarding=off&project=${id}&date=2026-06-21&time=12:00${shell === 'grid' ? '&shell=grid' : ''}`, { waitUntil: 'load' });
+async function open(id, extra = '') {
+  await page.goto(`${BASE}/?onboarding=off&project=${id}&date=2026-06-21&time=12:00&lang=en${extra}`, { waitUntil: 'load' });
   await waitForApp(page);
   await page.waitForFunction(() => ['ready', 'error'].includes(window.__home3d?.shell?.().status), { timeout: 60000 });
   await sleep(800); await still();
 }
 const uiSet = async (patch) => { await page.evaluate((p) => window.__home.ui(p), patch); await sleep(1200); await still(); };
 const click = async (testid) => { const el = await page.$(`[data-testid="${testid}"]`); await el.click(); await sleep(900); await still(); };
-/** a rendered frame of the canvas: PNG and the draw calls of a fresh frame */
+/** a rendered frame of the canvas: PNG, the draw calls of a fresh frame and the visible level solids */
 async function capture(file) {
   await page.evaluate(() => window.__home3d.invalidate()); await frames(4); await sleep(250);
   const calls = await page.evaluate(() => window.__home3d.renderInfo().frame.calls);
+  const solids = await page.evaluate(() => { const out = []; window.__homeScene.traverse((o) => { if (/^SOLID_/.test(o.name)) { let v = true; for (let q = o; q; q = q.parent) v = v && q.visible; if (v) out.push(o.name); } }); return out; });
   // a roof solid shown in this view (visible with its parents)
   const roof = await page.evaluate(() => { let on = false; window.__homeScene.traverse((o) => { if (/^ROOF_SOLID_/.test(o.name)) { let v = true; for (let q = o; q; q = q.parent) v = v && q.visible; on ||= v; } }); return on; });
   const box = await page.evaluate(() => { const r = document.querySelector('canvas').getBoundingClientRect(); return { x: r.left, y: r.top, width: r.width, height: r.height }; });
-  const png = await page.screenshot({ path: resolve(OUT, file), clip: box });
-  return { png, calls, roof };
+  await page.screenshot({ path: resolve(OUT, file), clip: box });
+  return { calls, roof, solids };
 }
 
-/** the same views in one shell: start, from above, the section of every level, the largest room of the start level */
-async function views(F, shell) {
-  await open(F.id, shell);
+/** the views: start, from above, the section of every level, the largest room of the start level */
+async function views(F) {
+  await open(F.id);
   const out = {}, state = await shellState();
-  out.start = await capture(`${F.id}_start_${shell}.png`);
+  out.start = await capture(`${F.id}_start.png`);
   await click('view-above');
-  out.top = await capture(`${F.id}_top_${shell}.png`);
+  out.top = await capture(`${F.id}_top.png`);
   for (const l of F.levels) {
     await uiSet({ section: 'arrange', houseView: 'interior', roomId: null, level: l });
-    out[`section-${l}`] = await capture(`${F.id}_section-${l}_${shell}.png`);
+    out[`section-${l}`] = await capture(`${F.id}_section-${l}.png`);
   }
   await uiSet({ section: 'arrange', houseView: 'interior', level: F.room.level, roomId: F.room.id });
-  out.room = await capture(`${F.id}_room_${shell}.png`);
+  out.room = await capture(`${F.id}_room.png`);
   await uiSet({ roomId: null, section: 'look', houseView: 'exterior' });
   return { views: out, state };
 }
 
-/** share of pixels that differ between two PNGs of the same size (decoded in the page — no image library in Node) and a difference image */
-async function diff(a, b, file) {
-  const r = await page.evaluate(async (a, b, tol) => {
-    const img = async (b64) => createImageBitmap(await (await fetch(`data:image/png;base64,${b64}`)).blob());
-    const [ia, ib] = await Promise.all([img(a), img(b)]);
-    if (ia.width !== ib.width || ia.height !== ib.height) return { share: 1, size: `${ia.width}×${ia.height} vs ${ib.width}×${ib.height}` };
-    const px = (i) => { const c = new OffscreenCanvas(i.width, i.height), x = c.getContext('2d'); x.drawImage(i, 0, 0); return x.getImageData(0, 0, i.width, i.height); };
-    const da = px(ia), db = px(ib), out = new OffscreenCanvas(ia.width, ia.height), ox = out.getContext('2d'), od = ox.createImageData(ia.width, ia.height);
-    let n = 0;
-    for (let i = 0; i < da.data.length; i += 4) {
-      const d = Math.max(Math.abs(da.data[i] - db.data[i]), Math.abs(da.data[i + 1] - db.data[i + 1]), Math.abs(da.data[i + 2] - db.data[i + 2]));
-      const hit = d > tol; if (hit) n++;
-      od.data[i] = hit ? 255 : da.data[i] * 0.3 + 170; od.data[i + 1] = hit ? 0 : da.data[i + 1] * 0.3 + 170; od.data[i + 2] = hit ? 0 : da.data[i + 2] * 0.3 + 170; od.data[i + 3] = 255;
-    }
-    ox.putImageData(od, 0, 0);
-    const blob = await out.convertToBlob({ type: 'image/png' }), buf = new Uint8Array(await blob.arrayBuffer());
-    let s = ''; for (let i = 0; i < buf.length; i += 0x8000) s += String.fromCharCode(...buf.subarray(i, i + 0x8000));
-    return { share: n / (da.data.length / 4), image: btoa(s) };
-  }, a.toString('base64'), b.toString('base64'), PIXEL_TOL);
-  if (r.image) writeFileSync(resolve(OUT, file), Buffer.from(r.image, 'base64'));
+/** the meshes of the generated shell in the scene */
+const houseMeshes = () => page.evaluate(() => { const h = window.__homeScene.getObjectByName('HOUSE'); let n = 0; h?.traverse((o) => { if (o.isMesh) n++; }); return h ? n : null; });
+/** the electrical plan of the start level (advanced mode, the Electrical step, opened fresh): where its wall mass comes from, its
+ *  polygons; `want` — the source to wait for */
+async function elPlan(id, want) {
+  await page.goto(`${BASE}/?onboarding=off&project=${id}&mode=advanced&lang=en&env=off`, { waitUntil: 'load' });
+  await waitForApp(page);
+  const step = await page.waitForSelector('[data-testid="step-electrical"]', { timeout: 15000 }).catch(() => null);
+  if (!step) return null;
+  await step.click(); await sleep(1500);
+  await page.waitForFunction((w) => document.querySelector('[data-testid="el-plan-svg"]')?.dataset.walls === w, { timeout: 30000 }, want).catch(() => {});
+  const r = await page.evaluate(() => {
+    const svg = document.querySelector('[data-testid="el-plan-svg"]');
+    if (!svg) return null;
+    const polys = [...svg.querySelectorAll('polygon')];
+    return { walls: svg.dataset.walls, view: svg.dataset.view, mass: polys.filter((p) => p.getAttribute('fill') === '#7d838c').length, white: polys.filter((p) => p.getAttribute('fill') === '#ffffff' && p.getAttribute('stroke') === 'none').length };
+  });
+  await page.evaluate(() => window.__home.ui({ mode: 'simple' })); await sleep(300);   // the mode is remembered on the device
   return r;
 }
 
@@ -123,26 +121,21 @@ try {
   for (const F of ['demo-apartment', 'sample-house'].filter((id) => !ONLY.length || ONLY.includes(id)).map(facts)) {
     const tag = F.id;
     wasm.length = 0;
-    const grid = await views(F, 'grid');
-    const gridWasm = wasm.length;
-    const core = await views(F, 'core');
-    check(`[${tag}] ?shell=grid shows the grid shell and fetches no WASM; by default the core shell is built in the worker`,
-      grid.state.kind === 'grid' && grid.state.status === 'ready' && gridWasm === 0 && core.state.kind === 'core' && core.state.status === 'ready' && !core.state.error,
-      `grid: ${JSON.stringify(grid.state)} (${gridWasm} wasm); core: ${JSON.stringify(core.state)}`);
+    const core = await views(F);
+    check(`[${tag}] the core shell is built in the worker`, core.state.kind === 'core' && core.state.status === 'ready' && !core.state.error, JSON.stringify(core.state));
     const w = wasm.find((x) => x.status === 200) ?? firstWasm;
     firstWasm ??= w;
     check(`[${tag}] the solid kernel: one WASM file ≤ 1 MB, served as application/wasm (or revalidated from the cache)`, wasm.length >= 1 && !!w && w.type === 'application/wasm' && w.bytes > 0 && w.bytes <= 1024 * 1024,
       wasm.map((x) => `${x.url} ${x.status} ${x.type ?? ''} ${(x.bytes / 1024).toFixed(0)} kB`).join(' · '));
     check(`[${tag}] budget: ≤ 60k triangles in the level solids, < 50 ms on the main thread for the geometries`, core.state.triangles > 0 && core.state.triangles <= 60000 && core.state.mainMs < 50,
       `${core.state.triangles} triangles; worker ${core.state.ms} ms (kernel load ${core.state.loadMs} ms); main thread ${core.state.mainMs} ms`);
-    const roofs = core.state.roofs ?? 0, outside = (k) => k === 'start' || k === 'top';
-    const extra = Object.keys(core.views).map((k) => core.views[k].calls - grid.views[k].calls - (outside(k) ? 4 * roofs : 0));
-    check(`[${tag}] draw calls: the core shell adds at most 2 per level (${F.levels.length} level(s)) and 4 per roof (${roofs}) in every view`, extra.every((d) => d <= 2 * F.levels.length),
-      Object.keys(core.views).map((k) => `${k}: ${grid.views[k].calls} → ${core.views[k].calls}`).join(' · '));
+    const roofs = core.state.roofs ?? 0, outside = (k) => k === 'start' || k === 'top', meshes = await houseMeshes();
+    check(`[${tag}] at most 3 meshes per level (${F.levels.length}) and per roof (${roofs}): the solid, the window frames, the panes`, meshes > 0 && meshes <= 3 * (F.levels.length + roofs),
+      `${meshes} meshes; draw calls ${Object.keys(core.views).map((k) => `${k} ${core.views[k].calls}`).join(' · ')}`);
     for (const k of Object.keys(core.views)) {
-      const d = await diff(grid.views[k].png, core.views[k].png, `${tag}_${k}_diff.png`);
-      if (roofs && outside(k)) check(`[${tag}] view "${k}": the roof is drawn (the picture differs from the flat-topped grid shell)`, d.share > 0.02 && core.views[k].roof, `${(d.share * 100).toFixed(3)} % differ; roof visible ${core.views[k].roof}`);
-      else check(`[${tag}] view "${k}": the core shell renders like the grid shell (≤ ${MAX_DIFF * 100} % of the pixels differ)${roofs ? ' — the roof hidden' : ''}`, d.share <= MAX_DIFF && !core.views[k].roof, `${(d.share * 100).toFixed(3)} % differ${d.size ? ` (${d.size})` : ''}; roof visible ${core.views[k].roof}`);
+      const v = core.views[k], level = k.startsWith('section-') ? k.slice(8) : null;
+      check(`[${tag}] view "${k}": the level solids are drawn${roofs ? (outside(k) ? ', the roof shown' : ', the roof hidden') : ''}`,
+        v.solids.length > 0 && (!level || v.solids.includes(`SOLID_${level}`)) && (!roofs || v.roof === outside(k)), `solids ${v.solids.join(', ')}; roof visible ${v.roof}; ${v.calls} draw calls`);
     }
     // a rebuild after the app is idle: the whole path (worker, transfer, geometries, first frame) without a long main-thread task
     const before = await page.evaluate(() => { const n = window.__longTasks.length; window.__home3d.shell(true); return n; });
@@ -150,20 +143,26 @@ try {
     await frames(6); await sleep(600);
     const long = await page.evaluate((n) => window.__longTasks.slice(n), before), worst = Math.max(0, ...long.map((t) => t.ms));
     check(`[${tag}] a shell rebuild leaves no main-thread task over 50 ms`, worst <= 50, `${long.length} long task(s), longest ${worst.toFixed(0)} ms; ${JSON.stringify(await shellState())}`);
+    const plan = await elPlan(F.id, 'section');
+    check(`[${tag}] the electrical plan draws the wall mass from the section of the level solid (the rooms as holes in it)`, plan?.walls === 'section' && plan.mass >= 1 && plan.white >= 2, JSON.stringify(plan));
   }
 
-  // the kernel cannot load: the grid shell is shown instead (one release of fallback)
+  // the kernel cannot load: no shell, a message with the cause, the plan draws the level footprint
   await page.setBypassServiceWorker(true);
   await page.setRequestInterception(true);
   const block = (r) => (/\.wasm$/.test(new URL(r.url()).pathname) ? r.abort() : r.continue());
   page.on('request', block);
   const seen = errors.length;
-  await page.goto(`${BASE}/?onboarding=off&project=demo-apartment`, { waitUntil: 'load' });
-  await waitForApp(page);
-  await page.waitForFunction(() => ['ready', 'error'].includes(window.__home3d?.shell?.().status) && window.__home3d.shell().kind !== 'core', { timeout: 60000 }).catch(() => {});
-  await sleep(800);
-  const fb = await shellState(), wall = await page.evaluate(() => !!window.__homeScene.getObjectByName('WALL_L1'));
-  check('WASM unavailable: the grid shell is shown instead (fallback, a warning in the console)', fb.kind === 'grid' && fb.status === 'error' && wall && errors.slice(seen).some((e) => /grid shell/.test(e)), `${JSON.stringify(fb)}; grid walls ${wall}`);
+  await open('demo-apartment');
+  const fb = await shellState(), meshes = await houseMeshes();
+  const msg = await page.$eval('[data-testid="toast"]', (e) => e.textContent).catch(() => null), lead = EN['scene.wallsFailed'].split('{error}')[0];
+  await page.screenshot({ path: resolve(OUT, 'kernel-failed.png') });
+  const warned = errors.slice(seen).some((e) => /solid kernel failed/.test(e));
+  check('WASM unavailable: no shell in the scene (the room finishes stay), the status and a message carry the cause, a warning in the console',
+    fb.kind === 'core' && fb.status === 'error' && !!fb.error && meshes === null && !!msg?.startsWith(lead) && msg.includes(fb.error) && warned, `${JSON.stringify(fb)}; house meshes ${meshes}; message "${msg}"`);
+  errors.splice(seen);
+  const plan = await elPlan('demo-apartment', 'footprint');
+  check('WASM unavailable: the electrical plan draws the level footprint as the wall mass', plan?.walls === 'footprint' && plan.mass === 1, JSON.stringify(plan));
   errors.splice(seen);
   page.off('request', block);
   await page.setRequestInterception(false);

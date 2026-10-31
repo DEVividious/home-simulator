@@ -19,7 +19,6 @@ const only = (arg('only', '') ?? '').split(',').filter(Boolean);
 /** [name, script, relative duration (order: longest first), extra arguments] */
 const ALL = [
   ['core', 'verify_core.mjs', 10],
-  ['core-grid', 'verify_core.mjs', 9, ['--shell', 'grid']],
   ['mobile', 'verify_mobile.mjs', 8],
   ['pwa', 'verify_pwa.mjs', 7],
   ['mounted', 'verify_mounted.mjs', 5],

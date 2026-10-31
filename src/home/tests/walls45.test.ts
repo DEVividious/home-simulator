@@ -1,7 +1,7 @@
 // Walls at 45° in the app (the core plan fixture walls-45.plan.json, compiled): the package passes the app validation, the door in
 // the slanted partition has its centre, doorway, frame and leaf along the wall, the walk goes through it into the pantry when it
 // is open, the walk starts inside the entrance, wall finishes are built on the slanted walls with their window and door holes,
-// the electrical plan fills the walls from the footprint, and furniture in front of the slanted door is warned.
+// and furniture in front of the slanted door is warned.
 import fs from 'node:fs';
 import path from 'node:path';
 import * as THREE from 'three';
@@ -16,7 +16,6 @@ import { itemById } from '../catalog/providers';
 import { furnitureWarnings } from '../model/collision';
 import { defaultDoorState, doorById, doorCenter, doorLeaves, doorPassable, inDoorway, setDoorOpen } from '../model/doors';
 import { roomById } from '../model/rooms';
-import { orthogonalPlan } from '../model/shell';
 import { entranceStart } from '../model/viewpoints';
 import { setDoorGate } from '../model/walk';
 import { WalkWorld, type WalkPose } from '../model/walkWorld';
@@ -34,9 +33,8 @@ afterEach(() => setDoorGate(null));
 afterAll(() => { activateProject(readProjectDir(path.join(root, 'projects', 'demo-apartment'))); });
 
 describe('walls at 45°', () => {
-  it('the package passes the app validation; the plan is not orthogonal (no grid shell for it)', () => {
+  it('the package passes the app validation', () => {
     expect(validateProject(project())).toEqual([]);
-    expect(orthogonalPlan()).toBe(false);
   });
   it('the slanted door: its centre on the partition, a doorway across it, a frame turned along it', () => {
     const d = doorById('D1')!, c = doorCenter(d);

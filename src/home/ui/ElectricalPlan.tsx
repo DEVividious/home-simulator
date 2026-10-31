@@ -10,10 +10,13 @@ import { DEVICES } from '../model/devices';
 import { EL_LAYER_IDS, measure, type ElPoint } from '../model/electrical';
 import { surfaceFromDrag, surfaceFromPlan, type PlanViewId } from '../model/elPlacement';
 import { allRooms } from '../model/rooms';
+import { wallSectionsRev } from '../model/shell';
 import type { LevelId, Vec2 } from '../model/types';
 import { buildPlan, shiftIntoView, symbolPrims, viewBounds, type Prim } from '../plan/elPlan';
 import { furnitureOutlines } from '../plan/planData';
 import { HIT_PX, planAim } from '../scene/electricalInput';
+import { wallSectionsReady } from '../three/coreShell';
+import { useStore } from '../store/createStore';
 import { useDesign } from '../store/design';
 import { beginMove, cancelPlace, commitPlace, currentWall, placeAt, placeNow, setPlaceDragging, usePlace } from '../store/elPlace';
 import { useLayout } from '../store/layout';
@@ -121,7 +124,10 @@ export function ElPlanStage() {
   const furniture = useMemo(() => (furnitureOn && view !== 'SITE' ? furnitureOutlines(view as LevelId) : undefined), [furnitureOn, view, rev]); // eslint-disable-line react-hooks/exhaustive-deps
   // fewer labels when zoomed out: full labels only up close, ids disappear in a whole-level view with many points
   const shownLabels = labels === 'full' && den > 130 ? 'id' : labels !== 'none' && den > 230 && plan.points.length > 25 ? 'none' : labels;
-  const drawing = useMemo(() => { planPerf.builds++; return buildPlan({ view, plan, layers, den, furniture, labels: shownLabels, roomNames: false, allExterior: true }); }, [view, plan, layers, den, furniture, shownLabels]);
+  // the wall mass is the section of the core's solids: asked for here too (the 3D view may not have built them), redrawn on arrival
+  const sections = useStore(wallSectionsRev, (s) => s.n);
+  useEffect(() => { void wallSectionsReady(); }, []);
+  const drawing = useMemo(() => { planPerf.builds++; return buildPlan({ view, plan, layers, den, furniture, labels: shownLabels, roomNames: false, allExterior: true }); }, [view, plan, layers, den, furniture, shownLabels, sections]); // eslint-disable-line react-hooks/exhaustive-deps
   const rooms = useMemo(() => (view === 'SITE' ? [] : allRooms().filter((r) => r.level === view)), [view]);
   const px = frame.w / box[0];                                                 // model metres per screen pixel
   const selPt = sel ? drawing.points.find((p) => p.id === sel) : null;
@@ -239,7 +245,7 @@ export function ElPlanStage() {
   const hitR = (r: number) => Math.max(r * 1.5, (coarse ? HIT_PX.touch : HIT_PX.mouse) * px);
   return (
     <div className="hm-elstage" data-testid="el-stage" data-view={view} data-zoom={zoom.toFixed(2)}>
-      <svg ref={svg} className={`hm-elstage-svg${placing ? ' placing' : ''}`} viewBox={`${vb.x0} ${-(vb.y0 + vb.h)} ${vb.w} ${vb.h}`} data-testid="el-plan-svg" data-view={view} data-den={Math.round(den)}
+      <svg ref={svg} className={`hm-elstage-svg${placing ? ' placing' : ''}`} viewBox={`${vb.x0} ${-(vb.y0 + vb.h)} ${vb.w} ${vb.h}`} data-testid="el-plan-svg" data-view={view} data-den={Math.round(den)} data-walls={drawing.walls}
         onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={cancel} onPointerLeave={() => { const s = placeNow(); if (s && !s.dragging && s.mode !== 'move' && !g.current) placeAt(null, null); }}
         onWheel={(e) => { const q = toModel(e.clientX, e.clientY); zoomTo(zoom * (e.deltaY < 0 ? 1.2 : 1 / 1.2), q ?? undefined); }}>
         <rect x={vb.x0} y={-(vb.y0 + vb.h)} width={vb.w} height={vb.h} fill="#f3f4f1" />

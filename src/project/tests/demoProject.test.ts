@@ -4,7 +4,9 @@ import path from 'node:path';
 import { createElement, type FunctionComponent } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import * as THREE from 'three';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeAll, describe, expect, it } from 'vitest';
+import { shellMeshes } from '@home-sim/core/solid/levels';
+import { loadGeometry, type Geometry } from '@home-sim/core/solid/wasm';
 import { defaultDoc, docErrors, parseDoc, type ConfiguratorDoc, type Variant } from '../../document/model';
 import { initHistory } from '../../history/history';
 import { applyVariantView, currentSun, currentView, setVariantStairs } from '../../home/actions';
@@ -16,7 +18,8 @@ import { elRooms, hasSite, resolvePlan } from '../../home/model/electrical';
 import { surfaceOfWall, surfacesOfLevel } from '../../home/model/mount';
 import { mountedAt } from '../../home/model/mountedFurniture';
 import { allLevels, allRooms, roomAt, roomById, roomsWithTag } from '../../home/model/rooms';
-import { hasGeneratedShell, levelShell, orthogonalPlan, shellBounds } from '../../home/model/shell';
+import { building } from '../../home/model/building';
+import { hasGeneratedShell, shellBounds } from '../../home/model/shell';
 import { hasStairs } from '../../home/model/stairs';
 import type { Vec3 } from '../../home/model/types';
 import { viewpoints } from '../../home/model/viewpoints';
@@ -94,9 +97,12 @@ describe('demo-apartment: a package without house modules', () => {
 });
 
 describe('demo-apartment: shell generated from the rooms', () => {
-  it('no building model file; the plan is orthogonal', () => {
+  let geo: Geometry;
+  beforeAll(async () => { geo = await loadGeometry(); });
+  const level = () => shellMeshes(geo, building()).levels[0];
+
+  it('no building model file', () => {
     expect(hasGeneratedShell()).toBe(true);
-    expect(orthogonalPlan()).toBe(true);
   });
 
   it('outline: 9.00 × 7.00 m, from the underside of the slab to the top of the ceiling', () => {
@@ -105,27 +111,22 @@ describe('demo-apartment: shell generated from the rooms', () => {
     expect(b.max[0]).toBeCloseTo(9, 6); expect(b.max[1]).toBeCloseTo(7, 6); expect(b.max[2]).toBeCloseTo(2.85, 6);
   });
 
-  it('wall volume = gross plan − rooms − openings', () => {
-    const s = levelShell('L1');
-    // volume of a closed solid from its faces: Σ (p · n) · area / 3 (divergence theorem)
-    const vol = (quads: typeof s.walls) => quads.reduce((v, q) => {
-      const [a, b, , d] = q.p, e1 = [b[0] - a[0], b[1] - a[1], b[2] - a[2]], e2 = [d[0] - a[0], d[1] - a[1], d[2] - a[2]];
-      const area = Math.hypot(e1[1] * e2[2] - e1[2] * e2[1], e1[2] * e2[0] - e1[0] * e2[2], e1[0] * e2[1] - e1[1] * e2[0]);
-      return v + (a[0] * q.n[0] + a[1] * q.n[1] + a[2] * q.n[2]) * area / 3;
-    }, 0);
+  it('solid volume = walls (gross plan − rooms − openings) + floor slab and ceiling slab over the whole plan', () => {
     const rooms = 22.248 + 16.5624 + 7.728 + 5.46;                    // room areas (exact products)
     const mass = (9 * 7 - rooms) * 2.6;
     // openings through the wall: doors 2.05 high (D0 1.0 × 0.30; D1 0.9 × 0.12; D2 0.8 × 0.12; D3 0.9 × 0.12), windows in 0.30 walls
     const doors = (1.0 * 0.3 + 0.9 * 0.12 + 0.8 * 0.12 + 0.9 * 0.12) * 2.05;
     const windows = (2.4 * 1.5 + 0.5 * 1.3 + 2.0 * 1.5 + 0.7 * 0.8) * 0.3;
-    expect(vol(s.walls)).toBeCloseTo(mass - doors - windows, 4);
-    // floor and ceiling slab under / over the whole plan
-    expect(vol(s.floor)).toBeCloseTo(9 * 7 * 0.25, 6);
-    expect(vol(s.top)).toBeCloseTo(9 * 7 * 0.25, 6);
+    expect(level().volume).toBeCloseTo(mass - doors - windows + 2 * 9 * 7 * 0.25, 4);
+  });
+
+  it('the wall mass in plan: the gross plan less the rooms', () => {
+    const area = level().section.reduce((s, p) => s + p.reduce((a, q, i) => { const r = p[(i + 1) % p.length]; return a + q[0] * r[1] - r[0] * q[1]; }, 0) / 2, 0);
+    expect(area).toBeCloseTo(63 - (22.248 + 16.5624 + 7.728 + 5.46), 6);
   });
 
   it('shell windows: four, in 0.30 exterior walls', () => {
-    const w = levelShell('L1').windows;
+    const w = level().windows;
     expect(w.map((x) => x.id).sort()).toEqual(['W1', 'W2', 'W3', 'W4']);
     for (const x of w) expect(x.depth).toBeCloseTo(0.3, 6);
     const w2 = w.find((x) => x.id === 'W2')!;

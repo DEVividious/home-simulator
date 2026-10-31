@@ -13,9 +13,6 @@ the behaviour is named in brackets. When a limit is lifted, remove it here in th
   points placed with `wall: N | S | E | W` find walls along the axes only — against a slanted wall give `at` and `rot`.
   Raster regularisation keeps the corners of slanted walls where they were read (`regularize`), and `dxf_walls.py` proposes
   orthogonal rooms only.
-- **The grid shell builds walls along the axes only.** A plan with walls at 45° always uses the solid kernel; when the kernel
-  cannot run, the grid shell shown instead leaves the slanted walls out, and the plan views draw its wall mass from the level
-  footprint (`packages/core/src/model/gridShell.ts`, `outline.ts`).
 - **Roofs are unions of rectangular wings.** A generated building is one closed solid per level (the room outlines grown by
   the exterior wall, minus the rooms, the openings and the stair shaft) and one roof solid per level with roof parts
   (`packages/core/src/solid/levels.ts`, `roofSolid.ts`). A pitched part (gable, hip, shed) covers one axis-aligned rectangle;
@@ -27,8 +24,6 @@ the behaviour is named in brackets. When a limit is lifted, remove it here in th
   (or a flat top slab). Dormers are
   gable or shed boxes on one plane; eyebrow, hipped and wall dormers are not supported. Chimneys are boxes from the slab of the
   lowest level they stand in (inside a room they stand there as a column).
-- **The grid fallback has no roof.** With `?shell=grid`, or when the solid kernel cannot run, the shell is the older grid of
-  boxes with a flat slab on the top level; sloped ceilings are then only the interior finishes.
 - **Old packages: one gable per attic level.** A package written before roofs had attic ceilings only; at load a level whose
   rooms all share one attic ceiling gets a gable with the same planes, the default thicknesses and overhangs
   (`roofFromAttic`, `packages/core/src/model/roof.ts`). A level that mixes attic and flat ceilings gets no roof (its attic
@@ -41,9 +36,14 @@ the behaviour is named in brackets. When a limit is lifted, remove it here in th
   slopes from above with the walls cut; the roof itself (and its roof windows) is not cut but hidden there
   (`src/home/scene/CoreShellLayer.tsx`). Wall finishes do not cover the cheeks of a dormer (they show the plain shell wall).
 - **The solid kernel needs WebAssembly and module workers.** The shell is built with manifold-3d (WASM, ~0.5 MB, ~0.2 MB
-  gzipped) in a worker (`src/home/three/coreWorker.ts`). Where it cannot load or run, the older grid shell is shown
-  instead; `?shell=grid` forces it. The grid shell (`packages/core/src/model/gridShell.ts`) stays for one release and still
-  gives the wall mass of the plan views.
+  gzipped) in a worker (`src/home/three/coreWorker.ts`). Where it cannot load or run there is no fallback shell: the scene
+  shows the room finishes, furniture and doors without the wall solids, slabs and windows, a message gives the cause, and
+  the electrical plan draws each level's footprint (the rooms grown by the exterior wall) as its wall mass. A failure in one
+  level's solid leaves the whole building without its shell.
+- **The wall mass in plan is a section.** The electrical plan (screen and PDF) draws the section of each level solid just
+  above the floor and at the level's cut height, united (`packages/core/src/solid/slice.ts`): chimneys and dormer cheeks are
+  mass, and an opening open at both heights — a glazing up to the ceiling, a door under a slope lower than the cut — shows as a
+  gap through the wall. Until the solids are built the plan draws the level footprint.
 - **Three stair kinds.** `StairDef.kind` is `straight` (one flight), `l-turn` (two flights at a right angle with a landing in the
   corner) or `u-turn` (two flights with the same number of risers side by side, a landing across both). Winders, spiral stairs,
   a straight flight with a landing half way and stairs with three or more flights are not supported; both flights of an L or U
@@ -103,7 +103,7 @@ the behaviour is named in brackets. When a limit is lifted, remove it here in th
 - **Walls without a room are straight and plain.** `walls` in `plan.json` (a wing wall, a porch wall, a garden wall) are
   straight prisms from the slab under their level up to their height, with rectangular openings, empty or filled with vertical
   slats; no curved walls, gates, fences or railings, and nothing on top of them. The walk on the site cannot pass them (their
-  openings included); the grid shell does not build them, and the print leaves the slats out (the opening stays open).
+  openings included); the print leaves the slats out (the opening stays open).
 - **Door types are fixed.** Doors are `hinged-single`, `hinged-double` (two equal leaves opening together into one room),
   `folding` (a bifold of two equal panels folding to one jamb), `sliding` or `pocket`. Unequal double leaves, a double door with
   one fixed leaf, bifolds of four or more panels, double-swing (café) doors and sectional garage doors are not supported; a
