@@ -19,7 +19,7 @@ import { building } from './building';
 import { levelAtZ, levelById, levelName, roomById, roomsOfLevel, type HomeRoom } from './rooms';
 import { inStairBox, stairAllowed, stairZ } from './stairs';
 import type { LevelId, Vec2 } from './types';
-import { BODY_R, doorPasses, walkAllowed, walkDoorwayRoom, walkRoomAt } from './walk';
+import { BODY_R, doorPasses, facesWall, walkAllowed, walkDoorwayRoom, walkRoomAt } from './walk';
 
 /** largest change of foot height per movement segment (8 cm) [m] — a 17.5 cm step on the ramp ≈ 5.5 cm / segment */
 export const MAX_STEP = 0.3;
@@ -131,6 +131,8 @@ export class WalkWorld {
 
   /** movement segment allowed: point accessible and height change ≤ MAX_STEP */
   private reach(from: WalkPose, q: Vec2, eye: number): WalkPose | null {
+    // no walking face-first into a wall (stairs have their own walls: the ramp and its sides)
+    if (!inStairBox(from.p) && !inStairBox(q) && facesWall(levelAtZ(from.z), from.p, q)) return null;
     const z = this.heightAt(q, from.z, eye);
     return z !== null && Math.abs(z - from.z) <= MAX_STEP ? { p: q, z } : null;
   }

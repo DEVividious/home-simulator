@@ -83,10 +83,11 @@ function climbOf(s) {
   const [x0, y0, x1, y1] = s.bbox, top = s.topZ;
   const upper = `Math.abs(window.__home3d.walk().z - ${top}) < 0.01`;
   if (s.kind === 'straight') {
-    // along the walking line (core stairDrawing): from 0.6 m before its foot, facing up, until 0.3 m past its top
+    // along the walking line (core stairDrawing): from 0.6 m before its foot, facing up, until off its top (0.15 m past it — a
+    // short top landing stops the walk NEAR_STOP before the wall ahead)
     const d = stairDrawing(s), a = d.path[0], b = d.path[d.path.length - 1], L = Math.hypot(b[0] - a[0], b[1] - a[1]), u = [(b[0] - a[0]) / L, (b[1] - a[1]) / L];
-    const past = `((window.__home3d.walk().p[0] - ${b[0]}) * ${u[0]} + (window.__home3d.walk().p[1] - ${b[1]}) * ${u[1]}) > 0.25`;
-    return { start: [a[0] - u[0] * 0.6, a[1] - u[1] * 0.6], yaw: Math.atan2(-u[0], u[1]), legs: [['KeyW', `${upper} && ${past}`]] };
+    const past = `((window.__home3d.walk().p[0] - ${b[0]}) * ${u[0]} + (window.__home3d.walk().p[1] - ${b[1]}) * ${u[1]}) > 0.15`;
+    return { start: [a[0] - u[0] * 0.6, a[1] - u[1] * 0.6], yaw: Math.atan2(-u[0], u[1]), legs: [['KeyW', `${upper} && ${past} && window.__home3d.walk().kind === 'room'`]] };
   }
   // l-turn up north along the east side, turning left: up the lower flight to the landing, then left (−X) up the upper flight
   return { start: [x1 - 0.45, y0 - 0.6], yaw: 0, legs: [['KeyW', `Math.abs(window.__home3d.walk().z - ${s.landingZ}) < 0.01 && window.__home3d.walk().p[1] > ${y1 - 0.75}`], ['KeyA', `${upper} && window.__home3d.walk().p[0] < ${x0 - 0.3}`]] };
@@ -124,7 +125,7 @@ try {
       const opposite = { KeyW: 'KeyS', KeyS: 'KeyW', KeyA: 'KeyD', KeyD: 'KeyA' }, downOk = [];
       // on the landing: on to the line of the lower flight (its middle), then down it
       const onLine = `Math.abs(window.__home3d.walk().p[0] - ${c.start[0]}) < 0.3`;
-      for (let i = c.legs.length - 1; i >= 0; i--) downOk.push(await hold(opposite[c.legs[i][0]], i ? `window.__home3d.walk().z < ${s.landingZ + 0.01} && ${onLine}` : 'window.__home3d.walk().z < 0.01'));
+      for (let i = c.legs.length - 1; i >= 0; i--) downOk.push(await hold(opposite[c.legs[i][0]], i ? `window.__home3d.walk().z < ${s.landingZ + 0.01} && ${onLine}` : "window.__home3d.walk().z < 0.01 && window.__home3d.walk().kind === 'room'"));
       const w2 = await s3('walk');
       check(`[${tag}] and back down to the ${lo} floor`, downOk.every(Boolean) && w2.z < 0.01 && (await st()).level === lo, `z ${w2.z} "${w2.place}"`);
     });

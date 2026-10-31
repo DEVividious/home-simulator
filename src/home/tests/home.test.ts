@@ -21,7 +21,7 @@ import {
 } from '../model/interiors';
 import { allLevels, allRooms, roomAt, roomById, roomsOfLevel, roomsWithTag } from '../model/rooms';
 import { keepInside, rotFacing } from '../model/snapping';
-import { BODY_R, doorCorridors, walkRoomAt, walkStep } from '../model/walk';
+import { BODY_R, doorCorridors, FRONT_STOP, walkRoomAt, walkStep } from '../model/walk';
 import { architectItems, architectFurniture, architectItemOf, defaultFurniture, isArchitectId, kitchenBuiltIn } from '../model/defaults';
 import { furnitureWarnings } from '../model/collision';
 import { neighbours } from '../model/placement';
@@ -269,14 +269,19 @@ describe('walk: moving between rooms through doors, walls block', () => {
     const p = go('L1', [1.8, 1.45], 0.05, 0);
     expect(walkRoomAt('L1', p)?.id).toBe('R1');
   });
-  it('a wall stops (body clearance), a diagonal move slides along the wall', () => {
+  it('walking straight at a wall stops FRONT_STOP before it (usability issue B13), a diagonal move slides along the wall', () => {
     const p = go('L1', [6.0, 5.36], 0.05, 0);
     expect(walkRoomAt('L1', p)?.id).toBe('R2');
-    expect(p[0]).toBeLessThanOrEqual(8.7 - BODY_R + 1e-9);
-    expect(p[0]).toBeGreaterThan(8.7 - BODY_R - 0.06);
-    const q = go('L1', [8.0, 4.6], 0.05, 0.02);
-    expect(q[0]).toBeGreaterThan(8.7 - BODY_R - 0.06);
-    expect(q[1]).toBeGreaterThan(5.5); // sliding in +Y after reaching the wall
+    expect(p[0]).toBeLessThanOrEqual(8.7 - FRONT_STOP + 1e-9);
+    expect(p[0]).toBeGreaterThan(8.7 - FRONT_STOP - 0.06);
+    const q = go('L1', [7.0, 4.6], 0.05, 0.02);
+    expect(q[0]).toBeGreaterThan(8.7 - FRONT_STOP - 0.1);
+    expect(q[0]).toBeLessThanOrEqual(8.7 - BODY_R + 1e-9);
+    expect(q[1]).toBeGreaterThan(5.5); // sliding in +Y after reaching the stop
+    // along the wall the body radius still holds: a walk parallel to the wall 30 cm from it goes on
+    const r = go('L1', [8.7 - 0.3, 4.6], 0, 0.05, 20);
+    expect(r[1]).toBeGreaterThan(5.5);
+    expect(r[0]).toBeCloseTo(8.7 - 0.3, 6);
   });
   it('every room of every level is reachable on foot (through doors and passages) — demo apartment and both levels of the sample house', () => {
     const reach = () => {

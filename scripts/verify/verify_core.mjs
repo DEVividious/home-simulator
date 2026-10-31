@@ -379,6 +379,21 @@ async function runProject(F) {
       return waitFor(async () => { const w = await s3('walk'); return w.on && Math.hypot(w.p[0] - p[0], w.p[1] - p[1]) < 0.3 && Math.abs(w.z - z) < 0.05 ? w : null; }, 15000);
     };
     const hold = async (k, cond, ms = 25000) => { await page.keyboard.down(k); const ok = await page.waitForFunction(cond, { timeout: ms, polling: 100 }).then(() => true).catch(() => false); await page.keyboard.up(k); await sleep(300); return ok; };
+    // usability issue B13: W held straight at a wall stops 1 m before it (it used to stop 22 cm away: the screen was one colour)
+    {
+      const R = F.room, c = [(R.bbox[0] + R.bbox[2]) / 2, (R.bbox[1] + R.bbox[3]) / 2], P = R.polygon;
+      const toEdge = (p, u) => { let best = Infinity; for (let i = 0; i < P.length; i++) { const a = P[i], b = P[(i + 1) % P.length], d = [b[0] - a[0], b[1] - a[1]], den = u[0] * d[1] - u[1] * d[0]; if (Math.abs(den) < 1e-9) continue; const ax = a[0] - p[0], ay = a[1] - p[1], s = (ax * d[1] - ay * d[0]) / den, t = (ax * u[1] - ay * u[0]) / den; if (s > 0 && t >= 0 && t <= 1) best = Math.min(best, s); } return best; };
+      const res = [];
+      for (const [u, yaw] of [[[1, 0], -Math.PI / 2], [[-1, 0], Math.PI / 2], [[0, 1], 0], [[0, -1], Math.PI]]) {
+        if (!(await goTo(c, R.floor_z ?? 0, yaw))) continue;
+        await hold('KeyW', 'false', 4000);
+        const w = await s3('walk');
+        res.push({ stayed: w.kind === 'room' && w.roomId === R.id, ahead: toEdge(w.p, u) });
+        if (res.at(-1).stayed && res.filter((r) => r.stayed).length === 1) await shot(`${tag}_06b_wall_ahead`);
+      }
+      check(`[${tag}] walk: W held straight at a wall stops at least 1 m before it (four directions from the middle of ${R.id})`,
+        res.some((r) => r.stayed) && res.every((r) => !r.stayed || r.ahead >= 0.98), res.map((r) => (r.stayed ? r.ahead.toFixed(2) + ' m' : 'went through an opening')).join(', '));
+    }
     if (F.stairs.length) {
       // U-turn stairs: lower flight away from the hall (−Y), across the landing (−X), upper flight back (+Y) to the upper level
       const S = F.stairs[0], up = F.levels[1];

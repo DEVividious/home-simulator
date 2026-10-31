@@ -10,7 +10,9 @@ import { shellFootprint } from '../model/shell';
 import { stairPart, stairs, stairSteps, stairZ } from '../model/stairs';
 import type { UTurnStairDef } from '@home-sim/core/package/types';
 import type { Vec2 } from '../model/types';
-import { setDoorGate } from '../model/walk';
+import { FRONT_STOP, setDoorGate, wallAhead, walkRoomAt } from '../model/walk';
+import { roomsOfLevel } from '../model/rooms';
+import { inStairBox } from '../model/stairs';
 import { exteriorDoors, nearExteriorDoor, passableOpenings, WalkWorld, type WalkPose } from '../model/walkWorld';
 
 const root = path.resolve(__dirname, '..', '..', '..');
@@ -79,6 +81,23 @@ describe('sample house', () => {
     });
     it('place on the stairs', () => {
       expect(world.placeAt({ p: [1.8, 2.5], z: 0.6 }, EYE)).toMatchObject({ kind: 'stairs', label: 'Stairs' });
+    });
+  });
+
+  describe('no walking face-first into a wall (usability issue B13)', () => {
+    it('from the middle of every ground-floor room, straight at each wall: the walk stops FRONT_STOP before a wall, or goes through an opening', () => {
+      let stops = 0;
+      for (const r of roomsOfLevel('L0')) {
+        if (inStairBox(r.center)) continue;
+        for (const u of [[1, 0], [-1, 0], [0, 1], [0, -1]] as Vec2[]) {
+          const end = walk(world, { p: r.center, z: r.floorZ }, u[0], u[1], 12);
+          if (walkRoomAt('L0', end.p)?.id !== r.id || inStairBox(end.p)) continue;      // went through a door or onto the stairs
+          const ahead = wallAhead('L0', end.p, u);
+          expect(ahead, `${r.id} towards ${u}`).toBeGreaterThanOrEqual(FRONT_STOP - 1e-9);
+          if (ahead < FRONT_STOP + 0.12) stops++;
+        }
+      }
+      expect(stops).toBeGreaterThan(4);
     });
   });
 

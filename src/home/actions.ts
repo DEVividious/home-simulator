@@ -31,6 +31,7 @@ import { sceneApi } from './scene/sceneApi';
 import { walkInput } from './scene/walkInput';
 import { doorById, doorCenter, doorsOfLevel, inDoorway, isOperable, openOf, PASS_OPEN } from './model/doors';
 import { EXIT_WALK_OUT, exitById } from './model/exits';
+import { FRONT_STOP } from './model/walk';
 import { doors, openDoor, toggleDoorOpen } from './store/doors';
 import type { Vec2 } from './model/types';
 import { addPoint, EL_TYPES, elRoom, elWall, removePoint, resolvePlan, siteLevelId, updatePoint, type ElectricalPlan, type ElPoint, type ElType, type Placement } from './model/electrical';
@@ -571,8 +572,10 @@ export const DOOR_AUTO_AHEAD = 0.55;
  * blocked step (unit). Returns whether a door was opened.
  */
 export function openDoorAhead(level: LevelId, p: Vec2, dir: Vec2): boolean {
-  const ahead: Vec2 = [p[0] + dir[0] * DOOR_AUTO_AHEAD, p[1] + dir[1] * DOOR_AUTO_AHEAD];
-  const d = doorsOfLevel(level).find((x) => isOperable(x.id) && openOf(doors.get(), x.id) < 0.5 && inDoorway(x, ahead, 0.45));
+  // two probes: right ahead, and where the leaf is when the walk stops before a closed door like before a wall (FRONT_STOP)
+  const at = (k: number): Vec2 => [p[0] + dir[0] * k, p[1] + dir[1] * k];
+  const d = doorsOfLevel(level).find((x) => isOperable(x.id) && openOf(doors.get(), x.id) < 0.5
+    && [DOOR_AUTO_AHEAD, FRONT_STOP + 0.15].some((k) => inDoorway(x, at(k), 0.45)));
   if (!d) return false;
   openDoor(d.id, 1);
   return true;

@@ -1,8 +1,9 @@
 // WALK mode on a level: the walkable area = room interiors (kept away from walls by the body radius) + corridors
 // in door and passage openings connecting two rooms of the same level (passing through the wall thickness). Walls block
-// motion; motion along a wall "slides" (X and Y components separately). Exterior doors do not lead outside. Under sloped
-// ceilings, places where the ceiling is lower than eye height + clearance are not walkable. Pure TS (tests without a browser).
-import { derivedByKey } from '../../project/active';
+// motion; motion along a wall "slides" (X and Y components separately). Walking straight at a wall stops FRONT_STOP before
+// it. Exterior doors do not lead outside. Under sloped ceilings, places where the ceiling is lower than eye height + clearance
+// are not walkable. Pure TS (tests without a browser).
+import { derivedByKey, project } from '../../project/active';
 import { distToPolygonEdges, pointInPolygon } from '@home-sim/core/model/geom2d';
 import { roomsOfLevel, type HomeRoom } from './rooms';
 import type { LevelId, Vec2 } from './types';
@@ -10,6 +11,14 @@ import type { LevelId, Vec2 } from './types';
 /** body radius [m] — distance of the eyes (camera) from walls */
 export const BODY_R = 0.22;
 const HEAD_CLEAR = 0.12;
+/**
+ * How close the eyes come to a wall straight ahead [m]. Walking face-first into a wall used to end with the eyes 22 cm from it:
+ * the screen was one colour and people did not know where they were (usability issue B13). Along a wall, and through an open
+ * door or passage, the body radius still holds.
+ */
+export const FRONT_STOP = 1.0;
+/** the stop for a walker who is already closer than FRONT_STOP (off the stairs, out of a doorway, turned to a wall) [m] */
+export const NEAR_STOP = 0.45;
 
 interface Corridor { a: Vec2; dir: Vec2; inward: Vec2; t0: number; t1: number; out: number; inn: number; doorId: string | null; roomId: string }
 
@@ -69,6 +78,47 @@ export function walkAllowed(level: LevelId, p: Vec2, eye: number): boolean {
   return doorCorridors(level).some((c) => open(c) && inCorridor(c, p));
 }
 
+/** whether a point at t along a room wall lies in an opening one can walk through now (an open door, a passage) */
+function throughOpening(room: HomeRoom, wallId: string, t: number): boolean {
+  for (const d of room.doors) if (d.wallId === wallId && t >= d.t0 && t <= d.t1 && (d.id === null || doorGate(d.id))) return true;
+  const passable = project().building.doorFacts?.passableOpenings ?? [];
+  for (const w of room.windows) {
+    if (w.wallId === wallId && t >= w.t0 && t <= w.t1 && w.sill <= 0.05 && passable.includes(w.id) && doorGate(w.id)) return true;
+  }
+  return false;
+}
+
+/** distance from p along the unit direction u to the first wall of p's room that faces p and is not an open opening
+ *  (Infinity: p is in no room — a doorway, the site) */
+export function wallAhead(level: LevelId, p: Vec2, u: Vec2): number {
+  const room = walkRoomAt(level, p);
+  if (!room) return Infinity;
+  let best = Infinity;
+  for (const w of room.walls) {
+    if (u[0] * w.inward[0] + u[1] * w.inward[1] >= 0) continue;           // walking away from (or along) this wall
+    const den = u[0] * w.dir[1] - u[1] * w.dir[0];                          // p + s·u = a + t·dir
+    if (Math.abs(den) < 1e-9) continue;
+    const ax = w.a[0] - p[0], ay = w.a[1] - p[1];
+    const s = (ax * w.dir[1] - ay * w.dir[0]) / den, t = (ax * u[1] - ay * u[0]) / den;
+    if (s < 0 || s >= best || t < 0 || t > w.length || throughOpening(room, w.id, t)) continue;
+    best = s;
+  }
+  return best;
+}
+
+/**
+ * A move p → q towards a wall straight ahead that it may not make: from open space no closer than FRONT_STOP; a walker who is
+ * already closer (stepping off the stairs at a short landing, out of a doorway into a narrow hall) still steps on, down to
+ * NEAR_STOP. Moves along or away from walls are free.
+ */
+export function facesWall(level: LevelId, p: Vec2, q: Vec2): boolean {
+  const dx = q[0] - p[0], dy = q[1] - p[1], l = Math.hypot(dx, dy);
+  if (l < 1e-9) return false;
+  const u: Vec2 = [dx / l, dy / l], aq = wallAhead(level, q, u);
+  if (aq >= FRONT_STOP) return false;
+  return wallAhead(level, p, u) >= FRONT_STOP || aq < NEAR_STOP;
+}
+
 /** door funnelling: when brushing against the frame, motion is steered towards the opening axis (as in 3D walkthroughs / games) */
 function funnel(level: LevelId, p: Vec2, sx: number, sy: number): Vec2[] {
   const out: Vec2[] = [], step = Math.hypot(sx, sy);
@@ -92,7 +142,7 @@ export function walkStep(level: LevelId, from: Vec2, dx: number, dy: number, eye
   for (let i = 0; i < n; i++) {
     const sx = dx / n, sy = dy / n;
     const cand: Vec2[] = [[p[0] + sx, p[1] + sy], ...funnel(level, p, sx, sy), [p[0] + sx, p[1]], [p[0], p[1] + sy]];
-    const ok = cand.find((q) => (q[0] !== p[0] || q[1] !== p[1]) && walkAllowed(level, q, eye));
+    const ok = cand.find((q) => (q[0] !== p[0] || q[1] !== p[1]) && walkAllowed(level, q, eye) && !facesWall(level, p, q));
     if (!ok) break;
     p = ok;
   }
