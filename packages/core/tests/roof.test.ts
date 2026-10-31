@@ -305,3 +305,35 @@ describe('a gable window with a polygonal outline (plan.json `outline`)', () => 
     expect(compilePlan(q, { catalog: null }).issues.map((i) => i.code)).toContain('window.roof');
   });
 });
+
+describe('walls that bound no room (plan.json `walls`)', () => {
+  it('compile with their axis, thickness, heights from the slab under the level, openings along them with slats', () => {
+    const w = PACKAGES['roof-wing-flat']().walls!;
+    expect(w.map((x) => x.id)).toEqual(['WW', 'WS']);
+    expect(w[0]).toMatchObject({ a: [8.6, 0.15], b: [9.2, 0.15], thickness: 0.3, z0: -0.25, z1: 2.6, openings: [] });
+    expect(w[1].openings).toEqual([{ id: 'WS-O1', t0: 0.75, t1: 2.25, z0: 0.5, z1: 2.0, infill: { kind: 'slats', width: 0.04, depth: 0.25, gap: 0.06 } }]);
+    const p = planOf('roof-wing-flat');
+    p.walls[1].openings[0].at = [3.4, -1.2];
+    expect(compilePlan(p, { catalog: null }).issues.map((i) => i.code)).toContain('wall.opening');
+  });
+  it('stand in the level solid with their openings cut; the slats are boxes of the frames mesh; the print thickens them and leaves the slats out', async () => {
+    const { slatMeshes } = await import('@home-sim/core/solid/frames');
+    const { printModel } = await import('@home-sim/core/print/model');
+    const { parseBed } = await import('@home-sim/core/print/printers');
+    const { profileOf } = await import('@home-sim/core/print/profiles');
+    const b = building(PACKAGES['roof-wing-flat']());
+    scoped((keep) => {
+      const s = levelSolid(geo, keep, b, 'G')!, probe = (x: number, y: number, z: number) => keep(s.solid.intersect(keep(geo.Manifold.cube([0.02, 0.02, 0.02], true).translate([x, y, z])))).volume();
+      expect(probe(1.0, -1.2, 1.0)).toBeGreaterThan(0);                       // the screen wall
+      expect(probe(2.0, -1.2, 1.0)).toBe(0);                                  // its opening
+      expect(probe(2.0, -1.2, 0.3)).toBeGreaterThan(0);                       // under the sill
+      expect(probe(8.9, 0.15, 1.0)).toBeGreaterThan(0);                       // the wing wall
+    });
+    const slats = slatMeshes(b.walls);
+    expect(slats.index.length / 3).toBe(15 * 12);                             // 1.5 m: 15 slats of 4 cm with 6 cm gaps, 12 triangles each
+    const m = printModel(PACKAGES['roof-wing-flat'](), geo, { bed: parseBed('K1C'), profile: profileOf('0.4'), scale: 300, name: 'w' });
+    expect(m.ok).toBe(true);
+    expect(m.adjustments.some((a) => a.code === 'wall.free' && a.element === 'wall WS')).toBe(true);
+    expect(m.notes.map((x) => x.code)).toContain('slats.omitted');
+  });
+});

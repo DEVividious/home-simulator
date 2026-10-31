@@ -6,7 +6,9 @@
 //   • double and folding doors: a click on the double door in the walk opens both leaves about their own hinges, the bifold
 //     folds, the double entrance door lets the walk out, and the print download works;
 //   • walls at 45°: the shell is built with the slanted walls (no grid fallback for them), a click on the door in the slanted
-//     partition opens it and the walk goes through into the room behind; the print download works.
+//     partition opens it and the walk goes through into the room behind; the print download works;
+//   • a flat-roofed wing and walls that bound no room: the screen wall with slats stands in the scene and stops the walk on the
+//     site; the downloaded print has the wing's roof in the upper floor's part and the parts joined by registration tabs.
 // Usage: node scripts/verify/verify_features.mjs [--no-build] [--only stairs-straight,stairs-l]
 //        HOME_SIM_BROWSER=auto|gpu|swiftshader. Output: reports/e2e/features/ (screenshots, features.json).
 import { execSync } from 'node:child_process';
@@ -14,6 +16,7 @@ import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, 
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { compilePlan } from '@home-sim/core/authoring/compile';
+import { stairDrawing } from '@home-sim/core/model/stairs';
 import { launch, ROOT, sleep, startServer, waitForApp } from './browser.mjs';
 import { S } from './selectors.mjs';
 import { zipFile, zipNames } from '../usability/lib.mjs';
@@ -30,7 +33,7 @@ const results = [];
 const check = (name, ok, detail = '') => { results.push({ name, status: ok ? 'PASS' : 'FAIL', detail: String(detail) }); console.log(`  ${ok ? 'PASS' : 'FAIL'} | ${name} | ${String(detail).replace(/\s+/g, ' ').slice(0, 400)}`); };
 
 // ------------------------------------------------------------------ temporary projects from the fixtures
-const FIXTURES = ['stairs-straight', 'stairs-l', 'doors', 'walls-45'].filter((f) => !ONLY.length || ONLY.includes(f));
+const FIXTURES = ['stairs-straight', 'stairs-l', 'doors', 'walls-45', 'roof-wing-flat'].filter((f) => !ONLY.length || ONLY.includes(f));
 const installed = [];
 function install(fixture) {
   const id = `e2e-${fixture}`, dir = resolve(ROOT, 'projects', id);
@@ -80,8 +83,10 @@ function climbOf(s) {
   const [x0, y0, x1, y1] = s.bbox, top = s.topZ;
   const upper = `Math.abs(window.__home3d.walk().z - ${top}) < 0.01`;
   if (s.kind === 'straight') {
-    // up east: from 0.6 m west of the box, facing +X
-    return { start: [x0 - 0.6, (y0 + y1) / 2], yaw: -Math.PI / 2, legs: [['KeyW', `${upper} && window.__home3d.walk().p[0] > ${x1 + 0.3}`]] };
+    // along the walking line (core stairDrawing): from 0.6 m before its foot, facing up, until 0.3 m past its top
+    const d = stairDrawing(s), a = d.path[0], b = d.path[d.path.length - 1], L = Math.hypot(b[0] - a[0], b[1] - a[1]), u = [(b[0] - a[0]) / L, (b[1] - a[1]) / L];
+    const past = `((window.__home3d.walk().p[0] - ${b[0]}) * ${u[0]} + (window.__home3d.walk().p[1] - ${b[1]}) * ${u[1]}) > 0.25`;
+    return { start: [a[0] - u[0] * 0.6, a[1] - u[1] * 0.6], yaw: Math.atan2(-u[0], u[1]), legs: [['KeyW', `${upper} && ${past}`]] };
   }
   // l-turn up north along the east side, turning left: up the lower flight to the landing, then left (−X) up the upper flight
   return { start: [x1 - 0.45, y0 - 0.6], yaw: 0, legs: [['KeyW', `Math.abs(window.__home3d.walk().z - ${s.landingZ}) < 0.01 && window.__home3d.walk().p[1] > ${y1 - 0.75}`], ['KeyA', `${upper} && window.__home3d.walk().p[0] < ${x0 - 0.3}`]] };
@@ -187,6 +192,21 @@ try {
       check(`[${tag}] walk: a click on the door ${slanted.id} in the slanted wall opens it, and the walk goes through into ${behind}`, !!q && opened && through && w.roomId === behind, `${w.place} (${w.roomId})`);
     });
 
+    // ---------------------------------------------------------------- walls that bound no room
+    const screen = (F.p.building.walls ?? []).find((w) => w.openings.some((o) => o.infill));
+    if (screen) await stage(`[${tag}] walls without a room`, async () => {
+      if (!(await s3('walk')).on) { await click(S.view('walk'), 2500); await waitFor(async () => { const w = await s3('walk'); return w.on && w.place ? w : null; }, 20000); }
+      const o = screen.openings.find((x) => x.infill), L = Math.hypot(screen.b[0] - screen.a[0], screen.b[1] - screen.a[1]), u = [(screen.b[0] - screen.a[0]) / L, (screen.b[1] - screen.a[1]) / L];
+      const mid = [screen.a[0] + u[0] * (o.t0 + o.t1) / 2, screen.a[1] + u[1] * (o.t0 + o.t1) / 2], n = [-u[1], u[0]];
+      // on the site, 2.5 m before the slats on the side away from the house, facing them
+      const stand = [mid[0] - n[0] * 2.5, mid[1] - n[1] * 2.5], g = F.p.site.groundLevel;
+      await goTo(stand, g, Math.atan2(-n[0], n[1]), -0.05); await sleep(800);
+      await shot(`${tag}_12_screen_wall`);
+      await hold('KeyW', 'false', 2500);
+      const w = await s3('walk'), past = (w.p[0] - mid[0]) * n[0] + (w.p[1] - mid[1]) * n[1];
+      check(`[${tag}] the screen wall ${screen.id} with slats stands on the site and stops the walk (${o.id} is filled)`, past < -screen.thickness / 2, `${past.toFixed(2)} m from the wall's axis`);
+    });
+
     // ---------------------------------------------------------------- exits (usability issue B8)
     await stage(`[${tag}] exit sign`, async () => {
       const D = F.p.building.doors.find((d) => d.rooms.includes('exterior')), mid = [(D.opening.faces[0] + D.opening.faces[1]) / 2, (D.opening.from + D.opening.to) / 2];
@@ -221,7 +241,9 @@ try {
         const same = stl.length > 0 && stl.slice().sort().join() === cliStl.join() && stl.every((n) => zipFile(buf, n).equals(readFileSync(join(cli, n))));
         const report = names.includes('print-report.json') ? JSON.parse(zipFile(buf, 'print-report.json').toString('utf8')) : null;
         const notes = (report?.notes ?? []).map((n) => n.code);
-        const parts = F.p.manifest.levels.length + 1;
+        const parts = F.p.manifest.levels.length + 1, joints = report?.joints ?? [];
+        if (F.p.building.roof?.parts?.some((x) => x.level === lo) && hi) check(`[${tag}] the print: the roof over the ${lo} wing goes with ${hi}'s part (${lo}'s part open from above), the parts are joined by tabs`,
+          notes.includes('roof.carried') && joints.length === parts - 1 && joints.every((j) => j.made && j.tabs >= 3), JSON.stringify(joints.map((j) => [j.between.join('→'), j.tabs])));
         check(`[${tag}] Download › Print model: the STL parts are the bytes of npm run project:print${s ? `, the stairs are printed (the steps in the upper slab go with ${hi}'s part)` : ''}`,
           same && stl.length === parts && (!s || notes.includes('stairs.split')), `${zip}: ${stl.join(', ')}; same bytes ${same}; notes ${notes.join(', ')}`);
       } finally { rmSync(dl, { recursive: true, force: true }); rmSync(cli, { recursive: true, force: true }); }

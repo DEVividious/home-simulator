@@ -1295,6 +1295,132 @@
       ]
      }
     },
+    "walls": {
+     "type": "array",
+     "items": {
+      "type": "object",
+      "properties": {
+       "id": {
+        "type": "string",
+        "minLength": 1
+       },
+       "level": {
+        "type": "string",
+        "minLength": 1
+       },
+       "a": {
+        "type": "array",
+        "prefixItems": [
+         {
+          "type": "number"
+         },
+         {
+          "type": "number"
+         }
+        ],
+        "items": false,
+        "minItems": 2,
+        "maxItems": 2
+       },
+       "b": {
+        "type": "array",
+        "prefixItems": [
+         {
+          "type": "number"
+         },
+         {
+          "type": "number"
+         }
+        ],
+        "items": false,
+        "minItems": 2,
+        "maxItems": 2
+       },
+       "thickness": {
+        "type": "number",
+        "exclusiveMinimum": 0
+       },
+       "z0": {
+        "type": "number"
+       },
+       "z1": {
+        "type": "number"
+       },
+       "openings": {
+        "type": "array",
+        "items": {
+         "type": "object",
+         "properties": {
+          "id": {
+           "type": "string",
+           "minLength": 1
+          },
+          "t0": {
+           "type": "number"
+          },
+          "t1": {
+           "type": "number"
+          },
+          "z0": {
+           "type": "number"
+          },
+          "z1": {
+           "type": "number"
+          },
+          "infill": {
+           "type": "object",
+           "properties": {
+            "kind": {
+             "type": "string",
+             "const": "slats"
+            },
+            "width": {
+             "type": "number",
+             "exclusiveMinimum": 0
+            },
+            "depth": {
+             "type": "number",
+             "exclusiveMinimum": 0
+            },
+            "gap": {
+             "type": "number",
+             "exclusiveMinimum": 0
+            }
+           },
+           "required": [
+            "kind",
+            "width",
+            "depth",
+            "gap"
+           ],
+           "additionalProperties": {}
+          }
+         },
+         "required": [
+          "id",
+          "t0",
+          "t1",
+          "z0",
+          "z1"
+         ],
+         "additionalProperties": {}
+        }
+       }
+      },
+      "required": [
+       "id",
+       "level",
+       "a",
+       "b",
+       "thickness",
+       "z0",
+       "z1",
+       "openings"
+      ],
+      "additionalProperties": {},
+      "description": "a wall that bounds no room: axis a → b, thickness about it, bottom and top (absolute), openings along it"
+     }
+    },
     "shell": {
      "type": "object",
      "properties": {

@@ -99,7 +99,11 @@ the behaviour is named in brackets. When a limit is lifted, remove it here in th
 - **Windows are glazing or openings, not joinery.** A window is a pane in a frame; whether it opens is not shown (only a glazing
   marked `passable` lets the walk through). A glazing with a polygonal outline (`outline` in `plan.json`) has a frame along
   every side and one pane; no mullions, transoms or sashes. Garage doors are drawn as one sliding leaf (no sectional or
-  up-and-over door), and walls that stand without a room (a wing wall, a pergola wall, a screen of slats) are not built.
+  up-and-over door).
+- **Walls without a room are straight and plain.** `walls` in `plan.json` (a wing wall, a porch wall, a garden wall) are
+  straight prisms from the slab under their level up to their height, with rectangular openings, empty or filled with vertical
+  slats; no curved walls, gates, fences or railings, and nothing on top of them. The walk on the site cannot pass them (their
+  openings included); the grid shell does not build them, and the print leaves the slats out (the opening stays open).
 - **Door types are fixed.** Doors are `hinged-single`, `hinged-double` (two equal leaves opening together into one room),
   `folding` (a bifold of two equal panels folding to one jamb), `sliding` or `pocket`. Unequal double leaves, a double door with
   one fixed leaf, bifolds of four or more panels, double-swing (café) doors and sectional garage doors are not supported; a

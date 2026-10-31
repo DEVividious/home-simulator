@@ -156,6 +156,16 @@ export function planImage(data: BuildingData, levelId: LevelId, o: { name: strin
       sh.label(at, w.id, 1, BLUE_TEXT, 'middle', 0, out > 0 ? -14 : 4);
     }
   }
+  // walls that bound no room: their outline filled like the walls, the openings left white (slats: a dashed line)
+  for (const w of B.walls.filter((x) => x.level === levelId)) {
+    const L = Math.hypot(w.b[0] - w.a[0], w.b[1] - w.a[1]), u: Vec2 = [(w.b[0] - w.a[0]) / L, (w.b[1] - w.a[1]) / L], h = w.thickness / 2;
+    const at = (s: number, k: number): Vec2 => [w.a[0] + u[0] * s - u[1] * k, w.a[1] + u[1] * s + u[0] * k];
+    sh.poly([at(0, -h), at(L, -h), at(L, h), at(0, h)], WALL);
+    for (const o of w.openings) {
+      sh.poly([at(o.t0, -h), at(o.t1, -h), at(o.t1, h), at(o.t0, h)], WHITE);
+      if (o.infill) for (let s = o.t0; s < o.t1 - 1e-6; s += 0.1) sh.seg(at(s, 0), at(Math.min(o.t1, s + 0.05), 0), WALL);
+    }
+  }
   // stairs: the outline, tread lines, the partition of a U-turn and the walking line with its arrow (model/stairs.ts)
   for (const s of B.stairs) if (s.fromLevel === levelId || s.toLevel === levelId) {
     const d = stairDrawing(s);

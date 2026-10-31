@@ -10,7 +10,7 @@ import { distToPolygonEdges } from '../model/geom2d.ts';
 import { outerOutline } from '../model/outline.ts';
 import { canonicalDir, lineC, lineFrame, linePt, lineT, type LineAxis, type LineFrame } from '../model/wallLine.ts';
 import { areaBelow, atticPlanes, surfaceFacets, type RoofPiece } from '../model/roof.ts';
-import type { ArchitectItem, DoorDef, ElectricalDefaults, ProjectModule, ProjectPackage, Rect, RoomJson, StairDef, Vec2, Viewpoint } from '../package/types.ts';
+import type { ArchitectItem, DoorDef, FreeWallJson, ElectricalDefaults, ProjectModule, ProjectPackage, Rect, RoomJson, StairDef, Vec2, Viewpoint } from '../package/types.ts';
 import { PlanSchema, type Plan, type PlanInput } from './plan.ts';
 import { compileRoof } from './roof.ts';
 
@@ -371,6 +371,26 @@ export function compilePlan(input: PlanInput | unknown, opts: CompileOptions): C
     if (!lower) err('stairs.start', `stairs "${s.id}": no room of level "${s.from}" contains the stair box`);
   }
 
+  // ---- free-standing walls: the axis, the openings along it, heights absolute (standing on the slab below the level)
+  const freeWalls: FreeWallJson[] = [];
+  for (const w of plan.walls) {
+    const lv = levels.get(w.level);
+    if (!lv) { err('wall.level', `wall "${w.id}": unknown level "${w.level}"`); continue; }
+    const a = P(w.from, w.level), b = P(w.to, w.level), L = Math.hypot(b[0] - a[0], b[1] - a[1]);
+    if (L < 0.05) { err('wall.length', `wall "${w.id}": its ends are the same point`); continue; }
+    const u: Vec2 = [(b[0] - a[0]) / L, (b[1] - a[1]) / L], z0 = r3(lv.floorZ - D.slab), z1 = r3(lv.floorZ + (w.height ?? lv.ceiling)), t = w.thickness ?? D.exteriorWall;
+    const openings: FreeWallJson['openings'] = [];
+    for (const o of w.openings) {
+      const q = P(o.at, w.level), s = (q[0] - a[0]) * u[0] + (q[1] - a[1]) * u[1], off = Math.abs((q[0] - a[0]) * u[1] - (q[1] - a[1]) * u[0]);
+      const t0 = r3(s - o.width / 2), t1 = r3(s + o.width / 2);
+      if (off > t / 2 + 0.3) err('wall.opening', `wall "${w.id}": opening "${o.id}" is not on the wall (${r3(off)} m off its axis)`);
+      if (t0 < -0.005 || t1 > L + 0.005) err('wall.opening', `wall "${w.id}": opening "${o.id}" (${o.width} m) does not fit the wall (0…${r3(L)})`);
+      if (lv.floorZ + o.head > z1 + 1e-6) err('wall.opening', `wall "${w.id}": opening "${o.id}" is higher than the wall`);
+      openings.push({ id: o.id, t0, t1, z0: r3(lv.floorZ + o.sill), z1: r3(lv.floorZ + o.head), ...(o.slats ? { infill: { kind: 'slats', width: o.slats.width, depth: o.slats.depth ?? t, gap: o.slats.gap } } : {}) });
+    }
+    freeWalls.push({ id: w.id, level: w.level, a, b, thickness: t, z0, z1, openings });
+  }
+
   // ---- roof windows and the room ceilings: flat, or under the roof of the level (its planes, capped by the flat top)
   const roofWindows = new Map<string, RoomJson['roof_windows']>();
   for (const w of plan.roofWindows) {
@@ -575,6 +595,7 @@ export function compilePlan(input: PlanInput | unknown, opts: CompileOptions): C
       doors,
       ...(plan.windows.some((w) => w.passable) ? { doorFacts: { passableOpenings: plan.windows.filter((w) => w.passable).map((w) => w.id) } } : {}),
       ...(stairs.length ? { stairs } : {}),
+      ...(freeWalls.length ? { walls: freeWalls } : {}),
       shell: { exteriorWall: D.exteriorWall, slab: D.slab },
       ...(roof.json ? { roof: roof.json } : {}),
     },

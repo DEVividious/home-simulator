@@ -12,7 +12,7 @@ import { roomsOfLevel, stairArrivesAt, type Building, type Level, type Room } fr
 import { offsetPolygon } from '../model/geom2d.ts';
 import { inRegion, surfaceRange } from '../model/roof.ts';
 import type { LevelId, Vec2, Vec3 } from '../package/types.ts';
-import { windowMeshes, type PlainMesh } from './frames.ts';
+import { joinMeshes, slatMeshes, windowMeshes, type PlainMesh } from './frames.ts';
 import { solidMesh, type SolidMesh } from './mesh.ts';
 import { levelOpenings, PROUD, snap, type OpeningCut, type PlanMass, type ShellWindow } from './openings.ts';
 import { prism, rectSection, roofSpace } from './prism.ts';
@@ -71,10 +71,17 @@ export function wallBounds(b: Building): { min: Vec3; max: Vec3 } {
   const levels = builtLevels(b), t = b.shell.exteriorWall;
   if (!levels.length) return { min: [0, 0, 0], max: [1, 1, 1] };
   const pts = levels.flatMap((l) => roomsOfLevel(b, l.id).flatMap((r) => r.polygon)), frames = levels.map((l) => levelFrame(b, l.id));
-  return {
-    min: [snap(Math.min(...pts.map((p) => p[0])) - t), snap(Math.min(...pts.map((p) => p[1])) - t), Math.min(...frames.map((f) => f.bottom))],
-    max: [snap(Math.max(...pts.map((p) => p[0])) + t), snap(Math.max(...pts.map((p) => p[1])) + t), Math.max(...frames.map((f) => f.top))],
+  const box = {
+    min: [snap(Math.min(...pts.map((p) => p[0])) - t), snap(Math.min(...pts.map((p) => p[1])) - t), Math.min(...frames.map((f) => f.bottom))] as Vec3,
+    max: [snap(Math.max(...pts.map((p) => p[0])) + t), snap(Math.max(...pts.map((p) => p[1])) + t), Math.max(...frames.map((f) => f.top))] as Vec3,
   };
+  // walls that bound no room: the corners of their prisms
+  for (const w of b.walls.filter((x) => levels.some((l) => l.id === x.level))) {
+    const L = Math.hypot(w.b[0] - w.a[0], w.b[1] - w.a[1]), n: Vec2 = [-(w.b[1] - w.a[1]) / L * w.thickness / 2, (w.b[0] - w.a[0]) / L * w.thickness / 2];
+    for (const p of [w.a, w.b]) for (const k of [-1, 1]) for (let j = 0; j < 2; j++) { const v = snap(p[j] + n[j] * k); box.min[j] = Math.min(box.min[j], v); box.max[j] = Math.max(box.max[j], v); }
+    box.min[2] = Math.min(box.min[2], snap(w.z0)); box.max[2] = Math.max(box.max[2], snap(w.z1));
+  }
+  return box;
 }
 
 /** bounds of the generated shell: the walls and the roof (eaves, ridges, chimneys) */
@@ -198,6 +205,17 @@ export function levelSolid(geo: Geometry, keep: Keep, b: Building, level: LevelI
     chimneys.push(keep(tags.original(cap ? keep(box.intersect(cap)) : box, { kind: 'chimney', level, chimneyId: c.id })));
   }
   if (chimneys.length) solid = keep(Manifold.union([solid, ...chimneys]));
+  // walls that bound no room: a prism about the axis, its openings cut through it
+  const free = b.walls.filter((w) => w.level === level).map((w) => {
+    const L = Math.hypot(w.b[0] - w.a[0], w.b[1] - w.a[1]), u: Vec2 = [(w.b[0] - w.a[0]) / L, (w.b[1] - w.a[1]) / L], n: Vec2 = [-u[1] * w.thickness / 2, u[0] * w.thickness / 2];
+    const at = (s: number, k: number): Vec2 => snap2([w.a[0] + u[0] * s + n[0] * k, w.a[1] + u[1] * s + n[1] * k]);
+    const quad = (s0: number, s1: number, k: number) => keep(new CrossSection([[at(s0, -k), at(s1, -k), at(s1, k), at(s0, k)]]));
+    let m = keep(tags.original(prism(keep, quad(0, L, 1), snap(w.z0), snap(w.z1)), { kind: 'mass', level }));
+    const cuts = w.openings.map((o) => keep(tags.original(prism(keep, quad(o.t0, o.t1, 1 + (2 * PROUD) / w.thickness), snap(o.z0), snap(o.z1)), { kind: 'opening', level, holeId: o.id, wallId: w.id })));
+    if (cuts.length) m = keep(m.subtract(keep(Manifold.union(cuts))));
+    return m;
+  });
+  if (free.length) solid = keep(Manifold.union([solid, ...free]));
   const status = solid.status();
   if (status !== 'NoError') throw new Error(`solid of level ${level}: ${status}`);
   return { frame, solid, tags, plan, cuts, windows };
@@ -232,8 +250,8 @@ export function shellMeshes(geo: Geometry, b: Building): ShellMeshes {
   const t0 = Date.now();
   const out = scoped((keep) => {
     const levels = builtLevels(b).map((l): LevelMeshes => {
-      const s = levelSolid(geo, keep, b, l.id)!, box = s.solid.boundingBox(), w = windowMeshes(s.windows);
-      return { level: l.id, frame: s.frame, solid: solidMesh(s.solid, s.tags), frames: w.frames, glass: w.glass, windows: s.windows, bounds: { min: [...box.min] as Vec3, max: [...box.max] as Vec3 }, volume: s.solid.volume() };
+      const s = levelSolid(geo, keep, b, l.id)!, box = s.solid.boundingBox(), w = windowMeshes(s.windows), slats = slatMeshes(b.walls.filter((x) => x.level === l.id));
+      return { level: l.id, frame: s.frame, solid: solidMesh(s.solid, s.tags), frames: joinMeshes(w.frames, slats), glass: w.glass, windows: s.windows, bounds: { min: [...box.min] as Vec3, max: [...box.max] as Vec3 }, volume: s.solid.volume() };
     });
     const [lo, hi] = span(b);
     const roofs = (b.roof?.levels ?? []).flatMap((level): RoofMeshes[] => {

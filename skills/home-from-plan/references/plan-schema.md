@@ -31,6 +31,8 @@ Worked examples: `projects/demo-apartment/source/plan.json` (flat, metres, expli
     { "id": "W2", "room": "R2", "at": [1860, 850], "width": 2.0, "sill": 0, "passable": true },
     { "id": "W3", "room": "R5", "at": [60, 400], "outline": [[300, 0.2], [300, 1.6], [420, 2.6], [540, 1.6], [540, 0.2]] }   // a gable window
   ],
+  "walls": [ { "id": "WP", "level": "L0", "from": [40, 900], "to": [400, 900], "thickness": 0.3, "height": 2.6,
+               "openings": [ { "id": "WP1", "at": [200, 900], "width": 1.5, "sill": 0.5, "head": 2.2, "slats": { "width": 0.04, "gap": 0.06 } } ] } ],
   "stairs": [ { "id": "S1", "kind": "u-turn", "from": "L0", "to": "L1", "box": [x0, y0, x1, y1], "up": "N", "turn": "left", "risers": 9, "tread": 0.27, "flightWidth": 0.95, "gap": 0.05 } ],
                                                              // or "kind": "straight" (risers = all), "l-turn" (+ "upperRisers")
   "roof": { "ridgeHeight": 8.45, "parts": [ { "id": "main", "level": "L1", "type": "gable", "ridge": "X", "pitch": 40, "knee": 1.0 } ],

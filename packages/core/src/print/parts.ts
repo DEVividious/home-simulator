@@ -316,6 +316,8 @@ export function buildParts(geo: Geometry, keep: Keep, data: BuildingData, n: num
   const pockets = roofed ? windowRecesses(geo, keep, withWindows, last, profile, n, notes) : [];
   if (pockets.length) upper = keep(upper.subtract(keep(geo.Manifold.union(pockets))));
   parts.push({ id: 'roof', kind: 'roof', level: last, base: z, top: upper.boundingBox().max[2], solid: upper, sections: [snap(z + 0.01)], mask: footprint });
+  // slats in the openings of free-standing walls are thinner than a print makes: the openings stay open
+  for (const w of b.walls) for (const o of w.openings) if (o.infill) notes.push({ code: 'slats.omitted', element: o.id, message: `the slats in opening ${o.id} of wall ${w.id} are not printed (too thin at this scale): the opening stays open` });
   // the joints: tabs on every part's walls, pockets in the part stacked on it
   const made: JointInfo[] = [];
   if (joints) for (let i = 0; i + 1 < parts.length; i++) {

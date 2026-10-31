@@ -12,6 +12,7 @@ import {
 import { offsetPolygon } from '@home-sim/core/model/geom2d';
 import { allLevels, DEFAULT_PLAN_WALL_OFFSET, levelById, levelName, roomById, roomsOfLevel, type RoomWall } from '../model/rooms';
 import { stairs } from '../model/stairs';
+import { building } from '../model/building';
 import { stairDrawing } from '@home-sim/core/model/stairs';
 import type { LevelId, Vec2 } from '../model/types';
 import { t } from '../../i18n';
@@ -153,6 +154,13 @@ export function buildPlan(o: PlanOptions): PlanDrawing {
   } else {
     if (atGround) prims.push({ k: 'poly', pts: houseFootprint(), fill: WALL, close: true });
     if (o.view !== 'SITE') for (const r of rooms) prims.push({ k: 'poly', pts: offsetPolygon(r.polygon, levelById(level)?.planWallOffset ?? DEFAULT_PLAN_WALL_OFFSET), fill: WALL, close: true });
+  }
+  // walls that bound no room (a porch wall, a wing wall)
+  if (o.view !== 'SITE') for (const w of building().walls.filter((x) => x.level === level)) {
+    const L = Math.hypot(w.b[0] - w.a[0], w.b[1] - w.a[1]), u: Vec2 = [(w.b[0] - w.a[0]) / L, (w.b[1] - w.a[1]) / L], h = w.thickness / 2;
+    const at = (s: number, k: number): Vec2 => [w.a[0] + u[0] * s - u[1] * k, w.a[1] + u[1] * s + u[0] * k];
+    prims.push({ k: 'poly', pts: [at(0, -h), at(L, -h), at(L, h), at(0, h)], fill: WALL, close: true });
+    for (const q of w.openings) prims.push({ k: 'poly', pts: [at(q.t0, -h), at(q.t1, -h), at(q.t1, h), at(q.t0, h)], fill: '#ffffff', close: true });
   }
   for (const r of rooms) prims.push({ k: 'poly', pts: r.polygon, fill: '#ffffff', stroke: o.view === 'SITE' ? undefined : LINE, lw: mm(0.18), close: true });
   if (o.view !== 'SITE') {

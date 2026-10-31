@@ -72,6 +72,16 @@ function planSvg(levelId) {
       g += `<polygon points="${pts(poly)}" fill="${w.sill_z < 0.05 ? '#93c5fd' : '#bfdbfe'}" stroke="#2563eb"/><text x="${X(at[0])}" y="${Y(at[1])}" font-size="11" fill="#1d4ed8" text-anchor="middle" dy="${out > 0 ? -4 : 12}">${esc(w.id)}</text>`;
     }
   }
+  // walls that bound no room: filled like the walls, openings white, slats dashed
+  for (const w of (pkg.building.walls ?? []).filter((x) => x.level === levelId)) {
+    const L = Math.hypot(w.b[0] - w.a[0], w.b[1] - w.a[1]), u = [(w.b[0] - w.a[0]) / L, (w.b[1] - w.a[1]) / L], h = w.thickness / 2;
+    const at = (s, k) => [w.a[0] + u[0] * s - u[1] * k, w.a[1] + u[1] * s + u[0] * k];
+    g += `<polygon points="${pts([at(0, -h), at(L, -h), at(L, h), at(0, h)])}" fill="#374151"/>`;
+    for (const o of w.openings) {
+      g += `<polygon points="${pts([at(o.t0, -h), at(o.t1, -h), at(o.t1, h), at(o.t0, h)])}" fill="#ffffff"/>`;
+      if (o.infill) { const p = at(o.t0, 0), q = at(o.t1, 0); g += `<line x1="${X(p[0])}" y1="${Y(p[1])}" x2="${X(q[0])}" y2="${Y(q[1])}" stroke="#374151" stroke-dasharray="3 3"/>`; }
+    }
+  }
   // stairs: the outline, tread lines, the partition of a U-turn and the walking line with its arrow (core model/stairs.ts)
   for (const s of pkg.building.stairs ?? []) if (s.fromLevel === levelId || s.toLevel === levelId) {
     const d = stairDrawing(s), line = (p, q, attr) => `<line x1="${X(p[0])}" y1="${Y(p[1])}" x2="${X(q[0])}" y2="${Y(q[1])}" ${attr}/>`;

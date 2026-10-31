@@ -26,7 +26,7 @@ const quadSection = (qs: ShellQuad[], z: number) => qs.reduce((s, q) => {
 }, 0);
 
 /** the building without its roof (the ceilings stay as they are: the levels become boxes up to their highest ceiling) */
-const noRoof = (b: Building): Building => ({ ...b, roof: null });
+const noRoof = (b: Building): Building => ({ ...b, roof: null, walls: [] });   // the grid shell has neither roofs nor walls without a room
 /** the building with polygonal openings cut as their bounding rectangles — what the grid shell does */
 function rectangular(b: Building): Building {
   const rooms = b.rooms.map((r) => ({ ...r, walls: r.walls.map((w) => ({ ...w, holes: w.holes.map((h) => ({ ...h, polygon: undefined })) })) }));

@@ -74,6 +74,13 @@ These rules make a package correct for the engine and stable for the user's save
   footprint and the same number of risers (winders → `l-turn` with the turning steps counted as the landing), and say it in
   the README.
 
+## Walls without a room
+- A wall that bounds no room — a wing wall beside a garage door, the wall of an entrance porch or a carport, a garden wall —
+  goes to `walls`: `from` / `to` on its axis (run it a few centimetres into the house wall it meets), `thickness`, `height`
+  above the level floor (under a flat roof: up to its underside). An opening in it: `at`, `width`, `sill`, `head`; filled with
+  vertical slats (a screen, lamellas): `slats` with their `width`, `depth` and `gap` (drawn section, else 4 × 10 cm, 6 cm apart,
+  and say so in the README). The room-less space behind it (a porch) is not a room.
+
 ## Walls that are not orthogonal
 - Walls at 45° (a chamfered corner, a bay, a slanted partition, a wall under the stairs) are modelled as drawn: the room
   `polygon` has the slanted edge, with its corners read on the inner faces. The two rooms of a slanted partition have parallel

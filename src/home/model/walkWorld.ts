@@ -14,7 +14,8 @@ import { t } from '../../i18n';
 import { siteLevelId } from './electrical';
 import { derived, project } from '../../project/active';
 import { doorById } from './doors';
-import { distToPolygonEdges, pointInPolygon } from '@home-sim/core/model/geom2d';
+import { distToPolygonEdges, pointInPolygon, segDist } from '@home-sim/core/model/geom2d';
+import { building } from './building';
 import { levelAtZ, levelById, levelName, roomById, roomsOfLevel, type HomeRoom } from './rooms';
 import { inStairBox, stairAllowed, stairZ } from './stairs';
 import type { LevelId, Vec2 } from './types';
@@ -62,6 +63,10 @@ export function exteriorDoors(spans?: Record<string, [Vec2, Vec2]>): ExtDoor[] {
 }
 
 const extDoors = derived(() => exteriorDoors());
+
+/** walls that bound no room stand in the way on the site (wing walls, porch walls, garden walls) — their openings too */
+const freeWalls = derived(() => building().walls.map((w) => ({ a: w.a, b: w.b, r: w.thickness / 2 + BODY_R })));
+export const nearFreeWall = (p: Vec2): boolean => freeWalls().some((w) => segDist(p, w.a, w.b).d < w.r);
 const DOOR_OUT = 1.0; // corridor reach outwards from the inner face (exterior wall up to 0.6 m + body)
 const DOOR_IN = BODY_R + 0.15;
 function inExtDoor(d: ExtDoor, p: Vec2) {
@@ -102,7 +107,7 @@ export class WalkWorld {
   constructor(readonly o: WalkWorldOptions) { this.doors = o.doorSpans ? exteriorDoors(o.doorSpans) : extDoors(); }
 
   private outsideHouse(p: Vec2) {
-    return !pointInPolygon(p, this.o.footprint, 0) && distToPolygonEdges(p, this.o.footprint) >= BODY_R;
+    return !pointInPolygon(p, this.o.footprint, 0) && distToPolygonEdges(p, this.o.footprint) >= BODY_R && !nearFreeWall(p);
   }
 
   /** foot height at point p given the current height zCur (selects the level), or null — point not accessible */

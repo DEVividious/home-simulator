@@ -81,6 +81,9 @@ The layout is drawn in a canonical frame (the lower flight rising towards −Y o
 `orient: { rotate: 0 | 90 | 180 | 270, mirror }` turns it counter-clockwise onto `bbox` after mirroring. `bbox` is the bounding
 box: an L does not fill its corner. The room of `toLevel` holding the stairs has `stair_opening` = `bbox`; the opening in its
 floor is the outline of the stairs (the L for an l-turn) (docs/WALK_AND_STAIRS.md).
+`building.walls` (optional): walls that bound no room `{ id, level, a, b, thickness, z0, z1, openings: [{ id, t0, t1, z0, z1,
+infill?: { kind: "slats", width, depth, gap } }] }` — the axis a → b, the thickness about it, bottom and top absolute; openings
+from t0 to t1 along the axis from a. The generated shell builds them with the level; slats fill an opening as vertical boxes.
 `building.shell`: generated-shell parameters `{ exteriorWall = 0.30, slab = 0.25 }`.
 
 ## building.roof

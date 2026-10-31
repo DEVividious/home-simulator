@@ -1240,6 +1240,145 @@
     "additionalProperties": false
    }
   },
+  "walls": {
+   "default": [],
+   "description": "walls that bound no room (they stand from the ground or the slab below their level up to their height)",
+   "type": "array",
+   "items": {
+    "type": "object",
+    "properties": {
+     "id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
+     },
+     "level": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
+     },
+     "from": {
+      "type": "array",
+      "prefixItems": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "number"
+       }
+      ],
+      "items": false,
+      "minItems": 2,
+      "maxItems": 2,
+      "description": "one end of the wall's axis (a point)"
+     },
+     "to": {
+      "type": "array",
+      "prefixItems": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "number"
+       }
+      ],
+      "items": false,
+      "minItems": 2,
+      "maxItems": 2,
+      "description": "the other end of the axis"
+     },
+     "thickness": {
+      "description": "thickness about the axis [m] (default: the exterior wall)",
+      "type": "number",
+      "exclusiveMinimum": 0
+     },
+     "height": {
+      "description": "top above the level floor [m] (default: the level ceiling)",
+      "type": "number",
+      "exclusiveMinimum": 0
+     },
+     "openings": {
+      "default": [],
+      "type": "array",
+      "items": {
+       "type": "object",
+       "properties": {
+        "id": {
+         "type": "string",
+         "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
+        },
+        "at": {
+         "type": "array",
+         "prefixItems": [
+          {
+           "type": "number"
+          },
+          {
+           "type": "number"
+          }
+         ],
+         "items": false,
+         "minItems": 2,
+         "maxItems": 2,
+         "description": "a point on the wall in the middle of the opening"
+        },
+        "width": {
+         "type": "number",
+         "exclusiveMinimum": 0
+        },
+        "sill": {
+         "type": "number",
+         "minimum": 0
+        },
+        "head": {
+         "type": "number",
+         "exclusiveMinimum": 0
+        },
+        "slats": {
+         "description": "the opening filled with vertical slats (a screen)",
+         "type": "object",
+         "properties": {
+          "width": {
+           "default": 0.04,
+           "type": "number",
+           "exclusiveMinimum": 0
+          },
+          "depth": {
+           "description": "default: the wall thickness",
+           "type": "number",
+           "exclusiveMinimum": 0
+          },
+          "gap": {
+           "default": 0.06,
+           "type": "number",
+           "exclusiveMinimum": 0
+          }
+         },
+         "additionalProperties": false
+        }
+       },
+       "required": [
+        "id",
+        "at",
+        "width",
+        "sill",
+        "head"
+       ],
+       "additionalProperties": false
+      }
+     },
+     "source": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "id",
+     "level",
+     "from",
+     "to"
+    ],
+    "additionalProperties": false,
+    "description": "a wall that bounds no room: a wing wall beside a garage door, the wall of an entrance porch, a garden wall"
+   }
+  },
   "furniture": {
    "default": [],
    "type": "array",

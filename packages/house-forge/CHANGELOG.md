@@ -13,6 +13,8 @@
   off` leaves them out); the card says how many.
 - A flat roof over a single-storey wing prints with the storey above it, so every storey's part is open from above.
 - Gable windows that are not rectangles (`outline` in `plan.json`: a trapezoid or pentagon under the roof).
+- Walls without a room (`walls` in `plan.json`): wing walls, porch walls, garden walls, openings in them filled with slats
+  (the slats are not printed).
 - Fewer questions: the skill names the workspace itself and takes the largest scale that fits, offering a smaller one on the
   approval card.
 - A straight flight ending at a wall with a short landing printed with an open ground-floor part; the landing now runs into the

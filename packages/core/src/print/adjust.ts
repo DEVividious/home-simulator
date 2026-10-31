@@ -19,7 +19,7 @@ import type { PrintProfile } from './profiles.ts';
 import { mmPerM } from './scale.ts';
 
 export type AdjustCode =
-  | 'wall.exterior' | 'wall.interior' | 'slab' | 'roof.thickness'
+  | 'wall.exterior' | 'wall.interior' | 'wall.free' | 'slab' | 'roof.thickness'
   | 'opening.widened' | 'opening.closed' | 'lintel.lowered' | 'lintel.removed' | 'sill.lowered' | 'opening.at-split'
   | 'pier.merged' | 'pier.widened' | 'chimney.grown' | 'roof-window.widened';
 
@@ -119,6 +119,21 @@ export function adjustForPrint(data: BuildingData, n: number, profile: PrintProf
     shell.exteriorWall = r6(T);
   }
   if (shell.slab < S - EPS) { note('slab', 'floor and roof slabs', shell.slab, S, slabRule); shell.slab = r6(S); }
+  // free-standing walls thinner than a printed wall: thickened about their axis
+  for (const w of d.walls ?? []) {
+    // a wall stands on the bed with its level: from the underside of the (maybe thickened) slab
+    const floor = d.rooms.levels[w.level]?.floor_z;
+    if (floor !== undefined) w.z0 = r6(Math.min(w.z0, floor - shell.slab));
+    if (w.thickness < T - EPS) { note('wall.free', `wall ${w.id}`, w.thickness, T, wallRule, w.level); w.thickness = r6(T); }
+    // the band over an opening thinner than a slab: the head lowered, or (no room for it) the opening opened to the top
+    for (const o of w.openings) {
+      const band = w.z1 - o.z1;
+      if (band > 1e-6 && band < S - EPS) {
+        if (w.z1 - S - o.z0 >= H - EPS) { note('lintel.lowered', o.id, band, S, slabRule, w.level); o.z1 = r6(w.z1 - S); }
+        else { note('lintel.removed', o.id, band, 0, slabRule, w.level); o.z1 = r6(w.z1); }
+      }
+    }
+  }
   d.shell = shell;
   if (!d.roof) { const derived = building(data).roof; if (derived?.fromAttic && derived.thickness < S - EPS) d.roof = JSON.parse(JSON.stringify(derived.json)); }
   if (d.roof && d.roof.covering + d.roof.buildup < S - EPS) { note('roof.thickness', 'roof', d.roof.covering + d.roof.buildup, S, slabRule); d.roof.buildup = r6(S - d.roof.covering); }

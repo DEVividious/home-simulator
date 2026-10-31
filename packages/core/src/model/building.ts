@@ -7,7 +7,7 @@ import { ccw, centroid, dist, norm, pointInPolygon, round, segDist, sub } from '
 import { stairOutline } from './stairs.ts';
 import { gapFrame, lineC, linePt, windowFrame, type LineFrame } from './wallLine.ts';
 import { atticPlanes, roofFromAttic, roofModel, type RoofModel, type RoofPiece } from './roof.ts';
-import type { DoorDef, LevelId, ProjectPackage, Rect, RoomJson, RoomKind, ShellSpec, StairDef, Vec2 } from '../package/types.ts';
+import type { DoorDef, FreeWallJson, LevelId, ProjectPackage, Rect, RoomJson, RoomKind, ShellSpec, StairDef, Vec2 } from '../package/types.ts';
 
 export type BuildingData = ProjectPackage['building'];
 
@@ -90,6 +90,8 @@ export interface Building {
   roomsByLevel: Map<LevelId, Room[]>;
   doors: DoorDef[];
   stairs: StairDef[];
+  /** walls that bound no room (building.walls) */
+  walls: FreeWallJson[];
   /** generated shell parameters (defaults + the package's `shell`) */
   shell: ShellSpec;
   /** the roof (building.roof, or derived from attic ceilings); null — no roof: the top level is closed by a flat slab */
@@ -181,6 +183,7 @@ function openingOutline(r: RoomJson, stairs: StairDef[]): Vec2[] {
 }
 
 const NO_STAIRS: StairDef[] = [];
+const NO_WALLS: FreeWallJson[] = [];
 const cache = new WeakMap<BuildingData, Building>();
 
 /** the derived building of a package's `building` block — computed once per block (by identity) */
@@ -195,7 +198,7 @@ export function building(data: BuildingData): Building {
   const roomsByLevel = new Map<LevelId, Room[]>(levels.map((l) => [l.id, rooms.filter((r) => r.level === l.id)]));
   const b: Building = {
     levels, levelById: new Map(levels.map((l) => [l.id, l])), rooms, roomById: new Map(rooms.map((r) => [r.id, r])), roomsByLevel,
-    doors: data.doors, stairs, shell, roof,
+    doors: data.doors, stairs, walls: data.walls ?? NO_WALLS, shell, roof,
   };
   cache.set(data, b);
   return b;

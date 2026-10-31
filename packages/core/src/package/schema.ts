@@ -73,6 +73,11 @@ const StairSchema = z.discriminatedUnion('kind', [
   z.looseObject({ ...stairCommon, kind: z.literal('u-turn'), gap: num, landingZ: num, split: num, landingEdge: num }),
 ]);
 
+const FreeWallSchema = z.looseObject({
+  id, level: id, a: vec2, b: vec2, thickness: num.positive(), z0: num, z1: num,
+  openings: z.array(z.looseObject({ id, t0: num, t1: num, z0: num, z1: num, infill: z.looseObject({ kind: z.literal('slats'), width: num.positive(), depth: num.positive(), gap: num.positive() }).optional() })),
+}).describe('a wall that bounds no room: axis a → b, thickness about it, bottom and top (absolute), openings along it');
+
 const rect = z.tuple([num, num, num, num]);
 const PlaneSchema = z.strictObject({ n: vec3, d: num }).refine((p) => p.n[2] > 1e-6, 'a roof plane must face up (n[2] > 0)');
 const RoofSchema = z.strictObject({
@@ -145,6 +150,7 @@ export const ProjectSchema = z.strictObject({
     doors: z.array(DoorSchema),
     doorFacts: z.strictObject({ overrides: z.record(z.string(), z.looseObject({ flush: z.boolean().optional(), source: z.string() })).optional(), passableOpenings: z.array(z.string()).optional() }).optional(),
     stairs: z.array(StairSchema).optional(),
+    walls: z.array(FreeWallSchema).optional(),
     shell: z.strictObject({ exteriorWall: num.positive().optional(), slab: num.positive().optional() }).optional(),
     roof: RoofSchema.optional(),
   }),

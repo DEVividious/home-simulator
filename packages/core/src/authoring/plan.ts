@@ -126,6 +126,19 @@ const StairSchema = z.strictObject({
 }).refine((s) => s.kind !== 'l-turn' || s.upperRisers !== undefined, 'an l-turn needs upperRisers (the risers of the upper flight)')
   .refine((s) => s.kind === 'l-turn' || s.upperRisers === undefined, 'upperRisers is for l-turn stairs only');
 
+const FreeWallSchema = z.strictObject({
+  id, level: id,
+  from: pt.describe('one end of the wall\'s axis (a point)'), to: pt.describe('the other end of the axis'),
+  thickness: num.positive().optional().describe('thickness about the axis [m] (default: the exterior wall)'),
+  height: num.positive().optional().describe('top above the level floor [m] (default: the level ceiling)'),
+  openings: z.array(z.strictObject({
+    id, at: pt.describe('a point on the wall in the middle of the opening'), width: num.positive(), sill: num.min(0), head: num.positive(),
+    slats: z.strictObject({ width: num.positive().default(0.04), depth: num.positive().optional().describe('default: the wall thickness'), gap: num.positive().default(0.06) }).optional()
+      .describe('the opening filled with vertical slats (a screen)'),
+  })).default([]),
+  source: z.string().optional(),
+}).describe('a wall that bounds no room: a wing wall beside a garage door, the wall of an entrance porch, a garden wall');
+
 const FurnitureSchema = z.strictObject({
   key: id.optional(), room: id, catalogId: z.string().min(1), variant: z.string().nullable().optional(),
   at: pt.optional().describe('centre of the footprint'), rot: num.optional().describe('0 = front faces +Y, 90 = −X, 180 = −Y, 270 = +X'),
@@ -170,6 +183,7 @@ export const PlanSchema = z.strictObject({
   roofWindows: z.array(z.strictObject({ id, room: id, rect: z.tuple([num, num, num, num]).describe('[x0, y0, x1, y1] of the window in the sloped ceiling, seen from above') })).default([]),
   roof: RoofSchema.optional().describe('the roof: parts over the levels (gable, hip, shed, flat), dormers, chimneys; without it a level slope builds a gable part'),
   stairs: z.array(StairSchema).default([]),
+  walls: z.array(FreeWallSchema).default([]).describe('walls that bound no room (they stand from the ground or the slab below their level up to their height)'),
   furniture: z.array(FurnitureSchema).default([]),
   notIncluded: z.array(z.strictObject({ room: id, what: z.string(), why: z.string() })).default([]),
   electrical: z.array(PointSchema).default([]),

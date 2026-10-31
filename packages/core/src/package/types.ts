@@ -157,6 +157,16 @@ export interface UTurnStairDef extends StairCommon {
 export type StairDef = StraightStairDef | LTurnStairDef | UTurnStairDef;
 export interface StairOrient { rotate: 0 | 90 | 180 | 270; mirror: boolean }
 
+// ------------------------------------------------------------------ free-standing walls
+/** the filling of an opening in a free-standing wall: vertical slats (a screen) — width along the wall, depth across it, gap
+ *  between them [m] */
+export interface WallInfill { kind: 'slats'; width: number; depth: number; gap: number }
+/** an opening in a free-standing wall: from t0 to t1 along it (from `a`), z0…z1 absolute */
+export interface FreeWallOpening { id: string; t0: number; t1: number; z0: number; z1: number; infill?: WallInfill }
+/** a wall that bounds no room — a wing wall beside a garage door, the wall of an entrance porch, a garden wall: its axis a → b,
+ *  its thickness about the axis, bottom and top (absolute) */
+export interface FreeWallJson { id: string; level: LevelId; a: Vec2; b: Vec2; thickness: number; z0: number; z1: number; openings: FreeWallOpening[] }
+
 // ------------------------------------------------------------------ generated shell
 /** generated shell parameters [m] */
 export interface ShellSpec {
@@ -426,6 +436,8 @@ export interface ProjectPackage {
     doorFacts?: DoorFacts;
     /** stairs between levels (walk, finishes); absent — a building without stairs */
     stairs?: StairDef[];
+    /** walls that bound no room (wing walls, porch walls, garden walls); absent — none */
+    walls?: FreeWallJson[];
     /** parameters of the shell generated from room outlines (project without assets.model) */
     shell?: Partial<ShellSpec>;
     /** the roof: parts over the levels, dormers, chimneys (absent — derived from attic ceilings, or a flat top) */

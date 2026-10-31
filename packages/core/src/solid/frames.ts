@@ -2,7 +2,7 @@
 // the middle of the wall (or roof) thickness, a mullion in wide windows, one pane. Boxes are built in the window's own frame
 // (along the width, up the window, out through the wall), so the same generator serves walls at any angle and roof windows in a
 // slope.
-import type { Vec3 } from '../package/types.ts';
+import type { FreeWallJson, Vec3 } from '../package/types.ts';
 import type { ShellWindow } from './openings.ts';
 
 /** indexed triangle mesh with flat normals */
@@ -96,8 +96,37 @@ function windowParts(f: WindowFrame): { frame: Quad[]; glass: Quad[] } {
   return { frame, glass: bar(f, w, W - w, g0, g0 + GLASS_D, w, H - w) };
 }
 
+/** the slats filling the openings of free-standing walls (vertical boxes, centred in the wall's thickness) */
+export function slatMeshes(walls: readonly FreeWallJson[]): PlainMesh {
+  const quads: Quad[] = [];
+  for (const w of walls) {
+    const L = Math.hypot(w.b[0] - w.a[0], w.b[1] - w.a[1]), u: Vec3 = [(w.b[0] - w.a[0]) / L, (w.b[1] - w.a[1]) / L, 0], n: Vec3 = [-u[1], u[0], 0];
+    for (const o of w.openings) {
+      const f = o.infill;
+      if (!f) continue;
+      const span = o.t1 - o.t0, count = Math.max(1, Math.floor((span + f.gap) / (f.width + f.gap))), used = count * f.width + (count - 1) * f.gap, s0 = o.t0 + (span - used) / 2;
+      const d = Math.min(f.depth, w.thickness);
+      for (let i = 0; i < count; i++) {
+        const s = s0 + i * (f.width + f.gap), o3: Vec3 = [w.a[0] + u[0] * s - n[0] * d / 2, w.a[1] + u[1] * s - n[1] * d / 2, o.z0];
+        quads.push(...boxQuads(o3, mul(u, f.width), mul(n, d), [0, 0, o.z1 - o.z0]));
+      }
+    }
+  }
+  return toMesh(quads);
+}
+
 /** frames and panes of a list of windows (in walls, or in their own frames), each merged into one mesh */
 export function windowMeshes(windows: (ShellWindow | WindowFrame)[]): { frames: PlainMesh; glass: PlainMesh } {
   const parts = windows.map((w) => windowParts('o' in w ? w : wallFrame(w)));
   return { frames: toMesh(parts.flatMap((p) => p.frame)), glass: toMesh(parts.flatMap((p) => p.glass)) };
+}
+
+/** two meshes as one (the second's indices moved past the first's vertices) */
+export function joinMeshes(a: PlainMesh, b: PlainMesh): PlainMesh {
+  if (!b.index.length) return a;
+  const nv = a.positions.length / 3, index = new Uint32Array(a.index.length + b.index.length);
+  index.set(a.index); for (let i = 0; i < b.index.length; i++) index[a.index.length + i] = b.index[i] + nv;
+  const positions = new Float32Array(a.positions.length + b.positions.length), normals = new Float32Array(positions.length);
+  positions.set(a.positions); positions.set(b.positions, a.positions.length); normals.set(a.normals); normals.set(b.normals, a.normals.length);
+  return { positions, normals, index };
 }
