@@ -361,8 +361,9 @@ describe('a gable window with a polygonal outline (plan.json `outline`)', () => 
       const f = wallFrame(w), quads = (mesh: { index: Uint32Array }) => mesh.index.length / 6;
       expect(quads(windowMeshes([w]).frames)).toBe(6 * 6);                                    // 5 sides and the drawn bar
       expect(quads(windowMeshes([w], { polygonFrames: false }).frames)).toBe(0);              // the app draws it
-      expect(quads(glazingFrameMesh(f, { at: [0.25, 0.5, 0.75], transom: 0.8 }))).toBe(9 * 6);
-      expect(quads(glazingFrameMesh(f, { at: [], transom: 99 }))).toBe(5 * 6);                 // a cross bar above it is left out
+      expect(quads(glazingFrameMesh(f, { at: [0.25, 0.5, 0.75], rows: [{ t: 0.8 }] }))).toBe(9 * 6);
+      expect(quads(glazingFrameMesh(f, { at: [], rows: [{ t: 99 }] }))).toBe(5 * 6);                 // a cross bar above it is left out
+      expect(quads(glazingFrameMesh(f, { at: [0.5], rows: [{ t: 0.3, s1: 0.5 }, { t: 0.6 }, { t: 0.4, s0: 0.98 }] }))).toBe(8 * 6); // one pane's bar, a whole one; none in a sliver
     });
     m.windows[m.windows.length - 1].mullions = [xm + 0.48];
     expect(compilePlan(m, { catalog: null }).issues.map((i) => i.code)).toContain('window.mullion');

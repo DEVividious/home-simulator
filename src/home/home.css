@@ -1024,3 +1024,8 @@ kbd { font: 11px ui-monospace, monospace; border: 1px solid var(--hm-line); bord
 .hm[data-layout='mobile'][data-orient='landscape']:has(.hm-objectbar) .hm-hintchip { display: none; }
 /* phone: the Download menu under the top bar, over the scene (the bar itself clips its content) */
 .hm[data-layout='mobile'] .hm-menu { position: fixed; top: calc(52px + var(--sa-t)); right: max(6px, var(--sa-r)); z-index: 40; }
+/* gable window card: the drawing of the window (seen from outside) with draggable bars */
+.hm-glazing-editor svg { display: block; width: 100%; max-height: 220px; touch-action: none; user-select: none; background: var(--hm-soft); border-radius: 8px; }
+.hm-glazing-glass { fill: #d7e8f2; }
+.hm-glazing-tools { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 8px 0; }
+.hm-glazing-editor > .hm-btn.wide { width: 100%; margin-top: 6px; }

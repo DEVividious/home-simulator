@@ -40,10 +40,14 @@ project uses them (for example the time of day, stairs or a plot to walk on).
   drag the sun. In advanced mode also the date, the 24-hour dial, the sun's position and the north arrow.
 - **Doors** in the scene bar hides or shows the door leaves. Click a door to open its card: **Open** / **Close** and the
   opening angle (or how far it slides; a garage door: how far it is raised).
-- **Gable windows** (the glazing under the roof): click one to open its card — **Frame colour**, **Division** (**As drawn**,
-  **None**, 2–4 panes) and a **Cross bar** (**Door height**, **Half way**). **All** changes every gable window at once, **This
-  one** only the one clicked (a glazing split by a wall between two rooms is one window: the wall counts as one of its
-  divisions). The choice is part of the version (Undo takes it back).
+- **Gable windows** (the glazing under the roof): click one to open its card — **Frame colour**, **Bars**, and quick choices
+  **Division** (**As drawn**, **None**, 2–4 panes) and **Cross bar** (**Door height**, **Half way**). **Bars** is a drawing of
+  the window seen from outside: drag a bar to move it, **+ Vertical** / **+ Horizontal** add one; a picked bar can be placed
+  exactly (from the left edge, or above the floor), a horizontal one runs across the **Whole width** or **One pane** (drag it
+  into another pane), **Remove** takes it away. Bars placed by hand show as **Custom** in the quick choices; picking a quick
+  choice replaces them. **All** changes every gable window at once (placed bars keep their proportions on each), **This one**
+  only the one clicked (a glazing split by a wall between two rooms is one window: the wall counts as one of its divisions).
+  The choice is part of the version (Undo takes it back).
 - **Surroundings** (Settings, only with a surroundings model) shows trees, neighbouring buildings and the road.
 
 ## Arrange

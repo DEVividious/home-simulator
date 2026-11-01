@@ -100,8 +100,9 @@ the behaviour is named in brackets. When a limit is lifted, remove it here in th
   only `npm run project:validate` checks that the files exist.
 - **Windows are glazing or openings, not joinery.** A window is a pane in a frame; whether it opens is not shown (only a glazing
   marked `passable` lets the walk through). A glazing with a polygonal outline (`outline` in `plan.json`) has a frame along
-  every side and one pane; its vertical bars as drawn (`mullions`) or as the user divides it (evenly, with one cross bar) are
-  drawn over the pane — no sashes, no free bar positions. A gable glazing may rise past the room's flat ceiling up to the roof
+  every side and one pane; its vertical bars as drawn (`mullions`) or as the user divides it are drawn over the pane — no
+  sashes. The user places vertical bars from frame to frame and horizontal ones across the whole glazing or one pane; a
+  vertical bar over part of the height, slanted bars and bars of different widths are not possible. A gable glazing may rise past the room's flat ceiling up to the roof
   plane; behind the ceiling it looks into the closed space under the ridge.
 - **Walls without a room are straight and plain.** `walls` in `plan.json` (a wing wall, a porch wall, a garden wall) are
   straight prisms from the slab under their level up to their height, with rectangular openings, empty or filled with vertical

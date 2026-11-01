@@ -433,7 +433,13 @@ export function setVariantGlazing(ids: string[], patch: GlazingChoice | null, la
   if (!ids.length) return;
   updateVariant(label, (v) => {
     const g = { ...(v.glazing ?? {}) };
-    for (const id of ids) { if (patch === null) delete g[id]; else g[id] = { ...(g[id] ?? {}), ...patch }; }
+    for (const id of ids) {
+      if (patch === null) { delete g[id]; continue; }
+      // a key set to undefined is dropped (e.g. a quick choice clears the placed bars)
+      const c: Record<string, unknown> = { ...(g[id] ?? {}), ...patch };
+      for (const k of Object.keys(c)) if (c[k] === undefined) delete c[k];
+      g[id] = c as GlazingChoice;
+    }
     const { glazing: _drop, ...rest } = v; void _drop;
     return (Object.keys(g).length ? { ...rest, glazing: g } : rest) as Variant;
   });

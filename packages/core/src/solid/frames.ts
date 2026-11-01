@@ -13,9 +13,11 @@ export interface PlainMesh { positions: Float32Array; normals: Float32Array; ind
  *  polygonal glazing has its corners (s along u, t along v; counter-clockwise or not) */
 export interface WindowFrame { o: Vec3; u: Vec3; v: Vec3; n: Vec3; width: number; height: number; depth: number; outline?: [number, number][]; mullions?: number[] }
 
-/** the bars dividing a polygonal glazing: vertical ones at `at` (along its width), a horizontal one at `transom` (up from its
- *  bottom; null: none) — each from frame to frame */
-export interface GlazingBars { at: number[]; transom: number | null }
+/** a horizontal glazing bar: `t` up from the bottom of the window; from frame to frame, or only between `s0` and `s1` (along its
+ *  width — e.g. the vertical bars bounding one pane) */
+export interface GlazingRow { t: number; s0?: number; s1?: number }
+/** the bars dividing a polygonal glazing: vertical ones at `at` (along its width, frame to frame) and horizontal ones (`rows`) */
+export interface GlazingBars { at: number[]; rows: GlazingRow[] }
 /** visible width of the frame and of the glazing bars [m] */
 export const GLAZING_BAR = 0.06;
 
@@ -82,16 +84,18 @@ function barQuads(f: WindowFrame, inner: [number, number][], bars: GlazingBars, 
     const t0 = Math.max(a[0], b[0]), t1 = Math.min(a[1], b[1]);
     if (t1 - t0 > w) out.push(...bar(f, s - w / 2, s + w / 2, d0 + e, d1 - e, t0, t1));
   }
-  if (bars.transom !== null) {
-    const a = spanAt(inner, 1, bars.transom - w / 2), b = spanAt(inner, 1, bars.transom + w / 2);
-    if (a && b) { const s0 = Math.max(a[0], b[0]), s1 = Math.min(a[1], b[1]); if (s1 - s0 > w) out.push(...bar(f, s0, s1, d0 + e, d1 - e, bars.transom - w / 2, bars.transom + w / 2)); }
+  for (const r of bars.rows) {
+    const a = spanAt(inner, 1, r.t - w / 2), b = spanAt(inner, 1, r.t + w / 2);
+    if (!a || !b) continue;
+    const s0 = Math.max(a[0], b[0], r.s0 ?? -Infinity), s1 = Math.min(a[1], b[1], r.s1 ?? Infinity);
+    if (s1 - s0 > w) out.push(...bar(f, s0, s1, d0 + e, d1 - e, r.t - w / 2, r.t + w / 2));
   }
   return out;
 }
 
 /** the frame and pane of a polygonal glazing: a bar along every side, the pane the outline shrunk by the bar width; its glazing
  *  bars (default: the vertical ones as drawn) */
-function polygonParts(f: WindowFrame, poly: [number, number][], bars: GlazingBars = { at: f.mullions ?? [], transom: null }): { frame: Quad[]; glass: Quad[] } {
+function polygonParts(f: WindowFrame, poly: [number, number][], bars: GlazingBars = { at: f.mullions ?? [], rows: [] }): { frame: Quad[]; glass: Quad[] } {
   const area = poly.reduce((s, a, i) => { const b = poly[(i + 1) % poly.length]; return s + a[0] * b[1] - b[0] * a[1]; }, 0);
   const P = area < 0 ? [...poly].reverse() : poly, n = P.length;
   const d0 = Math.max(0, (f.depth - FRAME_D) / 2), d1 = d0 + Math.min(FRAME_D, f.depth), w = Math.min(GLAZING_BAR, f.width / 4, f.height / 4);
