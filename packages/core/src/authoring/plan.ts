@@ -35,9 +35,9 @@ const DoorSchema = z.strictObject({
   id, between: z.tuple([id, id]).describe('the two rooms on either side; use "exterior" for an outside door'),
   at: pt.describe('any point in the middle of the door opening (on or inside the wall between the rooms)'),
   width: num.positive().describe('clear opening in the masonry [m]'),
-  type: z.enum(['hinged-single', 'hinged-double', 'folding', 'sliding', 'pocket']).default('hinged-single')
-    .describe('hinged-double: two leaves hinged at both jambs; folding: a bifold — two panels folding to the hinge side'),
-  swingInto: id.optional().describe('hinged, double, folding: the room the leaves open into, or "exterior" for an outward-opening outside door (default: the second room, or the room for an exterior door)'),
+  type: z.enum(['hinged-single', 'hinged-double', 'folding', 'sliding', 'pocket', 'sectional']).default('hinged-single')
+    .describe('hinged-double: two leaves hinged at both jambs; folding: a bifold — two panels folding to the hinge side; sectional: an overhead (garage) door whose panels lift up and back under the ceiling'),
+  swingInto: id.optional().describe('hinged, double, folding: the room the leaves open into, or "exterior" for an outward-opening outside door; sectional: the room it lifts into (default: the second room, or the room for an exterior door)'),
   hinge: z.enum(['left', 'right']).optional().describe('hinged: hinge side as seen from the room the door opens into, looking at the wall; folding: the side the panels fold to'),
   slideTo: z.enum(['start', 'end']).optional().describe('sliding / pocket: the leaf moves towards the start (smaller coordinate) or end of the opening'),
   height: num.positive().optional(), leafHeight: num.positive().optional(),
@@ -99,7 +99,8 @@ export const RoofSchema = z.strictObject({
   ridgeHeight: num.positive().optional().describe('height of the highest ridge (top of the covering) above z = 0 from the drawings [m] — checked (±10 cm)'),
   parts: z.array(RoofPartSchema).min(1),
   dormers: z.array(DormerSchema).default([]),
-  chimneys: z.array(z.strictObject({ id, rect: rect4.describe('[x0, y0, x1, y1] (points)'), top: num.describe('height of its top above z = 0 [m]') })).default([]),
+  chimneys: z.array(z.strictObject({ id, rect: rect4.describe('[x0, y0, x1, y1] (points)'), top: num.describe('height of its top above z = 0 [m]'),
+    from: id.optional().describe('the lowest level it stands in (default: the lowest level it is over); a duct that starts at a ceiling — e.g. a kitchen hood vent drawn dashed on the plan below — stands from the level above') })).default([]),
   confidence: z.enum(['confirmed', 'probable', 'unknown']).optional(), source: z.string().optional(),
 });
 

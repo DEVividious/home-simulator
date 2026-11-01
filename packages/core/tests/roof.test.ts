@@ -202,6 +202,19 @@ describe('dormers, roof windows, chimneys', () => {
     expect(roles(m.roofs[0].solid).has('chimney')).toBe(true);
     for (const l of m.levels) expect(roles(l.solid).has('chimney'), l.level).toBe(true);
   });
+
+  it('a chimney "from" a level stands only from that level up (a hood vent drawn dashed on the floor below)', () => {
+    const p = planOf('roof-gable-y');
+    p.roof.chimneys[0].from = 'A';
+    const r = compiled(p), ch = r.project!.building.roof!.chimneys![0];
+    expect(r.issues.filter((i) => i.level === 'error')).toEqual([]);
+    expect(ch.bottom).toBeCloseTo(2.85 - 0.25, 6);                            // the underside of the attic slab (default 25 cm)
+    const m = shellMeshes(geo, building(r.project!.building));
+    expect(roles(m.levels.find((l) => l.level === 'G')!.solid).has('chimney')).toBe(false);
+    expect(roles(m.levels.find((l) => l.level === 'A')!.solid).has('chimney')).toBe(true);
+    p.roof.chimneys[0].from = 'X';
+    expect(codes(p)).toContain('error:chimney.level');
+  });
 });
 
 describe('the section of a level under the roof', () => {
@@ -236,6 +249,11 @@ describe('compiler checks', () => {
     expect(codes(box(gable(), { windows: [{ id: 'W', room: 'R', at: [5, 0.3], width: 1, sill: 0.9, head: 2.1 }] }))).toContain('error:window.roof');
     expect(codes(box(gable(), { windows: [{ id: 'W', room: 'R', at: [0.3, 4], width: 1, sill: 0.9, head: 2.1 }] }))).not.toContain('error:window.roof');   // the gable wall
     expect(codes(box(gable(), { doors: [{ id: 'D', between: ['R', 'exterior'], at: [5, 0.15], width: 1 }] }))).toContain('error:door.roof');
+  });
+  it('a gable glazing may rise past the flat top of the ceiling up to its apex under the roof, not above the roof plane', () => {
+    const glazing = (apex: number) => ({ windows: [{ id: 'G', room: 'R', at: [0.3, 4], outline: [[3, 0.9], [3, 2.5], [4, apex], [5, 2.5], [5, 0.9]] }] });
+    expect(codes(box(gable(), glazing(3.4)))).not.toContain('error:window.roof');    // the flat top is at 2.6
+    expect(codes(box(gable(), glazing(4.8)))).toContain('error:window.roof');
   });
   it('a roof window across the ridge or on the flat top is an error', () => {
     expect(codes(box(gable(), { roofWindows: [{ id: 'RW', room: 'R', rect: [2, 3.5, 3, 4.5] }] }))).toContain('error:roofWindow.plane');
@@ -330,9 +348,10 @@ describe('a gable window with a polygonal outline (plan.json `outline`)', () => 
       expect(mesh.frames.index.length / 3).toBe(5 * 12);                     // a bar (6 quads) along each of the 5 sides
       expect(mesh.glass.index.length / 3).toBe(3 * 2 * 2);                   // a fan of 3, on both faces
     });
-    // a corner above the roof plane is refused
+    // a corner above the roof plane is refused (past the flat top of the ceiling is fine: a gable glazing up to its apex)
+    const roofAt = (x: number) => surfaceAt({ pieces: b0.roof!.byLevel(room.level), which: 'inner' }, x, y0 + 0.01)!.z - room.floorZ;
     const q = planOf('roof-gable-y');
-    q.windows = [...(q.windows ?? []), { id: 'WG', room: room.id, at: [xm, y0], outline: [[xm - 0.5, 0.3], [xm, h(xm) + 0.3], [xm + 0.5, 0.3]] }];
+    q.windows = [...(q.windows ?? []), { id: 'WG', room: room.id, at: [xm, y0], outline: [[xm - 0.5, 0.3], [xm, roofAt(xm) + 0.3], [xm + 0.5, 0.3]] }];
     expect(compilePlan(q, { catalog: null }).issues.map((i) => i.code)).toContain('window.roof');
   });
 });

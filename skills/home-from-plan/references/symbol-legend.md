@@ -38,7 +38,7 @@
 | Dormer (lukarna) | a bay in the roof outline with its own small roof and window; on the attic plan a recess in the knee wall | `roof.dormers[]` |
 | Chimney (komin) | small filled or hatched rectangle in a wall, above the roof on elevations | `roof.chimneys[]` |
 | Car outline, garden plants, terrace paving | context drawings | not furniture by default — garage `kind: "garage"`; terrace as a note; the catalog `car` only if the user wants cars |
-| Garage door | wide gap in the garage's exterior wall, label like "500/225" | `"type": "sliding"` door of that width and `height` (no sectional door type; note it) |
+| Garage door | wide gap in the garage's exterior wall, label like "500/225", sometimes the overhead tracks dashed into the garage | `"type": "sectional"` door of that width and `height` (it lifts under the garage ceiling; an up-and-over or roller door: the same, noted in the README) |
 | Watermark / logo | large diagonal text or a logo over the drawing | ignore |
 
 Size priors for calibration (`tools/image/calibrate.py symbol --kind …`) — for doors measure the **arc radius** (hinge to the tip

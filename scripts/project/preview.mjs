@@ -129,6 +129,10 @@ function planSvg(levelId) {
     } else if (d.slide) {
       const o = d.slide.origin, e = [o[0] + d.slide.dir[0] * d.leafWidth, o[1] + d.slide.dir[1] * d.leafWidth];
       g += `<line x1="${X(o[0])}" y1="${Y(o[1])}" x2="${X(e[0])}" y2="${Y(e[1])}" stroke="#dc2626" stroke-width="3"/><text x="${X(e[0])}" y="${Y(e[1])}" font-size="11" fill="#b91c1c" dx="4">${esc(d.id)} ↔</text>`;
+    } else if (d.lift) {
+      // a sectional door: the leaf in the wall line, its overhead tracks dashed into the room
+      const [l] = doorLeaves(d, 0), [t] = swingArcs(d);
+      g += `<line x1="${X(l.a[0])}" y1="${Y(l.a[1])}" x2="${X(l.b[0])}" y2="${Y(l.b[1])}" stroke="#dc2626" stroke-width="3"/><polyline points="${pts(t)}" fill="none" stroke="#dc2626" stroke-dasharray="4 3"/><text x="${X(l.b[0])}" y="${Y(l.b[1])}" font-size="11" fill="#b91c1c" dx="4">${esc(d.id)} ↑</text>`;
     }
   }
   for (const r of rooms) {

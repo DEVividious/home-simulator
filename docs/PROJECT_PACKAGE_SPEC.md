@@ -60,9 +60,10 @@ Walls (`<room>-w<n>`, n = edge index of the outline in counter-clockwise order),
 
 ## building.doors
 `{ id, level, rooms: [a, b | "exterior"], floorZ, opening: { along, dir?, from, to, faces, width, height }, leafWidth, height, type
-(hinged-single | hinged-double | folding | sliding | pocket), hinge, closedDir, openDir, hingeSide, swingInto, openAngle, slide
-({ origin, dir, travel } | null), source[], confidence, notes?, flush? }`. Hinged doors rotate around `hinge` from `closedDir` to
-`openDir`; sliding doors move along `slide.dir`. `leafWidth` is all the leaves together: a `hinged-double` door has two half
+(hinged-single | hinged-double | folding | sliding | pocket | sectional), hinge, closedDir, openDir, hingeSide, swingInto, openAngle, slide
+({ origin, dir, travel } | null), lift? ({ origin, dir, into } | null), source[], confidence, notes?, flush? }`. Hinged doors rotate
+around `hinge` from `closedDir` to `openDir`; sliding doors move along `slide.dir`; a sectional door's panels lift from the leaf
+at `lift.origin` up and back under the ceiling of the room `lift.into` points to. `leafWidth` is all the leaves together: a `hinged-double` door has two half
 leaves hinged at both jambs (the second at `hinge + closedDir · leafWidth`, turning into the same room, `hingeSide` null), a
 `folding` door two panels folding towards its hinge (`openAngle` 80). Doors to the exterior are drawn, opened and walked through like any other.
 
@@ -99,7 +100,8 @@ underside of its structure — the ceiling of the rooms below.
 - Dormer: `{ id, part, type: gable | shed, front: N | S | E | W, rect (outer faces of its walls), inner (the room space it adds),
   extent (its roof), planes[], window? }` — `window: { id, roomId, width, sill_z, head_z }` only for a front set back from the
   wall (a front in a wall plane holds an ordinary room window).
-- Chimney: `{ id, rect, bottom, top }` — a box from `bottom` (the slab underside of the lowest level it stands in) to `top`.
+- Chimney: `{ id, rect, bottom, top }` — a box from `bottom` (the slab underside of the lowest level it stands in — in
+  `plan.json` the lowest level under it, or the level its `from` names) to `top`.
 Room roof windows (`roof_windows[].plan_rect`) are cut through the roof perpendicular to the plane over their centre, with a
 frame in the slope. A phone with an app installed before roofs cannot open a package with `kind: "roof"` ceilings until the app
 is updated (docs/PHONE.md).

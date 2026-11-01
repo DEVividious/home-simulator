@@ -52,7 +52,8 @@ finds (`words.json › found`). Raster plans: read them off the image. Quote wha
   wall); a front set back on the roof gets its own window (`sill` / `head` between the roof below and the dormer roof). `front` =
   height of the dormer roof's eaves above the floor.
 - **Roof windows**: the top-level `roofWindows` (`room`, `rect` seen from above) — inside one sloped plane of that room's ceiling.
-- **Chimneys**: `rect` (points), `top` above z = 0; they stand from the slab of the lowest level they are in.
+- **Chimneys**: `rect` (points), `top` above z = 0; they stand from the slab of the lowest level they are in. A duct that starts
+  at a ceiling — a kitchen hood vent drawn dashed on the plan below — gets `from` = the level it stands in first.
 - Rooms on a roofed level keep their flat ceiling (`ceiling` or the level's) as the flat top (collar ties); the roof cuts it
   where it is lower. A level `slope` given together with the roof is a cross-check (a difference over 5 cm is a warning).
 
@@ -68,7 +69,9 @@ finds (`words.json › found`). Raster plans: read them off the image. Quote wha
 
 - `roof.cover` — walls of a level are under no part (and no level above them) — exact area, a corner left out of a polygon
   counts; `roof.levelAbove` — a level stands on a part.
-- `window.roof` / `door.roof` — an opening higher than the roof plane at its wall (lower it, or put it in a dormer).
+- `window.roof` / `door.roof` — an opening higher than the roof plane at its wall (lower it, or put it in a dormer); a gable
+  glazing (`outline`) may rise past the flat ceiling up to the roof plane.
+- `chimney.level` — `from` names no level; `chimney.outside` — the chimney is not over the walls of that level.
 - `roofWindow.plane` — a roof window across a ridge, a hip, a valley or the flat top; `dormer.plane` / `dormer.high` — a dormer
   across two planes, or higher than the roof behind it.
 - `roof.pitch` — pitched parts 5–75°, flat 0–5°.

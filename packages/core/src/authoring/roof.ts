@@ -309,8 +309,10 @@ export function compileRoof(ctx: RoofContext): CompiledRoof {
   const lowestFirst = [...plan.levels].sort((x, y) => x.floorZ - y.floorZ);
   const chimneys = (R?.chimneys ?? []).flatMap((c) => {
     const rect = r3Rect(rectOf(P([c.rect[0], c.rect[1]], lowestFirst[0].id), P([c.rect[2], c.rect[3]], lowestFirst[0].id)));
-    const cx = (rect[0] + rect[2]) / 2, cy = (rect[1] + rect[3]) / 2, lv = lowestFirst.find((l) => overLevel(l.id, cx, cy));
-    if (!lv) { err('chimney.outside', `chimney "${c.id}": not over the walls of any level`); return []; }
+    const cx = (rect[0] + rect[2]) / 2, cy = (rect[1] + rect[3]) / 2;
+    if (c.from && !levels.has(c.from)) { err('chimney.level', `chimney "${c.id}": unknown level "${c.from}"`); return []; }
+    const lv = c.from ? levels.get(c.from) : lowestFirst.find((l) => overLevel(l.id, cx, cy));
+    if (!lv || !overLevel(lv.id, cx, cy)) { err('chimney.outside', `chimney "${c.id}": not over the walls of ${c.from ? `level "${c.from}"` : 'any level'}`); return []; }
     return [{ id: c.id, rect, bottom: r3(lv.floorZ - D.slab), top: c.top }];
   });
 

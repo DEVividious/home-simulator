@@ -537,18 +537,19 @@
      },
      "type": {
       "default": "hinged-single",
-      "description": "hinged-double: two leaves hinged at both jambs; folding: a bifold — two panels folding to the hinge side",
+      "description": "hinged-double: two leaves hinged at both jambs; folding: a bifold — two panels folding to the hinge side; sectional: an overhead (garage) door whose panels lift up and back under the ceiling",
       "type": "string",
       "enum": [
        "hinged-single",
        "hinged-double",
        "folding",
        "sliding",
-       "pocket"
+       "pocket",
+       "sectional"
       ]
      },
      "swingInto": {
-      "description": "hinged, double, folding: the room the leaves open into, or \"exterior\" for an outward-opening outside door (default: the second room, or the room for an exterior door)",
+      "description": "hinged, double, folding: the room the leaves open into, or \"exterior\" for an outward-opening outside door; sectional: the room it lifts into (default: the second room, or the room for an exterior door)",
       "type": "string",
       "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
      },
@@ -1099,6 +1100,11 @@
        "top": {
         "type": "number",
         "description": "height of its top above z = 0 [m]"
+       },
+       "from": {
+        "description": "the lowest level it stands in (default: the lowest level it is over); a duct that starts at a ceiling — e.g. a kitchen hood vent drawn dashed on the plan below — stands from the level above",
+        "type": "string",
+        "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
        }
       },
       "required": [

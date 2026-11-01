@@ -195,7 +195,7 @@ export function planImage(data: BuildingData, levelId: LevelId, o: { name: strin
       sh.label([(a + cx) / 2, (b + d) / 2], w.id, 1, BLUE_TEXT, 'middle', 0, -5);
     }
   }
-  // doors: leaves (open) and swing arcs, every leaf of a double door, a bifold folded; sliding leaves
+  // doors: leaves (open) and swing arcs, every leaf of a double door, a bifold folded; sliding leaves; sectional doors and their tracks
   for (const d of B.doors.filter((x) => x.level === levelId)) {
     const leaves = doorLeaves(d, 1);
     if (d.hinge && leaves.length) {
@@ -206,6 +206,11 @@ export function planImage(data: BuildingData, levelId: LevelId, o: { name: strin
       const s = d.slide.origin, e: Vec2 = [s[0] + d.slide.dir[0] * d.leafWidth, s[1] + d.slide.dir[1] * d.leafWidth];
       sh.seg(s, e, DOOR, 3);
       sh.label(e, `${d.id} ↔`, 1, DOOR_TEXT, 'start', 4, -5);
+    } else if (d.lift && leaves.length) {
+      // a sectional door: the leaf in the wall line, its overhead tracks dashed into the room
+      sh.seg(leaves[0].a, leaves[0].b, DOOR, 3);
+      for (const arc of swingArcs(d)) for (let i = 0; i < arc.length - 1; i += 2) sh.seg(arc[i], arc[i + 1], DOOR);
+      sh.label(leaves[0].b, `${d.id} ↑`, 1, DOOR_TEXT, 'start', 4, -5);
     }
   }
   for (const r of rooms) {

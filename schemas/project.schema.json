@@ -696,7 +696,8 @@
          "hinged-double",
          "folding",
          "sliding",
-         "pocket"
+         "pocket",
+         "sectional"
         ]
        },
        "hinge": {
@@ -829,6 +830,66 @@
            "origin",
            "dir",
            "travel"
+          ],
+          "additionalProperties": {}
+         },
+         {
+          "type": "null"
+         }
+        ]
+       },
+       "lift": {
+        "anyOf": [
+         {
+          "type": "object",
+          "properties": {
+           "origin": {
+            "type": "array",
+            "prefixItems": [
+             {
+              "type": "number"
+             },
+             {
+              "type": "number"
+             }
+            ],
+            "items": false,
+            "minItems": 2,
+            "maxItems": 2
+           },
+           "dir": {
+            "type": "array",
+            "prefixItems": [
+             {
+              "type": "number"
+             },
+             {
+              "type": "number"
+             }
+            ],
+            "items": false,
+            "minItems": 2,
+            "maxItems": 2
+           },
+           "into": {
+            "type": "array",
+            "prefixItems": [
+             {
+              "type": "number"
+             },
+             {
+              "type": "number"
+             }
+            ],
+            "items": false,
+            "minItems": 2,
+            "maxItems": 2
+           }
+          },
+          "required": [
+           "origin",
+           "dir",
+           "into"
           ],
           "additionalProperties": {}
          },

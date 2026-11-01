@@ -269,10 +269,10 @@ function DoorInspector({ id }: { id: string }) {
         <button className={`hm-btn wide${open ? '' : ' primary'}`} disabled={t >= 1} onClick={() => setDoor(id, 1)} data-testid="door-open">{tr('inspector.open')}</button>
         <button className={`hm-btn wide${open ? ' primary' : ''}`} disabled={t <= 0} onClick={() => setDoor(id, 0)} data-testid="door-close">{tr('inspector.closeDoor')}</button>
       </div>
-      <div className="hm-current" data-testid="door-state">{tr('inspector.now')} <b>{t <= 0 ? tr('inspector.doorClosed') : t >= 1 ? tr('inspector.doorOpen') : d.hinge ? tr('inspector.doorAjar', { deg }) : tr('inspector.doorSlid', { pct: Math.round(t * 100) })}</b></div>
+      <div className="hm-current" data-testid="door-state">{tr('inspector.now')} <b>{t <= 0 ? tr('inspector.doorClosed') : t >= 1 ? tr('inspector.doorOpen') : d.hinge ? tr('inspector.doorAjar', { deg }) : tr(d.lift ? 'inspector.doorRaised' : 'inspector.doorSlid', { pct: Math.round(t * 100) })}</b></div>
       {d.hinge
         ? <Slider label={tr('inspector.openingAngle')} value={deg} min={0} max={d.openAngle ?? 90} step={5} unit="°" k={1} onPreview={(v) => setDoor(id, v / (d.openAngle ?? 90))} onCommit={(v) => setDoor(id, v / (d.openAngle ?? 90))} testid="door-angle" />
-        : <Slider label={tr('inspector.slideOpen')} value={Math.round(t * 100)} min={0} max={100} step={5} unit="%" k={1} onPreview={(v) => setDoor(id, v / 100)} onCommit={(v) => setDoor(id, v / 100)} testid="door-angle" />}
+        : <Slider label={tr(d.lift ? 'inspector.liftOpen' : 'inspector.slideOpen')} value={Math.round(t * 100)} min={0} max={100} step={5} unit="%" k={1} onPreview={(v) => setDoor(id, v / 100)} onCommit={(v) => setDoor(id, v / 100)} testid="door-angle" />}
       {!show && <p className="hm-note" data-testid="door-hidden-note">{tr('inspector.doorsHidden')}</p>}
       <Block title={tr('inspector.fromProject')}>
         <dl className="hm-facts" data-testid="door-facts">

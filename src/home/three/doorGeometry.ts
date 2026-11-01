@@ -3,7 +3,7 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { gapFrame, linePt } from '@home-sim/core/model/wallLine';
-import { doorLeaves, LEAF_T, leafCount, leafWidthOf, type DoorDef } from '../model/doors';
+import { doorLeaves, LEAF_T, leafCount, leafWidthOf, sectionCount, sectionPose, type DoorDef } from '../model/doors';
 
 const LEAF_COLOR = new THREE.Color('#f2f0ea'), HANDLE_COLOR = new THREE.Color('#33363b');
 function tint(g: THREE.BufferGeometry, c: THREE.Color) {
@@ -75,3 +75,34 @@ export function leafMatrix(d: DoorDef, t: number, out = new THREE.Matrix4(), i =
   return out.makeBasis(_x, _y, _z).setPosition(_p);
 }
 
+
+/** gap between the wall face and a closed sectional panel [m] (the door frame stands 1 cm proud of the wall) */
+const LIFT_GAP = 0.012;
+/** panels (sections) of a sectional door: panel i in its local frame — x along the wall (0…width), y up (centred), z thickness;
+ *  a horizontal groove on both faces, a grip on the bottom panel */
+export function sectionGeometries(d: DoorDef, i = 0) {
+  const n = sectionCount(d), w = d.leafWidth - 0.006, h = d.height / n - 0.004;
+  const parts = [tint(new THREE.BoxGeometry(w, h, LEAF_T), LEAF_COLOR).translate(w / 2 + 0.003, 0, 0)];
+  for (const s of [-1, 1]) parts.push(tint(new THREE.BoxGeometry(w - 0.06, 0.012, 0.003), HANDLE_COLOR.clone().lerp(LEAF_COLOR, 0.75)).translate(w / 2 + 0.003, 0, s * (LEAF_T / 2 + 0.0015)));
+  if (i === 0) for (const s of [-1, 1]) parts.push(tint(new THREE.BoxGeometry(0.16, 0.025, 0.02), HANDLE_COLOR).translate(w / 2 + 0.003, -h / 2 + 0.08, s * (LEAF_T / 2 + 0.01)));
+  const leaf = mergeGeometries(parts); parts.forEach((g) => g.dispose());
+  const hit = new THREE.BoxGeometry(w, h, 0.22); hit.translate(w / 2, 0, 0);
+  return { leaf, hit };
+}
+
+const _u = new THREE.Vector3();
+/** matrix of panel i of a sectional door at opening t: origin at its left edge, mid-height, on its centre plane; the panel tilts
+ *  about the wall direction, its top edge leaning into the room (core sectionPose) */
+export function sectionMatrix(d: DoorDef, t: number, out = new THREE.Matrix4(), i = 0): THREE.Matrix4 {
+  const L = d.lift!, p = sectionPose(d, t, i), c = Math.cos(p.angle), s = Math.sin(p.angle), k = LEAF_T / 2 + LIFT_GAP + p.depth;
+  _x.set(L.dir[0], 0, -L.dir[1]);
+  _u.set(L.into[0] * s, c, -L.into[1] * s);
+  _z.crossVectors(_x, _u);
+  _p.set(L.origin[0] + L.into[0] * k, d.floorZ + p.z, -(L.origin[1] + L.into[1] * k));
+  return out.makeBasis(_x, _u, _z).setPosition(_p);
+}
+
+/** moving parts of a door: its leaves, or the panels of a sectional door */
+export const partCount = (d: DoorDef): number => (d.lift ? sectionCount(d) : leafCount(d));
+export const partGeometries = (d: DoorDef, i: number) => (d.lift ? sectionGeometries(d, i) : leafGeometries(d, i));
+export const partMatrix = (d: DoorDef, t: number, out: THREE.Matrix4, i: number): THREE.Matrix4 => (d.lift ? sectionMatrix(d, t, out, i) : leafMatrix(d, t, out, i));

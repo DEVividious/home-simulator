@@ -37,9 +37,10 @@ These rules make a package correct for the engine and stable for the user's save
   jamb they fold to, as seen from that room.
 - Sliding / pocket: `"type": "sliding"`, `slideTo: "start" | "end"` (towards the smaller / larger coordinate along the wall).
 - An opening without a door leaf → `passages` (no door id).
-- Garage door (sectional, up-and-over, roller): no such door type — a `"type": "sliding"` door of the full width in the garage's
-  exterior wall (`height` ≈ the printed height, e.g. 2.25), noted in the README. Cars drawn in a garage are context, not
-  furniture, unless the user wants them: the catalog item `car` fits one.
+- Garage door (sectional, up-and-over, roller): `"type": "sectional"` of the full width in the garage's exterior wall
+  (`height` ≈ the printed height, e.g. 2.25, `leafHeight` 5 cm less); its panels lift up and back under the garage ceiling
+  (`swingInto` = the garage, the default for a door to the exterior). An up-and-over or roller door: still `sectional`, noted in
+  the README. Cars drawn in a garage are context, not furniture, unless the user wants them: the catalog item `car` fits one.
 - Heights default to 2.05 m opening / 2.00 m leaf.
 
 ## Windows
@@ -48,8 +49,9 @@ These rules make a package correct for the engine and stable for the user's save
   the plot (`site`) exists and one can walk out.
 - A glazing that is not a rectangle — a gable window under the roof (a trapezoid, a pentagon up into the gable) — has
   `outline` instead of `width` / `sill` / `head`: its corners as `[coordinate along the wall, height above the room floor]`
-  (x for a wall along X, y for a wall along Y; px in a px plan), every corner under the ceiling at its place; `at` still
-  names the wall. Walls along the plan axes only. Only a glazing one can walk through gets `passable` (a lift-and-slide or a
+  (x for a wall along X, y for a wall along Y; px in a px plan), every corner under the roof plane at its place — a gable
+  glazing keeps its apex as drawn, also above the room's flat ceiling (collar ties); `at` still names the wall. Glazing split
+  by a partition under the apex: one window per room, each up to its own sharp corner at the partition. Walls along the plan axes only. Only a glazing one can walk through gets `passable` (a lift-and-slide or a
   balcony door) — a fixed pane reaching the floor does not.
 - Windows belong on exterior walls (the compiler warns otherwise).
 

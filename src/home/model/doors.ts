@@ -22,8 +22,8 @@ export const doorById = (id: string | null | undefined): DoorDef | null => (id ?
 export const doorsOfLevel = (level: LevelId): DoorDef[] => model().all.filter((d) => d.level === level);
 export const doorsOfRoom = (roomId: string): DoorDef[] => model().all.filter((d) => d.rooms.includes(roomId));
 
-/** doors the engine draws and opens itself (every door with a hinge or a sliding track, also doors to the exterior) */
-export function isInteractive(d: DoorDef) { return d.hinge !== null || d.slide !== null; }
+/** doors the engine draws and opens itself (every door with a hinge, a sliding track or overhead tracks, also doors to the exterior) */
+export function isInteractive(d: DoorDef) { return d.hinge !== null || d.slide !== null || !!d.lift; }
 export const interactiveDoors = (): DoorDef[] => model().interactive;
 
 /** i18n keys of door types */
@@ -38,14 +38,16 @@ export const LEAF_T = 0.04;
 export const PASS_OPEN = 0.6;
 /** full open / close time [s] */
 export const DOOR_ANIM_S = 0.55;
+/** full open / close time of a sectional (overhead) door — its panels run the whole way up and under the ceiling [s] */
+export const LIFT_ANIM_S = 2.4;
 /** full open / close time of a door [s] */
-export const animSeconds = (_id: string) => DOOR_ANIM_S;
+export const animSeconds = (id: string) => (doorById(id)?.lift ? LIFT_ANIM_S : DOOR_ANIM_S);
 /** longest door animation of the project [s] (how long rendering continues after a state change) */
-export const maxAnimSeconds = () => DOOR_ANIM_S;
+export const maxAnimSeconds = () => (model().interactive.some((d) => d.lift) ? LIFT_ANIM_S : DOOR_ANIM_S);
 
 const clamp01 = (t: number): number => Math.min(1, Math.max(0, Number.isFinite(t) ? t : 0));
 
-export { doorLeaves, leafAngle, leafCount, leafWidthOf, swingArcs, swingDepth, type LeafSegment } from '@home-sim/core/model/doors';
+export { doorLeaves, leafAngle, leafCount, leafWidthOf, liftLevel, sectionCount, sectionPose, swingArcs, swingDepth, type LeafSegment } from '@home-sim/core/model/doors';
 
 /** the first leaf in plan at opening t (a → b: from the hinge edge / the start of a sliding leaf) — every leaf: doorLeaves */
 export const leafSegment = (d: DoorDef, t: number): LeafSegment | null => doorLeaves(d, t)[0] ?? null;

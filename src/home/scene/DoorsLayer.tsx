@@ -1,15 +1,15 @@
 // Interior doors in the scene: frame (always kept) + leaf with handle.
 // A swing leaf rotates about the HINGE AXIS (matrix from the hinge point and leaf direction — not about its centre), a sliding
-// leaf moves along the wall. Animation: a short transition to the state from the doors store; frames are woken only while the
+// leaf moves along the wall, the panels of a sectional door run up their tracks and back under the ceiling. Animation: a short transition to the state from the doors store; frames are woken only while the
 // leaf moves (on-demand rendering — wake()), no continuous rendering. Click / tap: in walk mode — open / close, in other views
 // — selection (door card). "Show doors" off: leaves hidden, frames kept.
 import { useFrame, type ThreeEvent } from '@react-three/fiber';
 import { useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
-import { frameGeometry, leafGeometries, leafMatrix } from '../three/doorGeometry';
+import { frameGeometry, partCount, partGeometries, partMatrix } from '../three/doorGeometry';
 import { toggleDoorInWalk } from '../actions';
-import { DOOR_ANIM_S, doorLeaves, interactiveDoors, leafCount, openOf, swingArcs, type DoorDef } from '../model/doors';
+import { animSeconds, doorLeaves, interactiveDoors, openOf, swingArcs, type DoorDef } from '../model/doors';
 import { doors, useDoors } from '../store/doors';
 import { ui, useUi } from '../store/ui';
 import { doorMotion } from './doorRuntime';
@@ -30,7 +30,7 @@ function Door({ d, selected, walking, top }: { d: DoorDef; selected: boolean; wa
   const show = useDoors((s) => s.show);
   const groups = useRef<(THREE.Group | null)[]>([]);
   const cur = useRef(openOf(doors.get(), d.id));
-  const n = leafCount(d), geo = useMemo(() => Array.from({ length: n }, (_, i) => leafGeometries(d, i)), [d, n]);
+  const n = partCount(d), geo = useMemo(() => Array.from({ length: n }, (_, i) => partGeometries(d, i)), [d, n]);
   // swing arcs (top view — as in an architectural plan): path of each leaf edge + the hinge
   const arcs = useMemo(() => swingArcs(d, 24).map((path, i) => {
     const pts = path.map((p) => new THREE.Vector3(p[0], d.floorZ + 0.02, -p[1]));
@@ -41,15 +41,16 @@ function Door({ d, selected, walking, top }: { d: DoorDef; selected: boolean; wa
     return l;
   }), [d]);
   useEffect(() => () => { for (const g of geo) { g.leaf.dispose(); g.hit.dispose(); } for (const a of arcs) a.geometry.dispose(); }, [geo, arcs]);
-  /** every leaf to the opening amount t (eased) */
-  const place = (t: number) => groups.current.forEach((g, i) => { if (g) { leafMatrix(d, ease(t), g.matrix, i); g.matrixWorldNeedsUpdate = true; } });
+  /** every leaf (panel) to the opening amount t (eased) */
+  const place = (t: number) => groups.current.forEach((g, i) => { if (g) { partMatrix(d, ease(t), g.matrix, i); g.matrixWorldNeedsUpdate = true; } });
+  const anim = animSeconds(d.id);
   // door state change → frames for the duration of the animation (the scene renders on demand)
-  useEffect(() => doors.subscribe(() => { if (Math.abs(openOf(doors.get(), d.id) - cur.current) > 1e-4) wake(DOOR_ANIM_S * 1000 + 150); }), [d]);
+  useEffect(() => doors.subscribe(() => { if (Math.abs(openOf(doors.get(), d.id) - cur.current) > 1e-4) wake(anim * 1000 + 150); }), [d, anim]);
   useEffect(() => { doorMotion.angle[d.id] = cur.current; place(cur.current); }, [d]);
   useFrame((_, dt) => {
     const target = openOf(doors.get(), d.id);
     if (!groups.current.length || cur.current === target) return;
-    const step = Math.min(dt, 0.1) / DOOR_ANIM_S, diff = target - cur.current;
+    const step = Math.min(dt, 0.1) / anim, diff = target - cur.current;
     cur.current = Math.abs(diff) <= step ? target : cur.current + Math.sign(diff) * step;
     place(cur.current);
     doorMotion.angle[d.id] = cur.current;

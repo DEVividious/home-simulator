@@ -15,8 +15,8 @@ A door is stated once, as a fact about the plan (`packages/core/src/authoring/pl
 | `between` | the two rooms on either side; `"exterior"` for an outside door |
 | `at` | any point in the middle of the opening (on or inside the wall between the rooms) |
 | `width` | clear opening in the masonry [m] |
-| `type` | `hinged-single` (default), `hinged-double` (two leaves hinged at both jambs), `folding` (a bifold: two panels folding to the hinge side), `sliding`, `pocket` |
-| `swingInto` | hinged, double, folding: the room the leaves open into (default: the second room; for an exterior door — the room) |
+| `type` | `hinged-single` (default), `hinged-double` (two leaves hinged at both jambs), `folding` (a bifold: two panels folding to the hinge side), `sliding`, `pocket`, `sectional` (an overhead garage door: its panels lift up and back under the ceiling) |
+| `swingInto` | hinged, double, folding: the room the leaves open into; sectional: the room it lifts into (default: the second room; for an exterior door — the room) |
 | `hinge` | hinged: `left` / `right`, as seen from the room the door opens into, looking at the wall; folding: the side the panels fold to; double: not used |
 | `slideTo` | sliding / pocket: the leaf moves towards the `start` (smaller coordinate) or `end` of the opening |
 | `height`, `leafHeight` | opening and leaf height (defaults from `defaults.doorHeight` = 2.05 m, `defaults.leafHeight` = 2.00 m) |
@@ -38,13 +38,14 @@ not guessed by the engine: the authoring skill decides (from a swing arc on a dr
 | `rooms: [A, B]` | rooms on both sides; B = `exterior` for an outside door |
 | `opening` | `along` (wall axis `X` / `Y`), `from`, `to`, `faces` (wall faces, cross coordinate), `width`, `height` — the masonry opening |
 | `leafWidth`, `height` | the leaf — of all the leaves together (a double door: two halves, a bifold: two panels) |
-| `type` | `hinged-single` · `hinged-double` · `folding` · `sliding` · `pocket` |
+| `type` | `hinged-single` · `hinged-double` · `folding` · `sliding` · `pocket` · `sectional` |
 | `hinge` | hinge axis in plan (LCS) — of the first leaf (a double door's second leaf hinges at `hinge + closedDir · leafWidth`); `null` for sliding leaves |
 | `closedDir`, `openDir` | unit vectors: closed leaf (hinge → lock) and leaf opened by 90° |
 | `hingeSide` | `left` / `right`, as seen from the room the door opens into (`null` for a double door) |
 | `swingInto` | room the leaf opens into |
 | `openAngle` | full opening angle (90°; a bifold 80° — its panels fold into a narrow V) |
 | `slide` | sliding leaf: `{ origin, dir, travel }` — start on the wall axis, sliding direction, travel |
+| `lift` | sectional leaf: `{ origin, dir, into }` — its start on the face of the room it lifts into, the direction along the wall, the unit vector into that room |
 | `source`, `confidence`, `notes` | provenance and confidence |
 | `flush` | door flush with the wall: concealed frame in the leaf colour, flat pull instead of a handle on the opening side |
 
@@ -82,6 +83,12 @@ Diagnostics and tests: `?doors=open | closed | hidden`.
   flush doors have a separate frame mesh in the leaf colour.
 - Leaves belong to the architecture group: the level section and the cutaway of occluding walls apply to them as to walls.
 - Sliding and pocket leaves move along the wall by their travel.
+- A sectional door is a stack of panels about 0.5 m high (`sectionCount`), each a rigid panel whose centre runs on the tracks:
+  up the jambs, round a 0.3 m bend 0.1 m above the leaf top, and back under the ceiling of the room it lifts into, the bottom
+  panel ending just past the bend (`sectionPose(d, t, k)` in the core, `sectionMatrix` in `doorGeometry.ts`). It sweeps no floor
+  (furniture: only the clear passage is kept), its plan symbol is the leaf in the wall line and the two tracks dashed into the
+  room, and it takes 2.4 s to open (`LIFT_ANIM_S`). The compiler warns (`door.lift`) when the open panels would lie above the
+  ceiling.
 - In the exterior view only the doors to the outside are drawn (an entrance, a garage door); every door inside the building
   appears in the level section, a room and the walk.
 - A double door is two leaf meshes, each about its own hinge, with a handle on both; a bifold two panels, the second turning

@@ -5,7 +5,9 @@
 //                  into the same room;
 //   folding        two panels of half the width (a bifold): the first turns about `hinge`, the second is hinged to its free edge
 //                  and its far edge runs along the wall line back towards the hinge, so the pair folds into a V;
-//   sliding, pocket one leaf moving along the wall by travel · t.
+//   sliding, pocket one leaf moving along the wall by travel · t;
+//   sectional      an overhead (garage) door: one leaf in plan, standing in the wall line; in 3D a stack of panels running up
+//                  its tracks, round a bend and back under the ceiling of the room it lifts into (sectionPose).
 // The plan symbols (swing arcs) and the floor a leaf sweeps (for warnings) follow from the same leaves.
 import type { DoorDef, Vec2 } from '../package/types.ts';
 
@@ -36,6 +38,7 @@ export function doorLeaves(d: DoorDef, t: number): LeafSegment[] {
     }
     return [{ a: h, b: at(h, dir, d.leafWidth), dir }];
   }
+  if (d.lift) return [{ a: d.lift.origin, b: at(d.lift.origin, d.lift.dir, d.leafWidth), dir: d.lift.dir }];
   if (d.slide) {
     const k = (d.opening.width - d.leafWidth) / 2 + d.slide.travel * clamp01(t), a = at(d.slide.origin, d.slide.dir, k);
     return [{ a, b: at(a, d.slide.dir, d.leafWidth), dir: d.slide.dir }];
@@ -44,8 +47,10 @@ export function doorLeaves(d: DoorDef, t: number): LeafSegment[] {
 }
 
 /** swing arcs for a plan, as polylines: the path of each hinged leaf's free edge (a bifold: of the fold between its panels);
- *  sliding — the track of the leaf */
+ *  sliding — the track of the leaf; sectional — its two overhead tracks from the jambs into the room (as dashed on a plan: the
+ *  polyline's segments 0–1 and 2–3) */
 export function swingArcs(d: DoorDef, steps = 16): Vec2[][] {
+  if (d.lift) { const [l] = doorLeaves(d, 0), r = liftReach(d), i = d.lift.into; return [[at(l.a, i, r), l.a, l.b, at(l.b, i, r)]]; }
   if (!d.hinge) { const s0 = doorLeaves(d, 0)[0], s1 = doorLeaves(d, 1)[0]; return s0 && s1 ? [[s0.a, s1.b]] : []; }
   const path = (k: number) => Array.from({ length: steps + 1 }, (_, i) => doorLeaves(d, i / steps)[k].b);
   return d.type === 'hinged-double' ? [path(0), path(1)] : [path(0)];
@@ -65,4 +70,31 @@ export function swingDepth(d: DoorDef): number {
   if (!d.hinge || !d.openDir) return 0;
   const o = d.openDir, h = d.hinge;
   return Math.max(0, ...Array.from({ length: 9 }, (_, i) => doorLeaves(d, i / 8)).flat().flatMap((l) => [l.a, l.b]).map((p) => (p[0] - h[0]) * o[0] + (p[1] - h[1]) * o[1]));
+}
+
+// ------------------------------------------------------------------ sectional (overhead) doors
+/** a sectional door: panels of about this height, the bend of its tracks and how far above the leaf top they run [m] */
+export const SECTIONAL = { panel: 0.5, radius: 0.3, rise: 0.1 } as const;
+/** number of panels of a sectional door (0 for any other door) */
+export const sectionCount = (d: DoorDef): number => (d.lift ? Math.max(2, Math.round(d.height / SECTIONAL.panel)) : 0);
+/** height of the horizontal tracks above the floor (the open panels lie there) [m] */
+export const liftLevel = (d: DoorDef): number => d.height + SECTIONAL.rise;
+/** how far the centre of every panel travels along the tracks from closed to open: the bottom panel ends just past the bend */
+const liftRun = (d: DoorDef) => liftLevel(d) - SECTIONAL.radius + (SECTIONAL.radius * Math.PI) / 2 + 0.06;
+/**
+ * panel k (0: the bottom one) of a sectional door at opening t: its centre's distance from the closed leaf plane into the room
+ * the door lifts into (`depth`), its height above the floor (`z`) and its tilt (0: upright … π/2: flat under the ceiling, the top
+ * edge leaning into the room). The panel centres run on the tracks: up the jambs, round a quarter bend, back under the ceiling.
+ */
+export function sectionPose(d: DoorDef, t: number, k: number): { depth: number; z: number; angle: number } {
+  const n = sectionCount(d), h = d.height / Math.max(1, n), R = SECTIONAL.radius, level = liftLevel(d), qV = level - R, arc = (R * Math.PI) / 2;
+  const q = (k + 0.5) * h + clamp01(t) * liftRun(d);
+  if (q <= qV) return { depth: 0, z: q, angle: 0 };
+  if (q <= qV + arc) { const a = (q - qV) / R; return { depth: R - R * Math.cos(a), z: qV + R * Math.sin(a), angle: a }; }
+  return { depth: R + (q - qV - arc), z: level, angle: Math.PI / 2 };
+}
+/** how far a fully open sectional door reaches into the room, from the closed leaf plane [m] (0 for any other door) */
+export function liftReach(d: DoorDef): number {
+  const n = sectionCount(d);
+  return n ? sectionPose(d, 1, n - 1).depth + d.height / n / 2 : 0;
 }

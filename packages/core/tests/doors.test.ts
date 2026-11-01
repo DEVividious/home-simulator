@@ -2,7 +2,7 @@
 // jamb; the plan symbols, the floor they sweep and the compiler's swing check follow from the leaves. Fixture: doors.plan.json.
 import { describe, expect, it } from 'vitest';
 import { compilePlan } from '@home-sim/core/authoring/compile';
-import { doorLeaves, leafCount, leafSectors, leafWidthOf, swingArcs, swingDepth } from '@home-sim/core/model/doors';
+import { doorLeaves, leafCount, leafSectors, leafWidthOf, liftLevel, liftReach, sectionCount, sectionPose, swingArcs, swingDepth } from '@home-sim/core/model/doors';
 import type { DoorDef, Vec2 } from '@home-sim/core/package/types';
 import { PACKAGES, planOf } from './packages';
 
@@ -51,6 +51,34 @@ describe('door types', () => {
     p.doors.push({ id: 'D4', between: ['L', 'exterior'], at: [0.15, 3.7], width: 1.2, swingInto: 'L', hinge: 'right' });
     const r = compilePlan(p, { catalog: null });
     expect(r.issues.map((i) => i.code)).toContain('door.swingOverlap');
+  });
+  it('a sectional door: one leaf at the face of the room it lifts into; its panels run up, round the bend and under the ceiling', () => {
+    const p = planOf('doors');
+    p.doors.push({ id: 'G1', between: ['L', 'exterior'], at: [0.15, 2.3], width: 2.4, type: 'sectional', height: 2.2, leafHeight: 2.15 });
+    const r = compilePlan(p, { catalog: null }), d = r.project!.building.doors.find((x) => x.id === 'G1')!;
+    expect(r.issues).toEqual([]);
+    expect(d).toMatchObject({ type: 'sectional', hinge: null, slide: null, swingInto: 'L', leafWidth: 2.3, lift: { into: [1, 0], dir: [0, 1] } });
+    expect(d.lift!.origin[0]).toBeCloseTo(0.3, 6);                              // the inner face of the west wall
+    const [l] = doorLeaves(d, 0.5);
+    expect(len(l.a, l.b)).toBeCloseTo(2.3, 9); expect(l.a[0]).toBeCloseTo(0.3, 6);
+    expect(swingDepth(d)).toBe(0); expect(leafSectors(d)).toEqual([]);
+    const n = sectionCount(d), h = d.height / n;
+    expect(n).toBe(4);
+    for (let k = 0; k < n; k++) {
+      expect(sectionPose(d, 0, k)).toEqual({ depth: 0, z: (k + 0.5) * h, angle: 0 });        // closed: upright, stacked
+      const o = sectionPose(d, 1, k);
+      expect(o.angle).toBeCloseTo(Math.PI / 2, 9); expect(o.z).toBeCloseTo(liftLevel(d), 9);   // open: flat under the ceiling
+      if (k) expect(o.depth - sectionPose(d, 1, k - 1).depth).toBeCloseTo(h, 9);             // still side by side
+    }
+    expect(sectionPose(d, 1, 0).depth - h / 2).toBeGreaterThan(0.3);            // the bottom panel past the bend: the opening is clear
+    expect(liftReach(d)).toBeGreaterThan(d.height); expect(liftReach(d)).toBeLessThan(d.height + 0.8);
+    const [track] = swingArcs(d);
+    expect(track).toHaveLength(4); close(track[1], l.a); expect(track[0][0] - track[1][0]).toBeCloseTo(liftReach(d), 9);
+    // a leaf that would lie above the ceiling when open is warned; a sectional door cannot lift into the exterior
+    p.doors[p.doors.length - 1] = { ...p.doors[p.doors.length - 1], height: 2.58, leafHeight: 2.55 };
+    expect(compilePlan(p, { catalog: null }).issues.map((i) => i.code)).toContain('door.lift');
+    p.doors[p.doors.length - 1] = { ...p.doors[p.doors.length - 1], height: 2.2, leafHeight: 2.15, swingInto: 'exterior' };
+    expect(compilePlan(p, { catalog: null }).issues.map((i) => i.code)).toContain('door.swing');
   });
   it('a plan without a type stays a single hinged door (older plans compile as before)', () => {
     const d: DoorDef = PACKAGES['two-storey-l']().doors[0];

@@ -5,11 +5,11 @@
 // axis and face, stairs from risers and level heights, furniture against a wall, provenance on every fact.
 // Problems are returned as issues (error / warning); the CLI refuses to write a package with errors.
 import { flatCeiling, roofCeiling, type CeilingProfile } from '../model/ceiling.ts';
-import { leafSectors, type LeafSector } from '../model/doors.ts';
+import { leafSectors, SECTIONAL, type LeafSector } from '../model/doors.ts';
 import { distToPolygonEdges } from '../model/geom2d.ts';
 import { outerOutline } from '../model/outline.ts';
 import { canonicalDir, lineC, lineFrame, linePt, lineT, type LineAxis, type LineFrame } from '../model/wallLine.ts';
-import { areaBelow, atticPlanes, surfaceFacets, type RoofPiece } from '../model/roof.ts';
+import { areaBelow, atticPlanes, surfaceAt, surfaceFacets, type RoofPiece } from '../model/roof.ts';
 import type { ArchitectItem, DoorDef, FreeWallJson, ElectricalDefaults, ProjectModule, ProjectPackage, Rect, RoomJson, StairDef, Vec2, Viewpoint } from '../package/types.ts';
 import { PlanSchema, type Plan, type PlanInput } from './plan.ts';
 import { outOfRange, rangeMessage } from '../package/range.ts';
@@ -261,6 +261,16 @@ export function compilePlan(input: PlanInput | unknown, opts: CompileOptions): C
       const hinge: Vec2 = at(r3(t), face);
       const closedDir: Vec2 = hingeAtEnd ? [-u[0], -u[1]] : [u[0], u[1]];
       doors.push({ ...base, hinge, closedDir: closedDir.map(cleanZero) as Vec2, openDir: n.map(cleanZero) as Vec2, hingeSide: d.type === 'hinged-double' ? null : side, swingInto: into, openAngle: d.type === 'folding' ? FOLD_ANGLE : 90, slide: null });
+    } else if (d.type === 'sectional') {
+      const into = d.swingInto ?? (b === 'exterior' ? a : b);
+      if (into !== a && into !== b || into === 'exterior') { err('door.swing', `${what}: a sectional door lifts into one of its rooms (${[a, b].filter((x) => x !== 'exterior').join(' / ')}), not "${into}"`); continue; }
+      // the leaf stands at the face of the room it lifts into; its panels run up and back under that room's ceiling
+      const intoEdge = into === a ? wall.edgeA : wall.edgeB!, n: Vec2 = [-intoEdge.out * f.n[0], -intoEdge.out * f.n[1]];
+      const room = plan.rooms.find((r) => r.id === into)!, lv = levels.get(room.level), ceiling = room.ceiling ?? lv?.slope?.flat ?? lv?.ceiling ?? 2.6;
+      const leafH = d.leafHeight ?? D.leafHeight;
+      if (leafH + SECTIONAL.rise > ceiling + 0.005) warn('door.lift', `${what}: its panels lie ${r3(leafH + SECTIONAL.rise)} m high when open, above the ceiling of "${into}" (${r3(ceiling)} m) — lower the leaf or check the ceiling`);
+      doors.push({ ...base, hinge: null, closedDir: null, openDir: null, hingeSide: null, swingInto: into, openAngle: null, slide: null,
+        lift: { origin: at(r3(wall.from + (w - leafW) / 2), intoEdge.c), dir: u.map(cleanZero) as Vec2, into: n.map(cleanZero) as Vec2 } });
     } else {
       const toEnd = (d.slideTo ?? 'end') === 'end', mid = r3((wall.faces[0] + wall.faces[1]) / 2);
       const originT = toEnd ? wall.from : wall.to, dir: Vec2 = toEnd ? u : [-u[0], -u[1]];
@@ -442,10 +452,12 @@ export function compilePlan(input: PlanInput | unknown, opts: CompileOptions): C
     const onWall = (kind: LineAxis, dir: Vec2 | undefined, cs: number[], from: number, to: number) => es.find((x) => x.axis === kind && (kind !== 'D' || (!!dir && Math.abs(x.dir[0] * dir[1] - x.dir[1] * dir[0]) < 1e-6)) && cs.some((v) => Math.abs(v - x.c) < 1e-5) && from >= x.lo - 0.01 && to <= x.hi + 0.01);
     for (const o of windows.get(r.id) ?? []) {
       const e = onWall(o.plane_axis === 'D' ? 'D' : o.plane_axis === 'Y' ? 'X' : 'Y', o.dir, [o.inner], o.from_, o.to);
-      // a polygonal glazing: every corner under the ceiling at its place
+      // a polygonal glazing (a gable window): every corner under the roof plane at its place — it may rise past the flat top of
+      // the ceiling into the space under the ridge, as gable glazings are drawn up to their apex
       if (e && o.polygon_YZ) {
-        const d = inward(e), over = o.polygon_YZ.find(([a, z]) => { const q = linePt(e, a, e.c); return z - fz > c.heightAt(q[0] + d[0], q[1] + d[1]) + 0.01; });
-        if (over) err('window.roof', `window "${o.id}": its corner at ${r3(over[0])} is ${r3(over[1] - fz)} m high, above the ceiling under the roof there — follow the roof plane`);
+        const d = inward(e), roofAt = (x: number, y: number) => (surfaceAt({ pieces: roof.model?.byLevel(r.level) ?? [], which: 'inner' }, x, y)?.z ?? fz + c.heightAt(x, y)) - fz;
+        const over = o.polygon_YZ.find(([a, z]) => { const q = linePt(e, a, e.c); return z - fz > roofAt(q[0] + d[0], q[1] + d[1]) + 0.01; });
+        if (over) err('window.roof', `window "${o.id}": its corner at ${r3(over[0])} is ${r3(over[1] - fz)} m high, above the roof plane there — follow the roof plane`);
       } else if (e && o.head_z! - fz > ceilingOver(e, o.from_, o.to) + 0.01) err('window.roof', `window "${o.id}": its head (${r3(o.head_z! - fz)} m) is above the roof plane at its wall (${r3(ceilingOver(e, o.from_, o.to))} m) — lower it, or put it in a dormer`);
     }
     for (const g of gaps.get(r.id) ?? []) {

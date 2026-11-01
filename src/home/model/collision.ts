@@ -38,11 +38,11 @@ export function furnitureWarnings(room: HomeRoom, item: CatalogItem, p: Furnitur
       if (item.inDoorway || bottom >= 2.05) break; // door flush in the opening; element above the door
       const wall = room.walls.find((w) => w.id === d.wallId), wl = wall?.length ?? Infinity;
       // doors from the door model (hinge and direction from the plan) — the swing zone only on the side the leaf
-      // opens into (leaf width); on the other side and for sliding doors a clear passage width is enough
+      // opens into (leaf width); on the other side and for sliding and sectional doors a clear passage width is enough
       const def = doorById(d.id), leaves = def && wall ? doorLeaves(def, 0) : [];
       if (def && leaves.length && wall) {
         const tAt = (q: Vec2) => (q[0] - wall.a[0]) * wall.dir[0] + (q[1] - wall.a[1]) * wall.dir[1], ts = leaves.flatMap((l) => [tAt(l.a), tAt(l.b)]);
-        const t0 = Math.max(0, Math.min(...ts)), t1 = Math.min(wl, Math.max(...ts)), into = def.swingInto === room.id;
+        const t0 = Math.max(0, Math.min(...ts)), t1 = Math.min(wl, Math.max(...ts)), into = !!def.hinge && def.swingInto === room.id;
         // side without the leaf: 3 cm tolerance at the reveals (an item next to the door does not "block" the passage); the side it
         // opens into: as deep as the leaves reach (a double door's half leaves, a bifold's folded panels)
         const m = into ? 0 : 0.03;

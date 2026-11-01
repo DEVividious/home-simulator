@@ -55,10 +55,11 @@ export const DoorSchema = z.looseObject({
   id, level: id, rooms: z.tuple([id, id]), floorZ: num,
   opening: z.looseObject({ along: z.enum(['X', 'Y', 'D']), dir: vec2.optional(), from: num, to: num, faces: z.array(num).length(2), width: num, height: num })
     .refine((o) => slanted(o, o.along), 'an opening in a slanted wall (along "D") needs "dir"'),
-  leafWidth: num, height: num, type: z.enum(['hinged-single', 'hinged-double', 'folding', 'sliding', 'pocket']),
+  leafWidth: num, height: num, type: z.enum(['hinged-single', 'hinged-double', 'folding', 'sliding', 'pocket', 'sectional']),
   hinge: vec2.nullable(), closedDir: vec2.nullable(), openDir: vec2.nullable(),
   hingeSide: z.enum(['left', 'right']).nullable(), swingInto: z.string().nullable(), openAngle: num.nullable(),
   slide: z.looseObject({ origin: vec2, dir: vec2, travel: num }).nullable(),
+  lift: z.looseObject({ origin: vec2, dir: vec2, into: vec2 }).nullable().optional(),
   source: z.array(z.string()), confidence, notes: z.string().optional(), flush: z.boolean().optional(),
 });
 

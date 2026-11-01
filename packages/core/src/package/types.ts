@@ -70,8 +70,9 @@ export interface RoomJson {
 
 // ------------------------------------------------------------------ doors
 /** hinged-double: two leaves hinged at both jambs; folding: two panels folding to the hinge jamb (a bifold) — `leafWidth` is all the
- *  leaves together, `hinge` / `closedDir` belong to the first leaf (packages/core/src/model/doors.ts) */
-export type DoorType = 'hinged-single' | 'hinged-double' | 'folding' | 'sliding' | 'pocket';
+ *  leaves together, `hinge` / `closedDir` belong to the first leaf; sectional: an overhead (garage) door lifting under the ceiling
+ *  (packages/core/src/model/doors.ts) */
+export type DoorType = 'hinged-single' | 'hinged-double' | 'folding' | 'sliding' | 'pocket' | 'sectional';
 
 export interface DoorDef {
   id: string;
@@ -99,6 +100,9 @@ export interface DoorDef {
   openAngle: number | null;
   /** sliding leaf: opening start on the wall axis, sliding direction, travel [m] */
   slide: { origin: Vec2; dir: Vec2; travel: number } | null;
+  /** sectional leaf: its start on the face of the room it lifts into, the direction along the wall to its end, the unit vector
+   *  into that room (the panels run up and back under its ceiling) */
+  lift?: { origin: Vec2; dir: Vec2; into: Vec2 } | null;
   source: string[];
   confidence: 'confirmed' | 'probable' | 'unknown';
   notes?: string;
