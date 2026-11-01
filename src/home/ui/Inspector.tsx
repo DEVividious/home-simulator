@@ -309,7 +309,7 @@ function DoorInspector({ id }: { id: string }) {
           <dt>{tr('inspector.leaf')}</dt><dd>{Math.round(d.leafWidth * 100)} × {Math.round(d.height * 100)} cm</dd>
           {d.hingeSide && <><dt>{tr('inspector.hinges')}</dt><dd>{tr(d.hingeSide === 'left' ? 'inspector.hingesLeft' : 'inspector.hingesRight', { from: name(d.swingInto ?? '') })}</dd></>}
           {d.swingInto && <><dt>{tr('inspector.opensInto')}</dt><dd>{name(d.swingInto)}</dd></>}
-          {d.slide && <><dt>{tr('inspector.leaf')}</dt><dd>{tr('inspector.pocket')}</dd></>}
+          {d.type === 'pocket' && <><dt>{tr('inspector.leaf')}</dt><dd>{tr('inspector.pocket')}</dd></>}
         </dl>
         <p className="hm-note">{tr('inspector.doorSourceNote', { source: d.source[0] ? ` (${d.source[0]})` : '' })}</p>
       </Block>
