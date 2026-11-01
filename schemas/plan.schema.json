@@ -715,6 +715,18 @@
      "passable": {
       "description": "floor-level glazed door one can walk through onto the terrain",
       "type": "boolean"
+     },
+     "group": {
+      "description": "with outline: the glazing this window is part of — one glazing split by a partition into a window per room gets the same group in each room; the app divides and colours its parts as one",
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
+     },
+     "mullions": {
+      "description": "with outline: vertical bars of the glazing as drawn (where its units meet, the middle of a two-leaf unit) — coordinates along the wall like the outline's; the user can change them in the app",
+      "type": "array",
+      "items": {
+       "type": "number"
+      }
      }
     },
     "required": [

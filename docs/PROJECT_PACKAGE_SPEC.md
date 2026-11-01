@@ -50,7 +50,9 @@ load), `doors[]` (gaps: `{ along: "X"|"Y"|"D", dir?, from_, to, across: [face, f
 from_, to, sill_z, head_z }` — `plane_axis` is the axis whose coordinate is constant on the wall, `inner` the room-side face;
 a wall at 45° is `"D"` (along / plane_axis) with its unit direction `dir`: from / to are p · dir and the faces / inner p · n,
 n = (−dir.y, dir.x) (`packages/core/src/model/wallLine.ts`); `sill_z`,
-`head_z` and `polygon_YZ` heights are absolute project Z like `ceiling.z`, while door gap `height` is above the room floor),
+`head_z` and `polygon_YZ` heights are absolute project Z like `ceiling.z`, while door gap `height` is above the room floor; a
+polygonal glazing may list its vertical bars as drawn in `mullions`, coordinates along the wall like `from_` / `to`, and the
+glazing it is part of in `group` when a partition splits it into a window per room),
 `stair_opening` (`[x0, y0, x1, y1]` or null), `roof_windows` (`[]`), `kind` (bath, kitchen, garage, tech, hall, bed, living,
 office, storage, room), `tags` (`kitchen`, `garage`).
 

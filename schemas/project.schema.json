@@ -509,6 +509,15 @@
                "type": "number"
               }
              }
+            },
+            "mullions": {
+             "type": "array",
+             "items": {
+              "type": "number"
+             }
+            },
+            "group": {
+             "type": "string"
             }
            },
            "required": [

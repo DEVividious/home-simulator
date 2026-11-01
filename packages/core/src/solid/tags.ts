@@ -37,13 +37,15 @@ const UP = 0.5, DOWN = -0.02, COVER = 0.1;
 export function roleOf(tag: Tag, n: Vec3): Role {
   switch (tag.kind) {
     case 'mass': return Math.abs(n[2]) < UP ? 'elevation' : 'slab';
-    case 'slab': return 'slab';
+    // the edge of a slab is part of the façade (one plaster from the plinth to the eaves), its top and underside are the slab
+    case 'slab': return Math.abs(n[2]) < UP ? 'elevation' : 'slab';
     case 'room': return n[2] > UP ? 'room-floor' : n[2] < DOWN ? 'room-ceiling' : 'room-wall';
     case 'opening': return 'reveal';
     case 'shaft': return 'shaft';
     // the roof: its top is the covering, its edges are the fascia and the verges; its underside (the space below it) is the
     // ceiling of the rooms and the soffit of the eaves
-    case 'roof': return n[2] > COVER ? (tag.flat ? 'roof-flat' : 'roof') : 'eaves';
+    // (the edge of a flat roof is the top of the façade below its parapet)
+    case 'roof': return n[2] > COVER ? (tag.flat ? 'roof-flat' : 'roof') : tag.flat && Math.abs(n[2]) < UP ? 'elevation' : 'eaves';
     case 'roof-space': return n[2] < DOWN ? 'roof-underside' : n[2] > UP ? 'slab' : 'eaves';
     case 'chimney': return 'chimney';
     case 'parapet': return Math.abs(n[2]) < UP ? 'elevation' : 'slab';

@@ -3,8 +3,8 @@
 // furniture are in the object bar; the finishes of walls, floor and ceiling in Arrange › Colours. Technical data (project
 // coordinates, ids, JSON) — advanced mode only.
 import { hasStairs, stairFacts, stairs } from '../model/stairs';
-import { Fragment, useMemo, type ReactNode } from 'react';
-import { patchFurniture, previewVariantStairs, setDoor, setFurnitureVariant, setVariantStairs } from '../actions';
+import { Fragment, useMemo, useState, type ReactNode } from 'react';
+import { patchFurniture, previewVariantStairs, setDoor, setFurnitureVariant, setVariantGlazing, setVariantStairs } from '../actions';
 import { displayName, elevationOf, isWallMounted, resolveDims, sizeLabel, variantOf as itemVariant } from '../catalog/furniture';
 import { materialsFor, type Surface } from '../catalog/materials';
 import { itemById } from '../catalog/providers';
@@ -18,6 +18,7 @@ import { roomById } from '../model/rooms';
 import { architectItemOf } from '../model/defaults';
 import { finishLook, resolveStairs, STAIR_FINISHES, STAIR_LIMITS, STAIRS_PRESETS, stairsSummary, type BalustradeType, type HandrailPlace, type StairFinish, type StairFinishId } from '../model/stairsConfig';
 import { doorById, doorTypeKey, openOf } from '../model/doors';
+import { choiceOf, FRAME_COLORS, glazingGroups, type BarsChoice, type GlazingChoice, type TransomChoice } from '../model/glazing';
 import { t as tr } from '../../i18n';
 import { useDoors } from '../store/doors';
 import { mountedNow } from '../scene/interaction';
@@ -27,7 +28,7 @@ import { useUi } from '../store/ui';
 import { materialThumbnail } from '../three/textures';
 import { ActionButton, Slot } from './Action';
 import { CardShell, TechnicalData } from './Card';
-import { Block, ColorInput, Seg, Slider, Tile } from './controls';
+import { Block, ColorInput, Seg, Slider, Swatches, Tile } from './controls';
 import { Icon } from './icons';
 import { ElectricalInspector } from './ElectricalPanels';
 
@@ -257,6 +258,34 @@ function StairsInspector() {
   );
 }
 
+/** gable window card: the frame colour and how the glazing is divided — for this window (every part of a glazing split by a
+ *  partition) or for every gable window */
+function WindowInspector({ id }: { id: string }) {
+  const v = useVariant(), all = glazingGroups(), w = all.find((x) => x.ids.includes(id)), [every, setEvery] = useState(true);
+  if (!w) return null;
+  const c = choiceOf(v.glazing, id), ids = every ? all.flatMap((x) => x.ids) : w.ids, room = w.roomIds.map((r) => roomById(r)?.label ?? r).join(' + ');
+  const set = (patch: GlazingChoice, what: string) => setVariantGlazing(ids, patch, tr('inspector.hist.glazing', { what }));
+  const colors = FRAME_COLORS.map((f) => ({ hex: f.hex, name: tr(`glazing.color.${f.key}`) }));
+  // "as drawn" only for a window the project divides; otherwise "none" stands for it
+  const drawn = w.drawn, bars: BarsChoice = !drawn && c.bars === 'project' ? 0 : c.bars;
+  const barOptions: [BarsChoice, string][] = [...(drawn ? [['project', tr('glazing.asDrawn')] as [BarsChoice, string]] : []), [0, tr('glazing.none')], [1, tr('glazing.panes', { n: 2 })], [2, tr('glazing.panes', { n: 3 })], [3, tr('glazing.panes', { n: 4 })]];
+  return (
+    <Panel testid="window" title={tr('inspector.window')} sub={room} img={<Icon name="interior" size={26} />}>
+      {all.length > 1 && <Seg wide value={every ? 'all' : 'one'} options={[['one', tr('glazing.thisOne')], ['all', tr('glazing.everyOne', { n: all.length })]]} onChange={(x) => setEvery(x === 'all')} testid="window-which" />}
+      <Block title={tr('glazing.frameColor')}>
+        <Swatches value={c.color} colors={colors} allowCustom={false} onChange={(hex, name) => set({ color: hex }, name)} testid="window-color" />
+      </Block>
+      <Block title={tr('glazing.division')}>
+        <Seg wide value={bars} options={barOptions} onChange={(x) => set({ bars: x }, tr('glazing.division').toLowerCase())} testid="window-bars" />
+      </Block>
+      <Block title={tr('glazing.crossBar')}>
+        <Seg wide value={c.transom} options={[['none', tr('glazing.none')], ['door', tr('glazing.doorHeight')], ['half', tr('glazing.halfWay')]] as [TransomChoice, string][]} onChange={(x) => set({ transom: x }, tr('glazing.crossBar').toLowerCase())} testid="window-transom" />
+      </Block>
+      <p className="hm-note">{tr('glazing.note')}</p>
+    </Panel>
+  );
+}
+
 /** door card: open / close, opening angle or slide, hinge side, opening direction */
 function DoorInspector({ id }: { id: string }) {
   const d = doorById(id), t = useDoors((s) => openOf(s, id)), show = useDoors((s) => s.show);
@@ -300,6 +329,7 @@ export function Inspector() {
     // cards of module elements (stairs) — only in a project that has the module: the selection may come from a saved state
     case 'house': return mode === 'advanced' ? <HouseInspector name={sel.name} data={sel.data} point={sel.point} /> : null;
     case 'door': return <DoorInspector key={sel.id} id={sel.id} />;
+    case 'window': return <WindowInspector key={sel.id} id={sel.id} />;
     case 'stairs': return hasStairs() ? <StairsInspector /> : null;
     case 'electrical': return <ElectricalInspector key={sel.id} id={sel.id} />;
   }

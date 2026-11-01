@@ -24,6 +24,8 @@ export interface ShellWindow {
   depth: number;
   /** a glazing with a polygonal outline (a gable window under the roof): its corners (along the width from a, up from z0) */
   outline?: Vec2[];
+  /** its vertical bars as drawn (along the width from a) */
+  mullions?: number[];
 }
 
 /** an opening cutter: an outline in the wall plane pushed through the wall */
@@ -115,7 +117,7 @@ export function levelOpenings(rooms: Room[], mass: PlanMass, wallTop: number): {
         const t0 = h.t0, t1 = h.t1;
         const z0w = room.floorZ + h.z0;
         windows.push({ id: h.id, roomId: room.id, wallId: w.id, kind: h.kind, a: [w.a[0] + w.dir[0] * t0, w.a[1] + w.dir[1] * t0], dir: w.dir, out, width: t1 - t0, z0: z0w, z1: Math.min(wallTop, room.floorZ + h.z1), depth,
-          ...(h.polygon ? { outline: outline.map(([t, z]) => [snap(t - t0), snap(z - z0w)] as Vec2) } : {}) });
+          ...(h.polygon ? { outline: outline.map(([t, z]) => [snap(t - t0), snap(z - z0w)] as Vec2) } : {}), ...(h.mullions ? { mullions: h.mullions.map((t) => snap(t - t0)) } : {}) });
       }
     }
   }

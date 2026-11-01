@@ -150,6 +150,8 @@
  "inspector.doorOpen": "otwarte",
  "inspector.doorSlid": "odsunięte {pct}%",
  "inspector.doorRaised": "podniesione {pct}%",
+ "inspector.window": "Okno szczytowe",
+ "inspector.hist.glazing": "Okna szczytowe: {what}",
  "inspector.doorSourceNote": "Strona zawiasów i kierunek otwierania — wg źródeł projektu{source}; to założenie projektu, nie wymiar konstrukcyjny.",
  "inspector.doorsHidden": "Skrzydła drzwi są ukryte („Pokaż drzwi” wyłączone) — przejścia są otwarte.",
  "inspector.flush": "zlicowane ze ścianą",

@@ -45,7 +45,11 @@ export interface FurniturePlacement {
 export interface DoorJson { along: 'X' | 'Y' | 'D'; dir?: Vec2; from_: number; to: number; across: number[]; width: number; door_id: string | null; leaf: number | null; height: number | null }
 /** a window: plane_axis — the axis constant along the face (X: a wall along Y, inner = its x), "D" — a slanted wall with unit
  *  direction `dir` (inner = p · n, from / to = p · dir) */
-export interface OpeningJson { id: string; kind: string; plane_axis: 'X' | 'Y' | 'D'; dir?: Vec2; inner: number; from_: number; to: number; sill_z?: number; head_z?: number; polygon_YZ?: number[][] }
+export interface OpeningJson { id: string; kind: string; plane_axis: 'X' | 'Y' | 'D'; dir?: Vec2; inner: number; from_: number; to: number; sill_z?: number; head_z?: number; polygon_YZ?: number[][];
+  /** a polygonal glazing: its vertical bars as drawn (coordinates along the wall, like from_ / to) */
+  mullions?: number[];
+  /** a polygonal glazing split by a partition: the glazing it is part of (the same in each room) */
+  group?: string }
 /** flat: at height z. roof: under the roof of the room's level (building.roof) — the underside of the roof structure, capped by
  *  the flat top flat_z (collar ties). attic (written before the roof existed): the ridge runs along X at y = ridge_y, or along Y at
  *  x = ridge_x; the ceiling falls by `slope` per metre away from it, capped by flat_z — a gable roof is derived from it at load */

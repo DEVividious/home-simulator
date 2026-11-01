@@ -7,6 +7,7 @@ import { createVariant, docErrors, duplicateVariant, renameVariant, type Variant
 import { exportVariant, importVariant, type VariantSun, type VariantView } from './model/variantData';
 import { hasStairs } from './model/stairs';
 import type { DeepPartial, StairsConfig } from './model/stairsConfig';
+import type { GlazingChoice } from './model/glazing';
 import { aboveViewId, homeViewId } from './model/views';
 import { viewpointById } from './model/viewpoints';
 import { displayName, resolveDims } from './catalog/furniture';
@@ -426,6 +427,17 @@ const stairsWith = (patch: DeepPartial<StairsConfig> | null) => (v: Variant): Va
   return { ...v, stairs: { ...cur, ...patch, ...(patch.handrail ? { handrail: { ...(cur.handrail ?? {}), ...patch.handrail } } : {}), ...(patch.balustrade ? { balustrade: { ...(cur.balustrade ?? {}), ...patch.balustrade } } : {}) } } as Variant;
 };
 export const previewVariantStairs = (patch: DeepPartial<StairsConfig>) => { if (hasStairs()) previewVariant(stairsWith(patch)); };
+/** the look of gable windows in the variant: a patch of their choices (colour, bars, horizontal bar) for each of `ids`; null —
+ *  back to the project's look */
+export function setVariantGlazing(ids: string[], patch: GlazingChoice | null, label: string) {
+  if (!ids.length) return;
+  updateVariant(label, (v) => {
+    const g = { ...(v.glazing ?? {}) };
+    for (const id of ids) { if (patch === null) delete g[id]; else g[id] = { ...(g[id] ?? {}), ...patch }; }
+    const { glazing: _drop, ...rest } = v; void _drop;
+    return (Object.keys(g).length ? { ...rest, glazing: g } : rest) as Variant;
+  });
+}
 /** variant export (JSON file to download) */
 export function exportVariantFile(id: string) {
   const doc = docOf(design.get()), f = exportVariant(doc, id), v = doc.variants.find((x) => x.id === id)!;

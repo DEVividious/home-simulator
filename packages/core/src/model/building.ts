@@ -23,6 +23,8 @@ export interface WallHole {
   z1: number;
   /** non-rectangular outline (e.g. glazing under a sloped roof) in (t, z) */
   polygon?: Vec2[];
+  /** its vertical bars as drawn (t along the wall) */
+  mullions?: number[];
 }
 
 export interface RoomWall {
@@ -155,7 +157,8 @@ function buildRoom(r: RoomJson, roof: RoofModel | null, stairs: StairDef[]): Roo
         // glazing with a polygonal outline: outline (along, Z) → (t, z above the floor), clipped to the wall
         const pts = o.polygon_YZ.map((q) => [round(Math.min(w.length, Math.max(0, tOn(w, linePt(f, q[0], o.inner))))), round(q[1] - r.floor_z)] as Vec2);
         const z0 = Math.min(...pts.map((p) => p[1])), z1 = Math.max(...pts.map((p) => p[1]));
-        w.holes.push({ id: o.id, kind: 'glazing', t0: s[0], t1: s[1], z0, z1, polygon: pts });
+        const bars = o.mullions?.map((m) => round(tOn(w, linePt(f, m, o.inner)))).filter((t) => t > s[0] && t < s[1]).sort((a, b) => a - b);
+        w.holes.push({ id: o.id, kind: 'glazing', t0: s[0], t1: s[1], z0, z1, polygon: pts, ...(bars?.length ? { mullions: bars } : {}) });
         windows.push({ id: o.id, wallId: w.id, t0: s[0], t1: s[1], sill: z0, head: z1, kind: 'glazing' });
       } else {
         const sill = round((o.sill_z ?? 0) - r.floor_z), head = round((o.head_z ?? 2.4) - r.floor_z);

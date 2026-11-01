@@ -28,7 +28,7 @@ const WindowSchema = z.looseObject({
   id, kind: z.string(), plane_axis: z.enum(['X', 'Y', 'D']).describe('axis whose coordinate is constant along the wall face; D — a slanted wall, with `dir`'),
   dir: vec2.optional().describe('slanted wall: unit direction along it; from / to = p · dir, inner = p · n, n = (−dir.y, dir.x)'),
   inner: num.describe('coordinate of the room-side wall face'), from_: num, to: num,
-  sill_z: num.optional(), head_z: num.optional(), polygon_YZ: z.array(z.array(num)).optional(),
+  sill_z: num.optional(), head_z: num.optional(), polygon_YZ: z.array(z.array(num)).optional(), mullions: z.array(num).optional(), group: z.string().optional(),
 }).refine((o) => slanted(o, o.plane_axis), 'a window in a slanted wall (plane_axis "D") needs "dir"');
 
 /** flat: absolute height z; roof: under the roof of the room's level, capped by the flat top flat_z; attic (sloped, written before

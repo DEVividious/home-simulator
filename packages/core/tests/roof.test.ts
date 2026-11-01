@@ -348,6 +348,24 @@ describe('a gable window with a polygonal outline (plan.json `outline`)', () => 
       expect(mesh.frames.index.length / 3).toBe(5 * 12);                     // a bar (6 quads) along each of the 5 sides
       expect(mesh.glass.index.length / 3).toBe(3 * 2 * 2);                   // a fan of 3, on both faces
     });
+    // glazing bars: the vertical ones as drawn (plan.json mullions), or as the user divides it, with a cross bar; each one a box
+    const { glazingFrameMesh, wallFrame } = await import('@home-sim/core/solid/frames');
+    const m = planOf('roof-gable-y');
+    m.windows = [...(m.windows ?? []), { id: 'WG', room: room.id, at: [xm, y0], outline: corners, mullions: [xm] }];
+    const rm = compilePlan(m, { catalog: null });
+    expect(rm.issues.filter((i) => i.level === 'error')).toEqual([]);
+    expect(rm.project!.building.rooms.rooms.find((x) => x.id === room.id)!.openings.find((x) => x.id === 'WG')!.mullions).toEqual([xm]);
+    scoped((keep) => {
+      const w = levelSolid(geo, keep, building(rm.project!.building), room.level)!.windows.find((x) => x.id === 'WG')!;
+      expect(w.mullions).toHaveLength(1); expect(w.mullions![0]).toBeCloseTo(0.5, 6);         // the middle of its 1 m width
+      const f = wallFrame(w), quads = (mesh: { index: Uint32Array }) => mesh.index.length / 6;
+      expect(quads(windowMeshes([w]).frames)).toBe(6 * 6);                                    // 5 sides and the drawn bar
+      expect(quads(windowMeshes([w], { polygonFrames: false }).frames)).toBe(0);              // the app draws it
+      expect(quads(glazingFrameMesh(f, { at: [0.25, 0.5, 0.75], transom: 0.8 }))).toBe(9 * 6);
+      expect(quads(glazingFrameMesh(f, { at: [], transom: 99 }))).toBe(5 * 6);                 // a cross bar above it is left out
+    });
+    m.windows[m.windows.length - 1].mullions = [xm + 0.48];
+    expect(compilePlan(m, { catalog: null }).issues.map((i) => i.code)).toContain('window.mullion');
     // a corner above the roof plane is refused (past the flat top of the ceiling is fine: a gable glazing up to its apex)
     const roofAt = (x: number) => surfaceAt({ pieces: b0.roof!.byLevel(room.level), which: 'inner' }, x, y0 + 0.01)!.z - room.floorZ;
     const q = planOf('roof-gable-y');

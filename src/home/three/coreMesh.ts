@@ -7,6 +7,7 @@ import * as THREE from 'three';
 import type { LevelMeshes } from '@home-sim/core/solid/levels';
 import type { SolidMesh } from '@home-sim/core/solid/mesh';
 import type { PlainMesh } from '@home-sim/core/solid/frames';
+import type { ShellWindow } from '@home-sim/core/solid/openings';
 import { ROLES, type Role } from '@home-sim/core/solid/tags';
 
 /** material of a surface role: 0 — wall, 1 — slab (and the soffits and fascias of the roof, a flat roof), 2 — pitched roof covering */
@@ -15,8 +16,9 @@ export const MATERIAL_OF: Record<Role, 0 | 1 | 2> = {
 };
 
 export interface MeshArrays { position: Float32Array; normal: Float32Array; uv: Float32Array | null; index: Uint32Array; groups: { start: number; count: number; materialIndex: number }[] }
-/** the arrays of a level solid or of a roof solid (with its windows) */
-export interface LevelArrays { level: string; solid: MeshArrays; frames: MeshArrays | null; glass: MeshArrays | null }
+/** the arrays of a level solid or of a roof solid (with its windows); the polygonal glazings of a level, whose frames and
+ *  glazing bars the app draws itself (the user chooses their bars and colour) */
+export interface LevelArrays { level: string; solid: MeshArrays; frames: MeshArrays | null; glass: MeshArrays | null; glazings: ShellWindow[] }
 
 /** project → three.js coordinates, in place */
 function toThree(a: Float32Array): Float32Array {
@@ -51,10 +53,10 @@ function solidArrays(m: SolidMesh): MeshArrays {
   return { position: toThree(m.positions.slice()), normal: toThree(m.normals.slice()), uv, index, groups };
 }
 
-const plainArrays = (m: PlainMesh): MeshArrays | null => (m.index.length ? { position: toThree(m.positions.slice()), normal: toThree(m.normals.slice()), uv: null, index: m.index.slice(), groups: [] } : null);
+export const plainArrays = (m: PlainMesh): MeshArrays | null => (m.index.length ? { position: toThree(m.positions.slice()), normal: toThree(m.normals.slice()), uv: null, index: m.index.slice(), groups: [] } : null);
 
 /** three.js arrays of one level or roof (worker side) */
-export const levelArrays = (l: Pick<LevelMeshes, 'level' | 'solid' | 'frames' | 'glass'>): LevelArrays => ({ level: l.level, solid: solidArrays(l.solid), frames: plainArrays(l.frames), glass: plainArrays(l.glass) });
+export const levelArrays = (l: Pick<LevelMeshes, 'level' | 'solid' | 'frames' | 'glass'>, glazings: ShellWindow[] = []): LevelArrays => ({ level: l.level, solid: solidArrays(l.solid), frames: plainArrays(l.frames), glass: plainArrays(l.glass), glazings });
 
 /** the buffers of a level, for transferring them out of the worker */
 export const levelBuffers = (l: LevelArrays): ArrayBuffer[] =>

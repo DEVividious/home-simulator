@@ -61,7 +61,7 @@ ctx.onmessage = async ({ data: req }) => {
       ctx.postMessage({ id, ok: true, kind: 'print', ...r }, r.files.map((f) => f.bytes.buffer as ArrayBuffer));
       return;
     }
-    const t1 = performance.now(), shell = shellMeshes(geo, building(req.data)), levels = shell.levels.map(levelArrays), roofs = shell.roofs.map(levelArrays);
+    const t1 = performance.now(), shell = shellMeshes(geo, building(req.data), { polygonFrames: false }), levels = shell.levels.map((l) => levelArrays(l, l.windows.filter((w) => w.outline))), roofs = shell.roofs.map((r) => levelArrays(r));
     const sections = Object.fromEntries(shell.levels.map((l) => [l.level, l.section]));
     ctx.postMessage({ id, ok: true, levels, roofs, sections, failed: shell.failed, triangles: shell.triangles, ms: performance.now() - t1, loadMs }, [...levels, ...roofs].flatMap(levelBuffers));
   } catch (e) {

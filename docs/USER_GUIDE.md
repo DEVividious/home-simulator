@@ -39,7 +39,11 @@ project uses them (for example the time of day, stairs or a plot to walk on).
 - **Time of day** (only when the project knows its location): **Morning**, **Noon**, **Afternoon**, **Sunset** and a day bar to
   drag the sun. In advanced mode also the date, the 24-hour dial, the sun's position and the north arrow.
 - **Doors** in the scene bar hides or shows the door leaves. Click a door to open its card: **Open** / **Close** and the
-  opening angle (or how far it slides).
+  opening angle (or how far it slides; a garage door: how far it is raised).
+- **Gable windows** (the glazing under the roof): click one to open its card — **Frame colour**, **Division** (**As drawn**,
+  **None**, 2–4 panes) and a **Cross bar** (**Door height**, **Half way**). **All** changes every gable window at once, **This
+  one** only the one clicked (a glazing split by a wall between two rooms is one window: the wall counts as one of its
+  divisions). The choice is part of the version (Undo takes it back).
 - **Surroundings** (Settings, only with a surroundings model) shows trees, neighbouring buildings and the road.
 
 ## Arrange

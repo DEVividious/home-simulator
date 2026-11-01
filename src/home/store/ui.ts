@@ -46,6 +46,7 @@ export type Selection =
   | { kind: 'room'; roomId: string }
   /** door: door card — open / close, angle */
   | { kind: 'door'; id: string }
+  | { kind: 'window'; id: string }
   /** stairs: finish card (cladding, handrail, balustrade) */
   | { kind: 'stairs' }
   /** electrical / smart-home point */

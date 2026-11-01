@@ -1,5 +1,6 @@
 // A complete design variant: besides interiors (arrangements, furniture, finishes, rugs) a variant remembers:
 //   • stairs finishes (treads, handrail, balustrade), its own electrical layout (when split from the global plan),
+//   • the look of the gable windows (frame colour, glazing bars),
 //   • the view (camera, FOV, surroundings) and the sun (date, time),
 //   • a thumbnail (JPEG ~320 px, data URL) and when it was saved.
 // All of these fields are optional. Export / import of a single variant: JSON file { schema: 'home-simulator/variant',
@@ -8,6 +9,7 @@ import { t } from '../../i18n';
 import type { ConfiguratorDoc } from '../../document/model';
 import { project } from '../../project/active';
 import { planErrors, type ElectricalPlan } from './electrical';
+import { glazingErrors, type GlazingChoice } from './glazing';
 import { stairsErrors, type DeepPartial, type StairsConfig } from './stairsConfig';
 import type { ImportedAsset, RoomInterior, Vec3 } from './types';
 
@@ -21,6 +23,8 @@ export interface Variant {
   interiors: Record<string, RoomInterior>;
   /** stairs finishes: cladding, handrail, balustrade (model/stairsConfig.ts) — absent = bare concrete */
   stairs?: DeepPartial<StairsConfig> | null;
+  /** gable windows by id: frame colour and glazing bars (model/glazing.ts) — absent = as in the project */
+  glazing?: Record<string, GlazingChoice> | null;
   /** own electrical layout of the variant (when the user split the plan); absent = the document's global plan */
   electrical?: ElectricalPlan | null;
   view?: VariantView | null;
@@ -31,7 +35,7 @@ export interface Variant {
 
 /** whether two versions hold the same design (furniture, finishes, stairs, electrical) — e.g. a fresh copy before any change */
 export const sameDesign = (a: Variant, b: Variant): boolean =>
-  JSON.stringify([a.interiors, a.stairs ?? null, a.electrical ?? null]) === JSON.stringify([b.interiors, b.stairs ?? null, b.electrical ?? null]);
+  JSON.stringify([a.interiors, a.stairs ?? null, a.electrical ?? null, a.glazing ?? null]) === JSON.stringify([b.interiors, b.stairs ?? null, b.electrical ?? null, b.glazing ?? null]);
 
 /** @deprecated identity kept while the port settles — a Variant carries all fields */
 export type FullVariant = Variant;
@@ -45,6 +49,7 @@ const v3 = (x: unknown) => Array.isArray(x) && x.length === 3 && x.every(fin);
 export function variantExtrasErrors(v: Variant): string[] {
   const e: string[] = [];
   e.push(...stairsErrors(v.stairs));
+  e.push(...glazingErrors(v.glazing));
   e.push(...planErrors(v.electrical, 'electrical (variant)'));
   if (v.view && (!v3(v.view.position) || !v3(v.view.target) || !fin(v.view.fov) || v.view.fov < 10 || v.view.fov > 120 || typeof v.view.environment !== 'boolean')) e.push('view: position, target, fov 10–120, environment');
   if (v.sun && (!/^\d{4}-\d{2}-\d{2}$/.test(String(v.sun.date)) || !fin(v.sun.minutes) || v.sun.minutes < 0 || v.sun.minutes >= 1440)) e.push('sun: date YYYY-MM-DD, minutes 0–1439');

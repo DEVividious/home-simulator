@@ -18,6 +18,7 @@ import { coreShell, shellStatus, type CoreShell } from '../three/coreShell';
 import type { ShellFailure } from '@home-sim/core/solid/levels';
 import { SHELL_FRAME, SHELL_GLASS, SHELL_ROOF, SHELL_SLAB, SHELL_WALL } from '../three/shellMaterials';
 import { levelIndex, levelName } from '../model/rooms';
+import { GlazingLayer } from './GlazingLayer';
 import { wake } from './renderLoop';
 import { lastWasClick } from './sceneApi';
 import type { SceneMode } from './sceneMode';
@@ -31,9 +32,9 @@ const noRay = () => {};
 export const roofShown = (roofLevel: string, mode: SceneMode): boolean => mode.cutZ === null || levelIndex(roofLevel) < levelIndex(mode.level);
 
 function CoreShellMeshes({ shell, mode }: { shell: CoreShell; mode: SceneMode }) {
-  const section = mode.cutZ !== null;
+  const section = mode.cutZ !== null, walking = mode.kind === 'walk' || (mode.kind === 'room' && mode.roomView === 'walk');
   const { levels, roofs, mainMs } = useMemo(() => {
-    const t0 = performance.now(), geos = (l: CoreShell['levels'][number]) => ({ level: l.level, solid: meshGeometry(l.solid), frames: l.frames && meshGeometry(l.frames), glass: l.glass && meshGeometry(l.glass) });
+    const t0 = performance.now(), geos = (l: CoreShell['levels'][number]) => ({ level: l.level, solid: meshGeometry(l.solid), frames: l.frames && meshGeometry(l.frames), glass: l.glass && meshGeometry(l.glass), glazings: l.glazings ?? [] });
     const out = shell.levels.map(geos), roofs = shell.roofs.map(geos);
     return { levels: out, roofs, mainMs: performance.now() - t0 };
   }, [shell]);
@@ -54,6 +55,7 @@ function CoreShellMeshes({ shell, mode }: { shell: CoreShell; mode: SceneMode })
           <mesh name={`SOLID_${l.level}`} geometry={l.solid} material={SOLID_MATERIALS} userData={{ capLevel: l.level }} castShadow receiveShadow />
           {l.frames && <mesh name={`WINDOW_FRAMES_${l.level}`} geometry={l.frames} material={SHELL_FRAME} castShadow receiveShadow />}
           {l.glass && <mesh name={`WINDOW_GLASS_${l.level}`} geometry={l.glass} material={SHELL_GLASS} raycast={noRay} />}
+          <GlazingLayer glazings={l.glazings} walking={walking} />
         </group>
       ))}
       {roofs.map((r) => (

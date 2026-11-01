@@ -112,7 +112,11 @@ const WindowSchema = z.strictObject({
   outline: z.array(z.tuple([num, num])).min(3).optional()
     .describe('a glazing that is not a rectangle (a gable window under the roof): its corners as [coordinate along the wall (a point coordinate: x for a wall along X, y along Y; px in a px plan), height above the room floor (m)] — instead of width / sill / head; walls along the plan axes only'),
   passable: z.boolean().optional().describe('floor-level glazed door one can walk through onto the terrain'),
-}).refine((w) => (w.width === undefined) !== (w.outline === undefined), 'give width (with sill / head) or outline');
+  group: id.optional().describe('with outline: the glazing this window is part of — one glazing split by a partition into a window per room gets the same group in each room; the app divides and colours its parts as one'),
+  mullions: z.array(num).optional().describe('with outline: vertical bars of the glazing as drawn (where its units meet, the middle of a two-leaf unit) — coordinates along the wall like the outline\'s; the user can change them in the app'),
+}).refine((w) => (w.width === undefined) !== (w.outline === undefined), 'give width (with sill / head) or outline')
+  .refine((w) => !w.mullions || !!w.outline, 'mullions are for a glazing with an outline')
+  .refine((w) => !w.group || !!w.outline, 'group is for a glazing with an outline');
 
 const StairSchema = z.strictObject({
   id, from: id, to: id,

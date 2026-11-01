@@ -51,7 +51,10 @@ These rules make a package correct for the engine and stable for the user's save
   `outline` instead of `width` / `sill` / `head`: its corners as `[coordinate along the wall, height above the room floor]`
   (x for a wall along X, y for a wall along Y; px in a px plan), every corner under the roof plane at its place — a gable
   glazing keeps its apex as drawn, also above the room's flat ceiling (collar ties); `at` still names the wall. Glazing split
-  by a partition under the apex: one window per room, each up to its own sharp corner at the partition. Walls along the plan axes only. Only a glazing one can walk through gets `passable` (a lift-and-slide or a
+  by a partition under the apex: one window per room, each up to its own sharp corner at the partition, both with the same
+  `group` (e.g. the glazing's label) — the app treats them as one window. Vertical bars drawn on
+  the elevation (where window units meet, the middle of a two-leaf unit) → `mullions: [coordinate along the wall, …]`; the user
+  can change the division and the frame colour in the app. Walls along the plan axes only. Only a glazing one can walk through gets `passable` (a lift-and-slide or a
   balcony door) — a fixed pane reaching the floor does not.
 - Windows belong on exterior walls (the compiler warns otherwise).
 

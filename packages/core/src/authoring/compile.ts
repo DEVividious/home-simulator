@@ -306,7 +306,7 @@ export function compilePlan(input: PlanInput | unknown, opts: CompileOptions): C
 
   // ---- windows (and the windows of dormer fronts that stand in a wall)
   const windows = new Map<string, RoomJson['openings']>();
-  const addWindow = (w: { id: string; room: string; width?: number; sill?: number; head?: number; passable?: boolean; outline?: [number, number][] }, p: Vec2) => {
+  const addWindow = (w: { id: string; room: string; width?: number; sill?: number; head?: number; passable?: boolean; outline?: [number, number][]; mullions?: number[]; group?: string }, p: Vec2) => {
     const es = edges.get(w.room);
     if (!es) { err('ref', `window "${w.id}": unknown room "${w.room}"`); return; }
     let best: Edge | null = null, bd = Infinity;
@@ -318,7 +318,9 @@ export function compilePlan(input: PlanInput | unknown, opts: CompileOptions): C
     // a polygonal glazing: its corners along the wall (point coordinates, converted like the wall's points) and heights
     if (w.outline && best.axis === 'D') { err('window.outline', `window "${w.id}": an outline window is for walls along the plan axes`); return; }
     const corners = w.outline?.map(([a, h]) => [best!.axis === 'X' ? P([a, 0], w.room)[0] : P([0, a], w.room)[1], h] as Vec2);
+    const bars = w.mullions?.map((a) => r3(best!.axis === 'X' ? P([a, 0], w.room)[0] : P([0, a], w.room)[1]));
     const t = alongOf(best, p), from = corners ? r3(Math.min(...corners.map((q) => q[0]))) : r3(t - w.width! / 2), to = corners ? r3(Math.max(...corners.map((q) => q[0]))) : r3(t + w.width! / 2);
+    if (bars?.some((m) => m <= from + 0.05 || m >= to - 0.05)) err('window.mullion', `window "${w.id}": a mullion lies outside its outline (or within 5 cm of its side)`);
     if (from < best.lo - 0.005 || to > best.hi + 0.005) err('window.span', `window "${w.id}": ${r3(to - from)} m does not fit the wall (${r3(best.lo)}…${r3(best.hi)})`);
     const interior = plan.rooms.some((r) => r.id !== w.room && r.level === levelOfRoom(w.room) && edges.get(r.id)!.some((o) => { if (!parallel(o, best!) || o.out === best!.out) return false; const e = inFrameOf(best!, o); return (e.c - best!.c) * best!.out > 0 && (e.c - best!.c) * best!.out < 0.6 && Math.min(e.hi, to) - Math.max(e.lo, from) > 0; }));
     if (interior) warn('window.interior', `window "${w.id}" sits on an interior wall of "${w.room}"`);
@@ -328,7 +330,7 @@ export function compilePlan(input: PlanInput | unknown, opts: CompileOptions): C
     const fz = levels.get(levelOfRoom(w.room)!)?.floorZ ?? 0;
     const plane = best.axis === 'D' ? { plane_axis: 'D' as const, dir: lineOf(best).dir! } : { plane_axis: best.axis === 'X' ? 'Y' as const : 'X' as const };
     list.push({ id: w.id, kind: corners ? 'glazing' : sill < 0.05 ? 'window (floor-to-lintel)' : 'window', ...plane, inner: best.axis === 'D' ? r6(best.c) : best.c, from_: from, to, sill_z: r3(fz + sill), head_z: r3(fz + head),
-      ...(corners ? { polygon_YZ: corners.map(([a, h]) => [r3(a), r3(fz + h)]) } : {}) });
+      ...(corners ? { polygon_YZ: corners.map(([a, h]) => [r3(a), r3(fz + h)]) } : {}), ...(bars?.length ? { mullions: [...bars].sort((a, b) => a - b) } : {}), ...(w.group ? { group: w.group } : {}) });
     windows.set(w.room, list);
   };
   for (const w of plan.windows) { if (!edges.has(w.room)) { err('ref', `window "${w.id}": unknown room "${w.room}"`); continue; } addWindow(w, P(w.at, w.room)); }
@@ -343,6 +345,8 @@ export function compilePlan(input: PlanInput | unknown, opts: CompileOptions): C
   // ---- stairs
   const stairs: StairDef[] = [];
   const stairOpenings = new Map<string, [number, number, number, number]>();
+  /** the plan area of the stairs standing in or arriving in a room [m²] (printed areas leave it out) */
+  const stairArea = new Map<string, number>();
   for (const s of plan.stairs) {
     const lf = levels.get(s.from), lt = levels.get(s.to);
     if (!lf || !lt) { err('stairs.level', `stairs "${s.id}": unknown level`); continue; }
@@ -380,6 +384,7 @@ export function compilePlan(input: PlanInput | unknown, opts: CompileOptions): C
     else stairOpenings.set(upper.id, box);
     const lower = plan.rooms.find((r) => r.level === s.from && inPolygon(c, polys.get(r.id)!));
     if (!lower) err('stairs.start', `stairs "${s.id}": no room of level "${s.from}" contains the stair box`);
+    for (const r of [upper, lower]) if (r) stairArea.set(r.id, (stairArea.get(r.id) ?? 0) + (box[2] - box[0]) * (box[3] - box[1]));
   }
 
   // ---- free-standing walls: the axis, the openings along it, heights absolute (standing on the slab below the level)
@@ -475,7 +480,10 @@ export function compilePlan(input: PlanInput | unknown, opts: CompileOptions): C
       // under a roof a plan prints the usable area (PN-ISO 9836: full above 2.20 m, half between 1.40 and 2.20, none below)
       const fs = ce.profile.kind === 'roof' ? ce.profile.facets() : null, all = Math.abs(area2(poly)) / 2;
       const usable = fs ? r2(all - areaBelow(fs, floorZ + 2.2) + (areaBelow(fs, floorZ + 2.2) - areaBelow(fs, floorZ + 1.4)) / 2) : null;
-      if (usable === null || Math.abs(usable - r.areaPrinted) / r.areaPrinted > 0.1) warn('room.area', `room "${r.id}": computed area ${area} m²${usable !== null ? ` (usable under the roof ${usable} m²)` : ''} differs from the printed ${r.areaPrinted} m² by more than 10 %`);
+      // a plan prints a room with stairs without them (the stair opening above, often the flight below too)
+      const st = stairArea.get(r.id) ?? 0, net = st ? r2(area - st) : null, netUsable = st && usable !== null ? r2(usable - st) : null;
+      const off = (a: number | null) => a === null || Math.abs(a - r.areaPrinted!) / r.areaPrinted! > 0.1;
+      if (off(usable) && off(net) && off(netUsable)) warn('room.area', `room "${r.id}": computed area ${area} m²${usable !== null ? ` (usable under the roof ${usable} m²)` : ''}${net !== null ? ` (without the stairs ${net} m²)` : ''} differs from the printed ${r.areaPrinted} m² by more than 10 %`);
     }
     return {
       id: r.id, name: r.name, ...(r.label ? { label: r.label } : {}), ...(r.names ? { names: r.names } : {}), level: r.level, floor_z: floorZ, area, area_data: r.areaPrinted ?? area, id_source: r.source ?? source,

@@ -150,6 +150,8 @@
  "inspector.doorOpen": "open",
  "inspector.doorSlid": "slid open {pct}%",
  "inspector.doorRaised": "raised {pct}%",
+ "inspector.window": "Gable window",
+ "inspector.hist.glazing": "Gable windows: {what}",
  "inspector.doorSourceNote": "Hinge side and opening direction — according to the project sources{source}; this is a design assumption, not a structural dimension.",
  "inspector.doorsHidden": "Door leaves are hidden (\"Show doors\" is off) — passages are open.",
  "inspector.flush": "flush with the wall",
